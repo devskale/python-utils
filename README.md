@@ -18,7 +18,8 @@ You can install individual packages directly from this repository:
 
 ```bash
 # Install a specific package
-pip install git+https://github.com/yourusername/python-utils.git#subdirectory=packages/hello_world
+pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/hello_world
+pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/credgoo
 ```
 
 ## Development Setup
@@ -27,7 +28,7 @@ To set up the repository for development:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/python-utils.git
+git clone https://github.com/devskale/python-utils.git
 cd python-utils
 
 # Install development dependencies
