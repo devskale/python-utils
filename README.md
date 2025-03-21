@@ -9,8 +9,7 @@ This repository contains a collection of Python utility packages designed to be 
 ## Available Packages
 
 - **hello_world**: A simple demonstration package showing the repository structure
-- **file_analyzer**: (Coming soon) Utility for analyzing file content and suggesting metadata
-- **secure_config**: (Coming soon) Secure storage and management of API keys and credentials
+- **credgoo**: Store your APIKEYs in a google sheet and retrieve them securely with local caching
 
 ## Installation
 
