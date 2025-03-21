@@ -3,6 +3,8 @@ import base64
 import argparse
 import os
 import sys
+import json
+import time
 from pathlib import Path
 
 def decrypt_key(encrypted_key, encryption_key):
@@ -64,26 +66,107 @@ def get_api_key_from_google(service, bearer_token, encryption_key, api_url=None)
     
     return None
 
-def cache_api_key(api_key, cache_file):
-    """Store API key in local cache file."""
+def cache_api_key(service, api_key, cache_dir):
+    """Store API key in service-specific cache file."""
     try:
         # Ensure directory exists
-        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        cache_dir.mkdir(parents=True, exist_ok=True)
         
-        # Write API key to file
+        # Create cache data with service information
+        cache_data = {
+            "service": service,
+            "api_key": api_key,
+            "timestamp": str(int(time.time()))
+        }
+        
+        # Define cache file path - now using JSON format
+        cache_file = cache_dir / 'api_keys.json'
+        
+        # Load existing cache if it exists
+        existing_cache = {}
+        if cache_file.exists():
+            try:
+                with open(cache_file, 'r') as f:
+                    existing_cache = json.load(f)
+            except json.JSONDecodeError:
+                # If file is corrupt, start with empty cache
+                existing_cache = {}
+        
+        # Update cache with new key
+        existing_cache[service] = cache_data
+        
+        # Write updated cache to file
         with open(cache_file, 'w') as f:
-            f.write(api_key)
+            json.dump(existing_cache, f, indent=2)
         
         # Set restrictive permissions
         os.chmod(cache_file, 0o600)  # Read/write for owner only
-        print(f"API key cached in {cache_file}")
+        print(f"API key for {service} cached in {cache_file}")
     except Exception as e:
         print(f"Warning: Failed to cache API key: {e}")
 
-def get_api_key(service, bearer_token, encryption_key, api_url=None, cache_dir=None):
+def get_cached_api_key(service, cache_dir):
+    """Retrieve API key for specific service from cache."""
+    cache_file = cache_dir / 'api_keys.json'
+    
+    if not cache_file.exists():
+        return None
+    
+    try:
+        with open(cache_file, 'r') as f:
+            cache = json.load(f)
+        
+        # Check if requested service exists in cache
+        if service in cache:
+            cached_key = cache[service].get("api_key")
+            if cached_key:
+                print(f"Using cached API key for {service}")
+                return cached_key
+    except Exception as e:
+        print(f"Warning: Failed to read cached API key: {e}")
+    
+    return None
+
+def store_credentials(token, encryption_key, url, cred_file):
+    """Store authentication credentials and URL securely."""
+    try:
+        # Ensure directory exists
+        cred_file.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Create credentials dictionary
+        credentials = {
+            "token": token,
+            "encryption_key": encryption_key,
+            "url": url
+        }
+        
+        # Write credentials to file
+        with open(cred_file, 'w') as f:
+            json.dump(credentials, f)
+        
+        # Set restrictive permissions
+        os.chmod(cred_file, 0o600)  # Read/write for owner only
+        print(f"Credentials stored in {cred_file}")
+    except Exception as e:
+        print(f"Warning: Failed to store credentials: {e}")
+
+def load_credentials(cred_file):
+    """Load authentication credentials and URL from file."""
+    try:
+        if cred_file.exists():
+            with open(cred_file, 'r') as f:
+                credentials = json.load(f)
+            return credentials.get("token"), credentials.get("encryption_key"), credentials.get("url")
+        return None, None, None
+    except Exception as e:
+        print(f"Warning: Failed to load credentials: {e}")
+        return None, None, None
+
+def get_api_key(service, bearer_token=None, encryption_key=None, api_url=None, cache_dir=None, no_cache=False):
     """
-    Get API key with caching support.
+    Get API key with service-specific caching support.
     First checks for a cached key, then falls back to Google Sheets if needed.
+    This function can be imported and used in other Python scripts.
     """
     # Set default cache directory if not provided
     if cache_dir is None:
@@ -91,35 +174,43 @@ def get_api_key(service, bearer_token, encryption_key, api_url=None, cache_dir=N
     else:
         cache_dir = Path(cache_dir)
     
-    # Define cache file path
-    cache_file = cache_dir / 'api.key'
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cred_file = cache_dir / 'credgoo.txt'
     
-    # Check for cached key
-    if cache_file.exists():
-        try:
-            with open(cache_file, 'r') as f:
-                cached_key = f.read().strip()
-                
-            if cached_key:
-                print(f"Using API key from cache: {cache_file}")
-                return cached_key
-        except Exception as e:
-            print(f"Warning: Failed to read cached API key: {e}")
+    # Handle credentials
+    if not bearer_token or not encryption_key:
+        stored_token, stored_key, stored_url = load_credentials(cred_file)
+        bearer_token = bearer_token or stored_token
+        encryption_key = encryption_key or stored_key
+        api_url = api_url or stored_url
+        
+        if not bearer_token or not encryption_key:
+            print("Error: Bearer token and encryption key are required.")
+            return None
+    else:
+        # Store new credentials when provided
+        store_credentials(bearer_token, encryption_key, api_url, cred_file)
     
-    # If no cached key, get from Google Sheets
+    # Check cache first unless no_cache is specified
+    if not no_cache:
+        cached_key = get_cached_api_key(service, cache_dir)
+        if cached_key:
+            return cached_key
+    
+    # If no cached key for this service, get from Google Sheets
     api_key = get_api_key_from_google(service, bearer_token, encryption_key, api_url)
     
     # Cache the key if retrieval was successful
     if api_key:
-        cache_api_key(api_key, cache_file)
+        cache_api_key(service, api_key, cache_dir)
     
     return api_key
 
 def main():
     parser = argparse.ArgumentParser(description="Retrieve API keys securely with caching")
     parser.add_argument("service", help="Service name to retrieve the API key for")
-    parser.add_argument("--token", required=True, help="Bearer token for authentication")
-    parser.add_argument("--key", required=True, help="Encryption key for decryption")
+    parser.add_argument("--token", help="Bearer token for authentication")
+    parser.add_argument("--key", help="Encryption key for decryption")
     parser.add_argument("--url", help="URL of the Google Apps Script web app")
     parser.add_argument("--cache-dir", help="Directory to store cached API keys (default: ~/.config/api_keys/)")
     parser.add_argument("--no-cache", action="store_true", help="Bypass cache and force retrieval from source")
@@ -128,17 +219,18 @@ def main():
     
     print("Starting API key retrieval...")
     
-    if args.no_cache:
-        # Force retrieval from Google Sheets
-        api_key = get_api_key_from_google(args.service, args.token, args.key, args.url)
-        # Update cache with new key
-        if api_key and not args.no_cache:
-            cache_dir = args.cache_dir or (Path.home() / '.config' / 'api_keys')
-            cache_file = Path(cache_dir) / 'api.key'
-            cache_api_key(api_key, cache_file)
-    else:
-        # Use caching logic
-        api_key = get_api_key(args.service, args.token, args.key, args.url, args.cache_dir)
+    # Determine cache directory
+    cache_dir = Path(args.cache_dir) if args.cache_dir else None
+    
+    # Get API key using the more flexible function
+    api_key = get_api_key(
+        args.service,
+        bearer_token=args.token,
+        encryption_key=args.key,
+        api_url=args.url,
+        cache_dir=cache_dir,
+        no_cache=args.no_cache
+    )
     
     if api_key:
         print(f"API Key for {args.service}: {api_key}")
@@ -147,5 +239,6 @@ def main():
         print("Failed to retrieve API key")
         return 1
 
+# This allows the script to be both imported as a module and run as a command-line tool
 if __name__ == "__main__":
     sys.exit(main())
