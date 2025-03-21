@@ -1,21 +1,28 @@
 from setuptools import setup, find_packages
+import os
 
 setup(
-    name="python-utils",
+    name="credgoo",
     version="0.1.0",
-    description="A collection of Python utility packages",
+    packages=find_packages(),
+    install_requires=[
+        "requests",
+    ],
     author="Your Name",
     author_email="your.email@example.com",
-    url="https://github.com/yourusername/python-utils",
-    packages=find_packages(),
+    description="A package for securely retrieving API keys from Google Sheets",
+    long_description=open("README.md", "r").read() if os.path.exists("README.md") else "",
+    long_description_content_type="text/markdown",
+    url="https://github.com/yourusername/credgoo",
     classifiers=[
-        "Development Status :: 3 - Alpha",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
     ],
-    python_requires=">=3.8",
+    python_requires=">=3.6",
+    entry_points={
+        "console_scripts": [
+            "credgoo=credgoo.credgoo:main",
+        ],
+    },
 )
