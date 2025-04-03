@@ -7,7 +7,6 @@ import os
 from dotenv import load_dotenv
 import easyocr
 import numpy as np
-from paddleocr import PaddleOCR
 
 
 class OCRExtractor:
@@ -40,6 +39,7 @@ def get_ocr_extractor(lang='deu'):
 
 class EasyOCRExtractor:
     def __init__(self, lang='de'):
+        import easyocr
         self.reader = easyocr.Reader([lang])
 
     def extract_text(self, pdf_path):
@@ -73,9 +73,9 @@ class PaddleOCRExtractor:
 
     def extract_text(self, pdf_path):
         try:
-            from paddleocr import PaddleOCR
             import numpy as np
             from pdf2image import convert_from_path
+            from paddleocr import PaddleOCR
 
             # Initialize OCR with fallback options
             ocr = None

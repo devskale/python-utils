@@ -14,7 +14,8 @@ setup(
         'docling',
         'easyocr',
         'pdf2image',
-        'llama-index-core'
+        'llama-index-core',
+        'marker-pdf'
     ],
     entry_points={
         'console_scripts': [
