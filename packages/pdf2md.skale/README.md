@@ -12,6 +12,9 @@
   - `OCR (Tesseract)`: Optical Character Recognition for image-based PDFs.
   - `EasyOCR`: Another OCR engine, offering multilingual support.
   - `Docling`: A new approach to extract text from pdfs.
+  - `Marker`: Uses marker extraction for enhanced text processing (creates dedicated subdirectory structure for each PDF).
+- **Recursive Processing:** Option to process directories recursively with `--recursive` flag.
+- **Dry Run Mode:** Preview file counts without conversion using `--dry` flag.
 - **Markdown Output:** Generates clean Markdown files, preserving text formatting.
 - **Metadata Inclusion:** Adds a YAML header to each Markdown file with:
   - Title (derived from the PDF filename).
@@ -23,11 +26,9 @@
 - **Command-Line Interface:** Easy to use with command-line arguments for input/output directories, overwriting files, and selecting extraction methods.
 - **OCR Support:** Handles image-based PDFs using OCR, with language selection.
 - **Error Handling:** Gracefully handles errors during conversion and provides informative messages.
-- **Docling Support**: Uses the docling library to extract text from pdfs.
-- **Marker Support**: Uses marker extraction for enhanced text processing.
 - **Environment Variable Support:** Uses `.env` file for API keys (e.g., `LLAMA_CLOUD_API_KEY`).
-- **Multiple Parsers**: You can select multiple parsers to use.
-- **System Architecture**: Updated architecture supports modular extractors and processors.
+- **Multiple Parsers:** You can select multiple parsers to use.
+- **System Architecture:** Updated architecture supports modular extractors and processors.
 
 ## Prerequisites
 
@@ -35,7 +36,7 @@
 - Required Python packages (install using `pip`):
 
   ```bash
-  pip install pdfplumber PyPDF2 pymupdf python-dotenv llama-parse llama-index tesseract docling easyocr
+  pip install pdfplumber PyPDF2 pymupdf python-dotenv llama-parse llama-index tesseract docling easyocr marker
   ```
 
   - **Tesseract OCR:** If you plan to use OCR, you'll need to install Tesseract OCR separately.
@@ -60,7 +61,7 @@
 1.  **Basic Conversion (pdfplumber):**
 
     ```bash
-    pdf2md-elegant <input_directory> <output_directory>
+    pdf2md <input_directory> <output_directory>
     ```
 
     - `<input_directory>`: The directory containing the PDF files you want to convert.
@@ -72,7 +73,7 @@
 2.  **Overwrite Existing Files:**
 
     ```bash
-    pdf2md-elegant <input_directory> --overwrite
+    pdf2md <input_directory> --overwrite
     ```
 
     - The `--overwrite` flag will force the script to overwrite existing Markdown files.
@@ -80,7 +81,7 @@
 3.  **Using OCR:**
 
     ```bash
-    pdf2md-elegant <input_directory>  --ocr
+    pdf2md <input_directory> --ocr
     ```
 
     - The `--ocr` flag enables OCR for text extraction.
@@ -88,7 +89,7 @@
 4.  **OCR Language:**
 
     ```bash
-    pdf2md-elegant <input_directory> --ocr --ocr-lang deu
+    pdf2md <input_directory> --ocr --ocr-lang deu
     ```
 
     - The `--ocr-lang` flag specifies the language for OCR (e.g., `deu` for German, `eng` for English). Default is `deu`.
@@ -96,20 +97,28 @@
 5.  **Selecting Parsers:**
 
     ```bash
-    pdf2md-elegant <input_directory> --parsers pdfplumber llamaparse ocr
+    pdf2md <input_directory> --parsers pdfplumber llamaparse ocr
     ```
 
     - The `--parsers` flag allows you to specify which parsers to use. You can list multiple parsers separated by spaces.
     - Available parsers: `pdfplumber`, `pypdf2`, `pymupdf`, `llamaparse`, `ocr`, `easyocr`, `docling`, `marker`.
+    - Note: `marker` extractor only works with PDF files and creates a dedicated subdirectory for each PDF.
 
 6.  **Using multiple parsers**
     ```bash
-    pdf2md-elegant <input_directory> --parsers pdfplumber pymupdf
+    pdf2md <input_directory> --parsers pdfplumber pymupdf
     ```
     - This will create two markdown files for each pdf, one with the pdfplumber parser and one with the pymupdf parser.
 
 ## Example
 
 ```bash
-pdf2md my_pdfs my_markdowns --overwrite --ocr --ocr-lang deu --parsers pdfplumber llamaparse easyocr
+# Basic conversion with default parser
+pdf2md my_pdfs
+
+# Recursive processing with multiple parsers
+pdf2md my_pdfs --recursive --parsers pdfplumber marker --overwrite
+
+# Dry run to preview file counts
+pdf2md my_pdfs --dry --recursive
 ```

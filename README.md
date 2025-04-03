@@ -21,7 +21,7 @@ You can install individual packages directly from this repository:
 pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/hello_world
 pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/credgoo
 pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/uniinfer
-pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/md2pdf.skale
+pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/pdf2md.skale
 ```
 
 ## Development Setup
