@@ -1,6 +1,6 @@
-# pdf2md-elegant: Elegant PDF to Markdown Converter
+# pdf2md-skale: Elegant PDF to Markdown Converter
 
-`pdf2md-elegant` is a versatile Python package designed to convert PDF files into Markdown format. It offers a range of extraction methods, including text-based and OCR-based approaches, to ensure accurate and comprehensive conversion. This tool is particularly useful for extracting content from PDFs for note-taking, content repurposing, or data analysis.
+`pdf2md-skale` is a versatile Python package designed to convert PDF files into Markdown format. It offers a range of extraction methods, including text-based and OCR-based approaches, to ensure accurate and comprehensive conversion. This tool is particularly useful for extracting content from PDFs for note-taking, content repurposing, or data analysis.
 
 ## Features
 

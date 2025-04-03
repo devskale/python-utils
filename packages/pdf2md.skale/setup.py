@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='pdf2md-elegant',
+    name='pdf2md-skale',
     version='0.2.0',
     packages=find_packages(),
     install_requires=[
@@ -18,14 +18,13 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'pdf2md=pdf2md.main:main',
-            'pdf2md-elegant=pdf2md.elegant:main'
+            'pdf2md=pdf2md.main:main'
         ]
     },
     author='Johann Waldherr',
     author_email='johann.waldherr@vergabepilot.at',
     description='A package to convert PDF files to Markdown using various extractors.',
-    url='https://github.com/vergabepilot/pdf2md-elegant',
+    url='https://github.com/devskale/python-utils.git#subdirectory=packages/md2pdf.skale',
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
