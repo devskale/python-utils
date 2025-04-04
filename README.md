@@ -11,6 +11,7 @@ This repository contains a collection of Python utility packages designed to be 
 - **hello_world**: A simple demonstration package showing the repository structure
 - **credgoo**: Store your APIKEYs in a google sheet and retrieve them securely with local caching
 - **uniinfer**: a unified python interface for 15+ popular inferencing providers
+- **pdf2md-skale**: A versatile PDF to Markdown converter with multiple extraction methods (pdfplumber, PyPDF2, PyMuPDF, OCR) and features like recursive processing, dry run mode, and metadata inclusion
 
 ## Installation
 
