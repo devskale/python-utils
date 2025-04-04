@@ -223,7 +223,14 @@ class MarkerExtractor(PDFExtractor):
 
             # Create output directory structure
             base_name = os.path.splitext(os.path.basename(pdf_path))[0]
-            output_dir = os.path.join(self.data_dir, 'md', base_name)
+
+            # Check if self.data_dir already contains the md/base_name structure
+            # This prevents duplicate nesting when output_base_dir is already structured
+            if os.path.basename(os.path.dirname(self.data_dir)) == 'md' and os.path.basename(self.data_dir) == base_name:
+                output_dir = self.data_dir
+            else:
+                output_dir = os.path.join(self.data_dir, 'md', base_name)
+
             os.makedirs(output_dir, exist_ok=True)
 
             # Generate metadata and add it to markdown content
@@ -257,6 +264,7 @@ class MarkerExtractor(PDFExtractor):
 
             # Store the path to the markdown file for later use
             self.output_md_path = md_path
+            print(f"marker output path: {self.output_md_path}")
 
             return rendered.markdown, len(rendered.markdown.split('\n\n'))
         except Exception as e:
