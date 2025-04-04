@@ -122,3 +122,20 @@ pdf2md my_pdfs --recursive --parsers pdfplumber marker --overwrite
 # Dry run to preview file counts
 pdf2md my_pdfs --dry --recursive
 ```
+
+## Additional CLI Example
+
+```bash
+pdf2md /Users/johannwaldherr/code/ww/ww_private/vDaten/work \
+       /Users/johannwaldherr/code/ww/ww_private/vDaten/work/md \
+       --ocr --ocr-lang eng
+```
+
+## Python Library Usage
+
+```python
+from pdf2md.converter import PDFtoMarkdown
+
+converter = PDFtoMarkdown(['ocr'])
+converter.convert('example.pdf', 'output_dir', 'example.md', 'ocr', overwrite=True)
+```
