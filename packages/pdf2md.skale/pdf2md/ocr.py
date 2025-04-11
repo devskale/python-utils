@@ -1,7 +1,6 @@
 # ocr.py within the pdf2md package
 
 import os
-from dotenv import load_dotenv
 from typing import Optional
 
 # Heavy OCR dependencies will be lazily loaded in their respective classes
