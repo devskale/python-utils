@@ -204,7 +204,8 @@ def main():
     default_input = config.get_input_directory()
 
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description="Convert PDF to Markdown")
+    parser = argparse.ArgumentParser(
+        description="Convert PDF to Markdown\n\nInstallation:\n  pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/pdf2md.skale")
     parser.add_argument("input_directory", nargs='?', default=default_input,
                         help=f"Directory containing PDF files (default: {default_input})")
     parser.add_argument("--overwrite", action="store_true",
@@ -224,7 +225,21 @@ def main():
                         help="Process directories recursively")
     parser.add_argument("--dry", action="store_true",
                         help="Dry run - show file counts without conversion")
+    parser.add_argument("--update", action="store_true",
+                        help="Update pdf2md to the latest version from GitHub")
     args = parser.parse_args()
+
+    if args.update:
+        print("Updating pdf2md from GitHub...")
+        try:
+            import subprocess
+            subprocess.run(["pip", "install", "--upgrade",
+                           "git+https://github.com/devskale/python-utils.git#subdirectory=packages/pdf2md.skale"], check=True)
+            print("Update successful!")
+            return
+        except subprocess.CalledProcessError as e:
+            print(f"Update failed: {e}")
+            return
 
     input_directory = args.input_directory
 
