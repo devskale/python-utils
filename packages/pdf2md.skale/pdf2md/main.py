@@ -136,22 +136,20 @@ def process_directory(input_dir: str, converter: PDFtoMarkdown, args) -> tuple[i
                 f"No supported files (PDF/DOCX/XLSX/PPTX) found in {input_dir}")
             return (0, 0)
 
-    print(f"Processing {len(supported_files)} file(s) in {input_dir}:")
-    for i, file in enumerate(supported_files, 1):
-        print(f"  {i}. {file}")
-    print()
+    print(f"Found {len(supported_files)} file(s) in {input_dir}")
 
     processed_files = 0
     skipped_files = 0
 
-    for file in supported_files:
+    for file_idx, file in enumerate(supported_files, 1):
         file_path = os.path.join(input_dir, file)
         base_name = os.path.splitext(file)[0]
 
+        print(f"\n[File {file_idx}/{len(supported_files)}] Processing: {file}")
+
         for parser in args.parsers:
-            print(f"\nProcessing with {parser}: {file}")
             if parser not in converter.extractors:
-                print(f"Warning: Unknown parser '{parser}'. Skipping.")
+                print(f"  Warning: Unknown parser '{parser}'. Skipping.")
                 continue
 
             output_filename = f"{base_name}.{parser}.md"
@@ -161,14 +159,14 @@ def process_directory(input_dir: str, converter: PDFtoMarkdown, args) -> tuple[i
                 supported_exts = ExtractorFactory.get_supported_extensions(
                     parser)
                 print(
-                    f"Warning: {parser} extractor only supports {', '.join(supported_exts)} files. Skipping {file}")
+                    f"  Warning: {parser} extractor only supports {', '.join(supported_exts)} files. Skipping.")
                 continue
 
             # For marker extractor, create a dedicated subdirectory structure only for PDF files
             if parser == 'marker':
                 if not file.lower().endswith('.pdf'):
                     print(
-                        f"Warning: Marker extractor can only process PDF files. Skipping {file}")
+                        f"  Warning: Marker extractor can only process PDF files. Skipping.")
                     continue
 
                 # Check if marker output directory already exists
@@ -176,7 +174,7 @@ def process_directory(input_dir: str, converter: PDFtoMarkdown, args) -> tuple[i
                     input_dir, 'md', base_name)
                 if os.path.exists(marker_output_dir) and not args.overwrite:
                     print(
-                        f"Marker output directory {marker_output_dir} already exists. Skipping conversion.")
+                        f"  Marker output directory already exists. Skipping conversion.")
                     continue
 
                 result = converter.convert(
@@ -187,13 +185,12 @@ def process_directory(input_dir: str, converter: PDFtoMarkdown, args) -> tuple[i
 
             if result:
                 processed_files += 1
-                print(f"Converted {file} to {output_filename} using {parser}")
+                print(f"  ✓ Converted to {output_filename} using {parser}")
             else:
                 skipped_files += 1
 
-    print(f"\nDirectory summary for {os.path.basename(input_dir)}:")
-    print(f"  Processed files: {processed_files}")
-    print(f"  Skipped files: {skipped_files}")
+    print(
+        f"\n[Directory: {os.path.basename(input_dir)}] Processed: {processed_files}, Skipped: {skipped_files}")
 
     return processed_files, skipped_files
 
@@ -279,11 +276,28 @@ def main():
         processed_dirs = 0
         skipped_files = 0
 
-        # First count total directories to process
+        # First count total directories and files to process
         total_dirs = 0
-        for root, dirs, _ in os.walk(input_directory):
+        total_files_to_process = 0
+        for root, dirs, files in os.walk(input_directory):
             dirs[:] = [d for d in dirs if not d.startswith('.') and d != 'md']
             total_dirs += len(dirs)
+
+            # Count files that would be processed
+            if all(parser not in ['docling', 'marker'] for parser in args.parsers):
+                total_files_to_process += sum(
+                    1 for f in files if f.lower().endswith('.pdf'))
+            else:
+                if 'marker' in args.parsers:
+                    total_files_to_process += sum(
+                        1 for f in files if f.lower().endswith('.pdf'))
+                else:
+                    total_files_to_process += sum(1 for f in files if f.lower().endswith(
+                        ('.pdf', '.docx', '.xlsx', '.pptx')))
+
+        print(
+            f"Found {total_dirs + 1} directories and {total_files_to_process} processable files")
+        print("Starting conversion...\n")
 
         for root, dirs, files in os.walk(input_directory):
             # Skip hidden directories and ./md subdirs
@@ -291,21 +305,27 @@ def main():
 
             # Process current directory
             print(
-                f"\nProcessing directory [{processed_dirs + 1}/{total_dirs}]: {root}")
+                f"\n[Directory {processed_dirs + 1}/{total_dirs + 1}] Processing: {root}")
             dir_processed, dir_skipped = process_directory(
                 root, converter, args)
             processed_files += dir_processed
             skipped_files += dir_skipped
             processed_dirs += 1
 
-        print(f"\nProcessed {processed_dirs} directories recursively.")
-        print(f"Total files processed: {processed_files}")
-        print(f"Total files skipped: {skipped_files}")
+            # Show overall progress with percentage
+            if total_files_to_process > 0:
+                progress_percent = round(
+                    (processed_files + skipped_files) / total_files_to_process * 100)
+                print(
+                    f"Overall progress: {progress_percent}% [{processed_files + skipped_files}/{total_files_to_process}] (✓ {processed_files} processed, ✗ {skipped_files} skipped)")
+
+        print(
+            f"\n=== FINAL SUMMARY ===\nDirectories: {processed_dirs}/{total_dirs + 1} completed ({round(processed_dirs/(total_dirs + 1)*100)}%)\nFiles: {processed_files} processed, {skipped_files} skipped, {processed_files + skipped_files} total")
     else:
         # Process single directory
         process_directory(input_directory, converter, args)
 
-    print("\nConversion complete!")
+    print("\n✓ Conversion complete!")
 
 
 if __name__ == "__main__":
