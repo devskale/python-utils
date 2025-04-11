@@ -23,7 +23,7 @@ setup(
         ]
     },
     author='Johann Waldherr',
-    author_email='johann.waldherr@vergabepilot.at',
+    author_email='dev@skale.dev',
     description='A package to convert PDF files to Markdown using various extractors.',
     url='https://github.com/devskale/python-utils.git#subdirectory=packages/md2pdf.skale',
     classifiers=[
