@@ -288,6 +288,7 @@ ExtractorFactory.register('marker', MarkerExtractor)
 def register_ocr_extractors():
     # Import OCR module lazily only when needed
     from pdf2md.ocr import get_ocr_extractor, EasyOCRExtractor, PaddleOCRExtractor
+    import platform
 
     # Register OCR extractors with the factory
     if 'ocr' not in ExtractorFactory.get_available_extractors():
@@ -295,5 +296,9 @@ def register_ocr_extractors():
             'ocr', lambda **kwargs: get_ocr_extractor(kwargs.get('lang', 'deu')))
     if 'easyocr' not in ExtractorFactory.get_available_extractors():
         ExtractorFactory.register('easyocr', EasyOCRExtractor)
+
+    # Only register PaddleOCR if not on macOS
     if 'paddleocr' not in ExtractorFactory.get_available_extractors():
-        ExtractorFactory.register('paddleocr', PaddleOCRExtractor)
+        if platform.system() != 'Darwin':
+            ExtractorFactory.register('paddleocr', PaddleOCRExtractor)
+        # We don't register PaddleOCR on macOS, so it will be caught earlier in the factory

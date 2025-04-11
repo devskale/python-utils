@@ -1,6 +1,7 @@
 # factory.py - Factory pattern implementation for PDF extractors
 
 import os
+import platform
 from typing import Dict, Type, Optional, List
 from abc import ABC, abstractmethod
 
@@ -44,6 +45,15 @@ class ExtractorFactory:
         """Create multiple extractors based on a list of parser names."""
         extractors = {}
         for parser in parsers:
+            # Special handling for paddleocr on macOS
+            if parser == 'paddleocr' and platform.system() == 'Darwin':
+                import sys
+                print("Warning: PaddleOCR is not supported on macOS.")
+                print(
+                    "Alternatives: '--parsers ocr' (pytesseract) or '--parsers easyocr'")
+                print("Skipping paddleocr parser.")
+                continue
+
             extractor = cls.get_extractor(parser, **kwargs)
             if extractor:
                 extractors[parser] = extractor

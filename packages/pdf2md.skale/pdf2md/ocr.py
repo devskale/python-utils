@@ -64,6 +64,8 @@ class EasyOCRExtractor:
 
 
 class PaddleOCRExtractor:
+    supported_extensions = ['.pdf']
+
     def __init__(self, lang='german'):
         import platform
         self.lang = lang
@@ -71,7 +73,10 @@ class PaddleOCRExtractor:
 
         if self.is_macos:
             raise RuntimeError(
-                "PaddleOCR is disabled on macOS. Please use OCRExtractor or EasyOCRExtractor instead.")
+                "PaddleOCR is not supported on macOS. Please use one of these alternatives:\n"
+                "- OCRExtractor (pytesseract based): '--parsers ocr'\n"
+                "- EasyOCRExtractor (easyocr based): '--parsers easyocr'\n"
+                "These alternatives provide similar functionality and work on macOS.")
 
         self.config_options = [
             # Fallback to MKLDNN acceleration (not available on macOS)
@@ -98,9 +103,6 @@ class PaddleOCRExtractor:
                     continue
 
             if ocr is None:
-                if self.is_macos:
-                    raise RuntimeError(
-                        "PaddleOCR is not fully supported on macOS. Please use another OCR method.")
                 raise RuntimeError(
                     "Failed to initialize PaddleOCR with any CPU configuration")
 

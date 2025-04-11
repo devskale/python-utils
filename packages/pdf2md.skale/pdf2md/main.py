@@ -2,6 +2,7 @@
 
 import os
 import argparse
+import platform
 from typing import List, Optional
 
 # Import local modules
@@ -242,6 +243,13 @@ def main():
     if args.ocr:
         print(f"OCR language: {args.ocr_lang}")
     print()
+
+    # Check for PaddleOCR on macOS before initializing converter
+    if 'paddleocr' in args.parsers and platform.system() == 'Darwin':
+        print("Error: PaddleOCR is not supported on macOS. Please use one of these alternatives:")
+        print("- OCRExtractor (pytesseract based): '--parsers ocr'")
+        print("- EasyOCRExtractor (easyocr based): '--parsers easyocr'")
+        return
 
     # Initialize converter with specified parsers
     converter = PDFtoMarkdown(args.parsers)
