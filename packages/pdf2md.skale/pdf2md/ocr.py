@@ -1,12 +1,10 @@
 # ocr.py within the pdf2md package
 
-import pytesseract
-from pdf2image import convert_from_path
-from PIL import Image
 import os
 from dotenv import load_dotenv
-import easyocr
-import numpy as np
+from typing import Optional
+
+# Heavy OCR dependencies will be lazily loaded in their respective classes
 
 
 class OCRExtractor:
@@ -16,13 +14,15 @@ class OCRExtractor:
         self.lang = lang
 
     def extract_text(self, pdf_path):
+        import pytesseract
+        from pdf2image import convert_from_path
+
         # Convert PDF to images
         images = convert_from_path(pdf_path)
 
         full_text = []
         for i, image in enumerate(images):
             # Perform OCR on each image
-            #
             text = pytesseract.image_to_string(
                 image,
                 lang=self.lang
@@ -43,10 +43,17 @@ class EasyOCRExtractor:
     supported_extensions = ['.pdf']
 
     def __init__(self, lang='de'):
-        import easyocr
-        self.reader = easyocr.Reader([lang])
+        self.lang = lang
+        self.reader = None
 
     def extract_text(self, pdf_path):
+        import easyocr
+        import numpy as np
+        from pdf2image import convert_from_path
+
+        if self.reader is None:
+            self.reader = easyocr.Reader([self.lang])
+
         images = convert_from_path(pdf_path)
         full_text = []
         for image in images:
@@ -77,9 +84,7 @@ class PaddleOCRExtractor:
 
     def extract_text(self, pdf_path):
         try:
-            import numpy as np
             from pdf2image import convert_from_path
-            from paddleocr import PaddleOCR
 
             # Initialize OCR with fallback options
             ocr = None
