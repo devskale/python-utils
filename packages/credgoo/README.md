@@ -82,3 +82,34 @@ By default, retrieved keys are cached in `~/.config/api_keys/api_keys.json`. The
 - Recommended to store credentials in secure locations
 - Cache files have restrictive permissions (0600)
 - Consider rotating credentials periodically
+
+## Why Credgoo is Great
+
+Credgoo provides a secure and convenient way to manage your API keys:
+
+🔒 **Personal Secure Storage**
+
+- Your keys are stored in your personal Google Sheet, not on some third-party server
+- Only you have access to your spreadsheet (Google account protected)
+
+🔑 **Double-Layer Security**
+
+- Protected by both a SECRET_TOKEN (authentication)
+- And an ENCRYPTION_KEY (data security)
+- Both are required to access your credentials
+
+🛡️ **Encrypted Transmission**
+
+- Keys are encrypted before being sent over the network
+- Uses robust encryption with unique initialization vectors
+
+💻 **CLI Integration**
+
+- Easy to use from command line with automatic decryption
+- No keys stored in plaintext in your local environment
+
+🔁 **Centralized Management**
+
+- Update keys in one place (your spreadsheet)
+- Changes are immediately available everywhere
+- No need to update multiple config files
