@@ -58,7 +58,7 @@
      LLAMA_CLOUD_API_KEY=your_api_key_here
      ```
 
-  2. Using the credgoo library (recommended):
+  2. Using the credgoo library (recommended, see [documentation](https://github.com/devskale/python-utils/blob/master/README.md)):
      ```bash
      pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/credgoo
      ```
