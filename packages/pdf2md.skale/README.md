@@ -50,11 +50,23 @@
   - **Marker**: If you plan to use Marker extraction, you need to install it separately.
     - `pip install marker`
 
-- **LLAMA_CLOUD_API_KEY (Optional):** If you want to use the `llamaparse` extractor, you need to set the `LLAMA_CLOUD_API_KEY` environment variable. You can do this by creating a `.env` file in the same directory as the script and adding the line:
+- **LLAMA_CLOUD_API_KEY (Optional):** If you want to use the `llamaparse` extractor, you need to set the `LLAMA_CLOUD_API_KEY` environment variable. You can do this either by:
 
-  ```
-  LLAMA_CLOUD_API_KEY=your_api_key_here
-  ```
+  1. Creating a `.env` file in the same directory as the script and adding:
+
+     ```
+     LLAMA_CLOUD_API_KEY=your_api_key_here
+     ```
+
+  2. Using the credgoo library (recommended):
+     ```bash
+     pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/credgoo
+     ```
+     Then in your code:
+     ```python
+     from credgoo import get_credential
+     llama_api_key = get_credential('llamacloud')
+     ```
 
 ## Usage
 
