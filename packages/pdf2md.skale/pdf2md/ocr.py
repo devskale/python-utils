@@ -10,6 +10,8 @@ import numpy as np
 
 
 class OCRExtractor:
+    supported_extensions = ['.pdf']
+
     def __init__(self, lang='deu'):
         self.lang = lang
 
@@ -38,6 +40,8 @@ def get_ocr_extractor(lang='deu'):
 
 
 class EasyOCRExtractor:
+    supported_extensions = ['.pdf']
+
     def __init__(self, lang='de'):
         import easyocr
         self.reader = easyocr.Reader([lang])
