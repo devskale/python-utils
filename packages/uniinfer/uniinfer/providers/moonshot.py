@@ -15,13 +15,14 @@ except ImportError:
 class MoonshotProvider(ChatProvider):
     """
     Provider for Moonshot AI API.
-    
+
     Moonshot AI is a China-based LLM provider that uses the OpenAI client format.
     """
+
     def __init__(self, api_key: Optional[str] = None, base_url: str = "https://api.moonshot.cn/v1", **kwargs):
         """
         Initialize the Moonshot provider.
-        
+
         Args:
             api_key (Optional[str]): The Moonshot API key.
             base_url (str): The base URL for the Moonshot API.
@@ -29,67 +30,82 @@ class MoonshotProvider(ChatProvider):
         """
         super().__init__(api_key)
         self.base_url = base_url
-        
+
+    @classmethod
+    def list_models(cls) -> list:
+        """
+        List available models from Moonshot AI.
+
+        Returns:
+            list: A list of available model names.
+        """
+        return [
+            "moonshot-v1-8k",
+            "moonshot-v1-32k",
+            "moonshot-v1-128k"
+        ]
+
         if not HAS_OPENAI:
             raise ImportError(
                 "openai package is required for the MoonshotProvider. "
                 "Install it with: pip install openai"
             )
-        
+
         # Initialize the OpenAI client for Moonshot
         self.client = OpenAI(
             api_key=self.api_key,
             base_url=self.base_url
         )
-    
+
     def complete(
-        self, 
-        request: ChatCompletionRequest, 
+        self,
+        request: ChatCompletionRequest,
         **provider_specific_kwargs
     ) -> ChatCompletionResponse:
         """
         Make a chat completion request to Moonshot.
-        
+
         Args:
             request (ChatCompletionRequest): The request to make.
             **provider_specific_kwargs: Additional Moonshot-specific parameters.
-            
+
         Returns:
             ChatCompletionResponse: The completion response.
-            
+
         Raises:
             Exception: If the request fails.
         """
         if self.api_key is None:
             raise ValueError("Moonshot API key is required")
-        
+
         # Prepare messages in the OpenAI format
-        messages = [{"role": msg.role, "content": msg.content} for msg in request.messages]
-        
+        messages = [{"role": msg.role, "content": msg.content}
+                    for msg in request.messages]
+
         # Prepare parameters
         params = {
             "model": request.model or "moonshot-v1-8k",  # Default model
             "messages": messages,
             "temperature": request.temperature,
         }
-        
+
         # Add max_tokens if provided
         if request.max_tokens is not None:
             params["max_tokens"] = request.max_tokens
-        
+
         # Add any provider-specific parameters
         params.update(provider_specific_kwargs)
-        
+
         try:
             # Make the chat completion request
             completion = self.client.chat.completions.create(**params)
-            
+
             # Extract the response content
             message = ChatMessage(
                 role=completion.choices[0].message.role,
                 content=completion.choices[0].message.content
             )
-            
+
             # Extract usage information
             usage = {}
             if hasattr(completion, 'usage'):
@@ -98,7 +114,7 @@ class MoonshotProvider(ChatProvider):
                     "completion_tokens": completion.usage.completion_tokens,
                     "total_tokens": completion.usage.total_tokens
                 }
-            
+
             # Create raw response
             try:
                 raw_response = completion.model_dump_json()
@@ -108,7 +124,7 @@ class MoonshotProvider(ChatProvider):
                     "model": params["model"],
                     "usage": usage
                 }
-            
+
             return ChatCompletionResponse(
                 message=message,
                 provider='moonshot',
@@ -118,31 +134,32 @@ class MoonshotProvider(ChatProvider):
             )
         except Exception as e:
             raise Exception(f"Moonshot API error: {str(e)}")
-    
+
     def stream_complete(
-        self, 
-        request: ChatCompletionRequest, 
+        self,
+        request: ChatCompletionRequest,
         **provider_specific_kwargs
     ) -> Iterator[ChatCompletionResponse]:
         """
         Stream a chat completion response from Moonshot.
-        
+
         Args:
             request (ChatCompletionRequest): The request to make.
             **provider_specific_kwargs: Additional Moonshot-specific parameters.
-            
+
         Returns:
             Iterator[ChatCompletionResponse]: An iterator of response chunks.
-            
+
         Raises:
             Exception: If the request fails.
         """
         if self.api_key is None:
             raise ValueError("Moonshot API key is required")
-        
+
         # Prepare messages in the OpenAI format
-        messages = [{"role": msg.role, "content": msg.content} for msg in request.messages]
-        
+        messages = [{"role": msg.role, "content": msg.content}
+                    for msg in request.messages]
+
         # Prepare parameters
         params = {
             "model": request.model or "moonshot-v1-8k",  # Default model
@@ -150,28 +167,29 @@ class MoonshotProvider(ChatProvider):
             "temperature": request.temperature,
             "stream": True
         }
-        
+
         # Add max_tokens if provided
         if request.max_tokens is not None:
             params["max_tokens"] = request.max_tokens
-        
+
         # Add any provider-specific parameters
         params.update(provider_specific_kwargs)
-        
+
         try:
             # Make the streaming request
             stream = self.client.chat.completions.create(**params)
-            
+
             for chunk in stream:
                 if hasattr(chunk.choices[0], 'delta') and hasattr(chunk.choices[0].delta, 'content'):
                     content = chunk.choices[0].delta.content
                     if content:
                         # Create a message for this chunk
-                        message = ChatMessage(role="assistant", content=content)
-                        
+                        message = ChatMessage(
+                            role="assistant", content=content)
+
                         # No detailed usage stats in streaming mode
                         usage = {}
-                        
+
                         yield ChatCompletionResponse(
                             message=message,
                             provider='moonshot',
