@@ -41,6 +41,85 @@ class CloudflareProvider(ChatProvider):
         # Save any additional configuration
         self.config = kwargs
 
+    @classmethod
+    def list_models(cls, api_key: Optional[str] = None, account_id: Optional[str] = None) -> list:
+        """
+        List available models from Cloudflare Workers AI.
+
+        Args:
+            api_key (Optional[str]): The Cloudflare API token.
+            account_id (Optional[str]): The Cloudflare account ID.
+
+        Returns:
+            list: A list of available model names with readable format.
+        """
+        if api_key is None:
+            try:
+                from credgoo.credgoo import get_api_key
+                api_key = get_api_key("cloudflare")
+                if api_key is None:
+                    raise ValueError(
+                        "Failed to retrieve Cloudflare API key from credgoo")
+            except ImportError:
+                raise ValueError(
+                    "Cloudflare API key is required when credgoo is not available")
+
+        if account_id is None:
+            raise ValueError("Cloudflare account ID is required")
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+
+        try:
+            response = requests.get(
+                f"https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/models/search",
+                headers=headers
+            )
+            response.raise_for_status()
+
+            models_data = response.json()
+            print(
+                f"Full Cloudflare API response: {json.dumps(models_data, indent=2)}")
+
+            # Extract model details from the response
+            model_list = []
+            if models_data.get("success", False) and "result" in models_data:
+                for model in models_data["result"]:
+                    if isinstance(model, dict) and "id" in model:
+                        model_id = model["id"]
+
+                        # Skip UUIDs
+                        if len(model_id) == 36 and model_id.count("-") == 4:
+                            continue
+
+                        # Get model name or use ID as fallback
+                        model_name = model.get("name", model_id)
+
+                        # Check if model has price = 0 in properties
+                        has_free_price = False
+                        if "properties" in model:
+                            for prop in model["properties"]:
+                                if prop.get("property_id") == "price" and isinstance(prop.get("value"), list):
+                                    for price_item in prop["value"]:
+                                        if price_item.get("price") == 0:
+                                            has_free_price = True
+                                            break
+                                    if has_free_price:
+                                        break
+
+                        # Only include models with @ prefix or valid names AND price = 0
+                        if (model_id.startswith("@") or model["id"][0].isalpha()) and has_free_price:
+                            model_list.append(model_name)
+
+                # Sort models alphabetically by name
+                model_list.sort()
+
+            return model_list
+        except Exception as e:
+            raise Exception(f"Failed to fetch Cloudflare models: {str(e)}")
+
     def _prepare_messages(self, messages: List[ChatMessage]) -> str:
         """
         Prepare messages for Cloudflare Workers AI.
