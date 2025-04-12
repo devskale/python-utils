@@ -15,7 +15,7 @@ from providers_config import PROVIDER_CONFIGS
 def main():
     # Initialize argument parser
     parser = argparse.ArgumentParser(description='UniInfer example script')
-    parser.add_argument('-l', '--list', action='store_true',
+    parser.add_argument('-l', '--list-providers', '--list', action='store_true',
                         help='List available providers')
     parser.add_argument('--list-models', action='store_true',
                         help='List available models for the specified provider')
@@ -31,7 +31,7 @@ def main():
                         help='Specify token limit for file context (default: 4000)')
     args = parser.parse_args()
 
-    if args.list:
+    if args.list_providers:
         providers = ProviderFactory.list_providers()
         print("Available providers:")
         for provider in providers:
