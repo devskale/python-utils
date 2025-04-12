@@ -41,7 +41,9 @@ def main():
     if args.list_models:
         try:
             provider_class = ProviderFactory.get_provider_class(args.provider)
-            models = provider_class.list_models()
+            models = provider_class.list_models(
+                **({} if args.provider not in ['cloudflare', 'ollama'] else PROVIDER_CONFIGS[args.provider].get('extra_params', {}))
+            )
             print(f"Available models for {args.provider}:")
             for model in models:
                 print(f"- {model}")

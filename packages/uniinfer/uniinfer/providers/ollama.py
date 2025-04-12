@@ -29,20 +29,43 @@ class OllamaProvider(ChatProvider):
         self.base_url = base_url
 
     @classmethod
-    def list_models(cls) -> list:
+    def list_models(cls, **kwargs) -> list:
         """
         List available models from Ollama.
+
+        Args:
+            **kwargs: Additional configuration options including base_url
 
         Returns:
             list: A list of available model names.
         """
-        return [
-            "llama2",
-            "mistral",
-            "codellama",
-            "llava",
-            "gemma"
-        ]
+        try:
+            # Use provided base_url or fallback to instance/class attribute or default
+            base_url = kwargs.get('base_url') or getattr(
+                cls, 'base_url', "http://localhost:11434")
+            base_url = base_url.replace(
+                'http://', 'https://') if not base_url.startswith('https://') else base_url
+            endpoint = f"{base_url}/api/tags"
+            print(f"Using Ollama endpoint: {endpoint}")  # Verbose logging
+
+            response = requests.get(endpoint)
+            response.raise_for_status()
+
+            data = response.json()
+            models = [model["name"] for model in data.get("models", [])]
+            print(f"Found {len(models)} available models")
+            return models
+
+        except Exception as e:
+            print(f"Error listing models from Ollama: {str(e)}")
+            # Fallback to default models if API call fails
+            return [
+                "llama2",
+                "mistral",
+                "codellama",
+                "llava",
+                "gemma"
+            ]
 
     def complete(
         self,
