@@ -40,18 +40,49 @@ class InternLMProvider(ChatProvider):
             )
 
     @classmethod
-    def list_models(cls) -> list:
+    def list_models(cls, api_key: Optional[str] = None) -> list:
         """
         List available models from InternLM.
 
+        Args:
+            api_key (Optional[str]): The InternLM API key.
+
         Returns:
             list: A list of available model names.
+
+        Raises:
+            ValueError: If no API key is provided
+            Exception: If API request fails
         """
-        return [
-            "internlm3-latest",
-            "internlm2-latest",
-            "internlm1-latest"
-        ]
+        if not api_key:
+            from credgoo.credgoo import get_api_key
+            api_key = get_api_key("internlm")
+            if not api_key:
+                raise ValueError("API key is required to list actual models")
+
+        if HAS_OPENAI:
+            try:
+                client = OpenAI(
+                    api_key=api_key,
+                    base_url="https://chat.intern-ai.org.cn/api/v1/"
+                )
+                models = client.models.list()
+                return [model.id for model in models.data]
+            except Exception as e:
+                raise Exception(f"Failed to list models: {str(e)}")
+        else:
+            try:
+                headers = {
+                    "Authorization": f"Bearer {api_key}"
+                }
+                response = requests.get(
+                    "https://chat.intern-ai.org.cn/api/v1/models",
+                    headers=headers
+                )
+                response.raise_for_status()
+                return [model["id"] for model in response.json().get("data", [])]
+            except Exception as e:
+                raise Exception(f"Failed to list models: {str(e)}")
 
     def complete(
         self,
