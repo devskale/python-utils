@@ -28,6 +28,45 @@ class OpenRouterProvider(ChatProvider):
         super().__init__(api_key)
         self.base_url = "https://openrouter.ai/api/v1"
 
+    @classmethod
+    def list_models(cls) -> list:
+        """
+        List available models from OpenRouter.
+
+        Returns:
+            list: A list of available free model IDs.
+
+        Raises:
+            Exception: If the request fails.
+        """
+        from credgoo.credgoo import get_api_key
+        api_key = get_api_key('openrouter') or self.api_key
+        if api_key is None:
+            raise ValueError("OpenRouter API key is required")
+
+        endpoint = "https://openrouter.ai/api/v1/models"
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "HTTP-Referer": "https://github.com/uniinfer",
+            "X-Title": "UniInfer"
+        }
+
+        response = requests.get(endpoint, headers=headers)
+
+        if response.status_code != 200:
+            error_msg = f"OpenRouter API error: {response.status_code} - {response.text}"
+            raise Exception(error_msg)
+
+        models = response.json().get('data', [])
+        free_models = [
+            model['id']
+            for model in models
+            if model.get('pricing', {}).get('prompt') == '0'
+            and model.get('pricing', {}).get('completion') == '0'
+        ]
+        return free_models
+
     def complete(
         self,
         request: ChatCompletionRequest,
