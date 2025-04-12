@@ -1,6 +1,7 @@
 """
 Moonshot provider implementation.
 """
+import requests
 from typing import Dict, Any, Iterator, Optional
 
 from ..core import ChatProvider, ChatCompletionRequest, ChatCompletionResponse, ChatMessage
@@ -32,18 +33,42 @@ class MoonshotProvider(ChatProvider):
         self.base_url = base_url
 
     @classmethod
-    def list_models(cls) -> list:
+    def list_models(cls, api_key: Optional[str] = None) -> list:
         """
         List available models from Moonshot AI.
+
+        Args:
+            api_key (Optional[str]): The Moonshot API key.
 
         Returns:
             list: A list of available model names.
         """
-        return [
-            "moonshot-v1-8k",
-            "moonshot-v1-32k",
-            "moonshot-v1-128k"
-        ]
+        if api_key is None:
+            try:
+                from credgoo.credgoo import get_api_key
+                api_key = get_api_key("moonshot")
+                if api_key is None:
+                    raise ValueError(
+                        "Failed to retrieve Moonshot API key from credgoo")
+            except ImportError:
+                raise ValueError(
+                    "Moonshot API key is required when credgoo is not available")
+
+        headers = {
+            "Authorization": f"Bearer {api_key}"
+        }
+
+        try:
+            response = requests.get(
+                "https://api.moonshot.cn/v1/models",
+                headers=headers
+            )
+            response.raise_for_status()
+
+            models_data = response.json()
+            return [model["id"] for model in models_data.get("data", [])]
+        except Exception as e:
+            raise Exception(f"Failed to fetch Moonshot models: {str(e)}")
 
         if not HAS_OPENAI:
             raise ImportError(
