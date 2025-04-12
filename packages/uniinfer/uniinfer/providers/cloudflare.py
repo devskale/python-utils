@@ -42,16 +42,25 @@ class CloudflareProvider(ChatProvider):
         self.config = kwargs
 
     @classmethod
-    def list_models(cls, api_key: Optional[str] = None, account_id: Optional[str] = None) -> list:
+    def list_models(cls, api_key: Optional[str] = None, account_id: Optional[str] = None,
+                    author: Optional[str] = None, hide_experimental: Optional[bool] = None,
+                    page: Optional[int] = None, per_page: Optional[int] = None,
+                    search: Optional[str] = None, source: Optional[int] = None) -> list:
         """
         List available models from Cloudflare Workers AI.
 
         Args:
             api_key (Optional[str]): The Cloudflare API token.
             account_id (Optional[str]): The Cloudflare account ID.
+            author (Optional[str]): Filter by Author.
+            hide_experimental (Optional[bool]): Filter to hide experimental models.
+            page (Optional[int]): Page number for pagination.
+            per_page (Optional[int]): Number of items per page.
+            search (Optional[str]): Search query string.
+            source (Optional[int]): Filter by Source Id.
 
         Returns:
-            list: A list of available model names with readable format.
+            list: A list of available model names with price = 0.
         """
         if api_key is None:
             try:
@@ -72,16 +81,34 @@ class CloudflareProvider(ChatProvider):
             "Content-Type": "application/json"
         }
 
+        # Build query parameters
+        params = {
+            "task": "Text Generation"  # Always filter for Text Generation models
+        }
+
+        # Add optional parameters if provided
+        if author is not None:
+            params["author"] = author
+        if hide_experimental is not None:
+            params["hide_experimental"] = hide_experimental
+        if page is not None:
+            params["page"] = page
+        if per_page is not None:
+            params["per_page"] = per_page
+        if search is not None:
+            params["search"] = search
+        if source is not None:
+            params["source"] = source
+
         try:
             response = requests.get(
                 f"https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/models/search",
-                headers=headers
+                headers=headers,
+                params=params
             )
             response.raise_for_status()
 
             models_data = response.json()
-            print(
-                f"Full Cloudflare API response: {json.dumps(models_data, indent=2)}")
 
             # Extract model details from the response
             model_list = []
@@ -89,12 +116,6 @@ class CloudflareProvider(ChatProvider):
                 for model in models_data["result"]:
                     if isinstance(model, dict) and "id" in model:
                         model_id = model["id"]
-
-                        # Skip UUIDs
-                        if len(model_id) == 36 and model_id.count("-") == 4:
-                            continue
-
-                        # Get model name or use ID as fallback
                         model_name = model.get("name", model_id)
 
                         # Check if model has price = 0 in properties
@@ -102,15 +123,14 @@ class CloudflareProvider(ChatProvider):
                         if "properties" in model:
                             for prop in model["properties"]:
                                 if prop.get("property_id") == "price" and isinstance(prop.get("value"), list):
+                                    # Check if any price component is 0
                                     for price_item in prop["value"]:
-                                        if price_item.get("price") == 0:
+                                        if isinstance(price_item, dict) and price_item.get("price") == 0:
                                             has_free_price = True
                                             break
-                                    if has_free_price:
-                                        break
 
-                        # Only include models with @ prefix or valid names AND price = 0
-                        if (model_id.startswith("@") or model["id"][0].isalpha()) and has_free_price:
+                        # Only include models with price = 0
+                        if has_free_price:
                             model_list.append(model_name)
 
                 # Sort models alphabetically by name
