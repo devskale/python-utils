@@ -56,7 +56,7 @@ def main():
     uni = ProviderFactory().get_provider(
         name=provider,
         api_key=get_api_key(provider),
-        # account_id=PROVIDER_CONFIGS[provider].get('extra_params', {}).get('account_id', None)
+        **({} if provider not in ['cloudflare', 'ollama'] else PROVIDER_CONFIGS[provider].get('extra_params', {}))
     )
 
     prompt = args.query if args.query else "Erkläre mir bitte wie Transformer in maschinellem Lernen funktionieren in einfachen Worten und auf deutsch."

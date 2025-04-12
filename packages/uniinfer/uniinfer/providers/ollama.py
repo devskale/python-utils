@@ -16,7 +16,7 @@ class OllamaProvider(ChatProvider):
     This provider requires a running Ollama instance.
     """
 
-    def __init__(self, api_key: Optional[str] = None, base_url: str = "http://localhost:11434", **kwargs):
+    def __init__(self, api_key: Optional[str] = None, base_url: str = "https://localhost:11434", **kwargs):
         """
         Initialize the Ollama provider.
 
@@ -62,7 +62,10 @@ class OllamaProvider(ChatProvider):
         Raises:
             Exception: If the request fails.
         """
-        endpoint = f"{self.base_url}/api/chat"
+        # Ensure URL starts with https
+        base_url = self.base_url.replace(
+            'http://', 'https://') if not self.base_url.startswith('https://') else self.base_url
+        endpoint = f"{base_url}/api/chat"
 
         # Prepare the request payload
         payload = {
@@ -152,7 +155,10 @@ class OllamaProvider(ChatProvider):
         Raises:
             Exception: If the request fails.
         """
-        endpoint = f"{self.base_url}/api/chat"
+        # Ensure URL starts with https
+        base_url = self.base_url.replace(
+            'http://', 'https://') if not self.base_url.startswith('https://') else self.base_url
+        endpoint = f"{base_url}/api/chat"
 
         # Prepare the request payload
         payload = {

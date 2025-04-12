@@ -69,11 +69,11 @@ PROVIDER_CONFIGS = {
         'needs_api_key': True,
     },
     'ollama': {
-        'name': 'Ollama (Local)',
+        'name': 'Ollama (amp1)',
         'default_model': 'gemma3:4b',
         'needs_api_key': False,
         'extra_params': {
-            'base_url': 'http://localhost:11434'
+            'base_url': 'http://amp1.mooo.com:11444'
         }
     },
     'arli': {
