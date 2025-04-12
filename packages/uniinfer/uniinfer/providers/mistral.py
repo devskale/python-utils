@@ -31,12 +31,25 @@ class MistralProvider(ChatProvider):
         Returns:
             list: A list of available model names.
         """
-        return [
-            "mistral-tiny",
-            "mistral-small",
-            "mistral-medium",
-            "mistral-large"
-        ]
+        from credgoo.credgoo import get_api_key
+
+        # Get API key from credgoo
+        api_key = get_api_key("mistral")
+        if not api_key:
+            raise ValueError("Failed to get Mistral API key from credgoo")
+
+        endpoint = "https://api.mistral.ai/v1/models"
+        headers = {
+            "Authorization": f"Bearer {api_key}"
+        }
+        response = requests.get(endpoint, headers=headers)
+
+        if response.status_code != 200:
+            raise Exception(
+                f"Failed to fetch models: {response.status_code} - {response.text}")
+
+        models_data = response.json()
+        return [model["id"] for model in models_data["data"]]
 
     def complete(
         self,
