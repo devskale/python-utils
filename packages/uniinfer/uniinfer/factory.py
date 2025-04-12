@@ -86,3 +86,21 @@ class ProviderFactory:
             except AttributeError:
                 result[name] = []
         return result
+
+    @staticmethod
+    def get_provider_class(name: str) -> Type[ChatProvider]:
+        """
+        Get the provider class for a given provider name.
+
+        Args:
+            name (str): The name of the provider.
+
+        Returns:
+            Type[ChatProvider]: The provider class.
+
+        Raises:
+            ValueError: If the provider is not registered.
+        """
+        if name not in ProviderFactory._providers:
+            raise ValueError(f"Provider '{name}' not registered")
+        return ProviderFactory._providers[name]

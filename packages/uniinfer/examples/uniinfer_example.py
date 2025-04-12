@@ -39,14 +39,16 @@ def main():
         return
 
     if args.list_models:
-        models = ProviderFactory.list_models()
-        if args.provider not in models:
-            print(f"Provider '{args.provider}' not found")
+        try:
+            provider_class = ProviderFactory.get_provider_class(args.provider)
+            models = provider_class.list_models()
+            print(f"Available models for {args.provider}:")
+            for model in models:
+                print(f"- {model}")
             return
-        print(f"Available models for {args.provider}:")
-        for model in models[args.provider]:
-            print(f"- {model}")
-        return
+        except Exception as e:
+            print(f"Error listing models for {args.provider}: {str(e)}")
+            return
 
     provider = args.provider
 
