@@ -32,6 +32,18 @@ class MoonshotProvider(ChatProvider):
         super().__init__(api_key)
         self.base_url = base_url
 
+        if not HAS_OPENAI:
+            raise ImportError(
+                "openai package is required for the MoonshotProvider. "
+                "Install it with: pip install openai"
+            )
+
+        # Initialize the OpenAI client for Moonshot
+        self.client = OpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url
+        )
+
     @classmethod
     def list_models(cls, api_key: Optional[str] = None) -> list:
         """
