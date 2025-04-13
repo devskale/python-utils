@@ -252,6 +252,9 @@ class NGCProvider(ChatProvider):
                 "model": request.model,
                 "messages": messages,
                 "temperature": request.temperature,
+                "top_p": 0.95,
+                "frequency_penalty": 0,
+                "presence_penalty": 0,
                 "stream": True,
             }
 
@@ -269,7 +272,7 @@ class NGCProvider(ChatProvider):
             # Process the streaming response
             for chunk in stream:
                 # Check if there is content in this chunk
-                if hasattr(chunk.choices[0].delta, "content") and chunk.choices[0].delta.content:
+                if chunk.choices and chunk.choices[0].delta and hasattr(chunk.choices[0].delta, "content") and chunk.choices[0].delta.content is not None:
                     # Create a message for this chunk
                     message = ChatMessage(
                         role="assistant",

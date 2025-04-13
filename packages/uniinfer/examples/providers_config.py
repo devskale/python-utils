@@ -111,7 +111,7 @@ PROVIDER_CONFIGS = {
     },
     'ngc': {
         'name': 'NVIDIA GPU Cloud (NGC)',
-        'default_model': 'deepseek-ai/deepseek-r1-distill-llama-8b',
+        'default_model': 'nvidia/llama-3.3-nemotron-super-49b-v1',
         'needs_api_key': True,
     },
     'cloudflare': {
