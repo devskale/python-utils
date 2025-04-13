@@ -116,7 +116,7 @@ PROVIDER_CONFIGS = {
     },
     'cloudflare': {
         'name': 'Cloudflare Workers AI',
-        'default_model': '@cf/meta/llama-3.1-8b-instruct',
+        'default_model': '@cf/meta/llama-4-scout-17b-16e-instruct',
         'needs_api_key': True,
         'extra_params': {
             'account_id': '1ee331dfd225ac49d67c521a73ca7fe8'  # Will be prompted during setup
