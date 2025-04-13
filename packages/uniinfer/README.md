@@ -34,6 +34,7 @@ UniInfer provides a consistent Python interface for LLM chat completions across 
 - **Multi-provider Support** - Switch between providers with one line change
 - **Streaming** - Real-time token streaming for all providers
 - **Error Resilience** - Automatic retries & fallback strategies
+- **Model Discovery** - List available models across all providers
 
 ## Key Benefits
 
@@ -79,6 +80,31 @@ pip install credgoo  # For seamless API key management
 ## Quick Start
 
 ### Basic Usage with Automatic Key Management
+
+## Advanced Usage
+
+### Model Discovery
+
+UniInfer provides a unified way to list available models across all providers:
+
+```python
+from uniinfer import ProviderFactory
+
+# List all available models
+models = ProviderFactory.list_models()
+
+# Example output structure
+{
+    "anthropic": ["claude-3-opus", "claude-3-sonnet", "claude-3-haiku"],
+    "ollama": ["llama2", "mistral", "codellama"],
+    # ... other providers
+}
+
+# List models for a specific provider
+provider_models = ProviderFactory.list_models()["anthropic"]
+```
+
+### Provider Selection
 
 ```python
 from uniinfer import ChatMessage, ChatCompletionRequest, ProviderFactory
@@ -229,24 +255,24 @@ print(f"Response from {provider_used}: {response.message.content}")
 
 ## Supported Providers 🤖
 
-| Provider            | Example Models                     | Streaming | Auth Method       |
-| ------------------- | ---------------------------------- | --------- | ----------------- |
-| **OpenAI**          | GPT-4, GPT-4 Turbo                 | ✅        | API Key (credgoo) |
-| **Anthropic**       | Claude 3 Opus, Sonnet              | ✅        | API Key (credgoo) |
-| **Mistral**         | Mistral 8x7B, Mixtral              | ✅        | API Key (credgoo) |
-| **Ollama**          | Local/self-hosted models           | ✅        | None              |
-| **OpenRouter**      | 60+ models incl. Claude 2          | ✅        | API Key (credgoo) |
-| **Google Gemini**   | Gemini Pro, Gemini Flash           | ✅        | API Key (credgoo) |
-| **HuggingFace**     | Llama 2, Mistral                   | ✅        | API Key (credgoo) |
-| **Cohere**          | Command R+                         | ✅        | API Key (credgoo) |
-| **Groq**            | Llama 3.1 8B/70B                   | ✅        | API Key (credgoo) |
-| **AI21**            | Jamba models                       | ✅        | API Key (credgoo) |
-| **InternLM**        | InternLM models                    | ✅        | API Key (credgoo) |
-| **Moonshot**        | Moonshot models                    | ✅        | API Key (credgoo) |
-| **StepFun**         | Step-1 models                      | ✅        | API Key (credgoo) |
-| **Upstage**         | Solar models                       | ✅        | API Key (credgoo) |
-| **NGC**             | NVIDIA GPU Cloud                   | ✅        | API Key (credgoo) |
-| **Cloudflare**      | Workers AI models                  | ✅        | API Key (credgoo) |
+| Provider          | Example Models            | Streaming | Auth Method       |
+| ----------------- | ------------------------- | --------- | ----------------- |
+| **OpenAI**        | GPT-4, GPT-4 Turbo        | ✅        | API Key (credgoo) |
+| **Anthropic**     | Claude 3 Opus, Sonnet     | ✅        | API Key (credgoo) |
+| **Mistral**       | Mistral 8x7B, Mixtral     | ✅        | API Key (credgoo) |
+| **Ollama**        | Local/self-hosted models  | ✅        | None              |
+| **OpenRouter**    | 60+ models incl. Claude 2 | ✅        | API Key (credgoo) |
+| **Google Gemini** | Gemini Pro, Gemini Flash  | ✅        | API Key (credgoo) |
+| **HuggingFace**   | Llama 2, Mistral          | ✅        | API Key (credgoo) |
+| **Cohere**        | Command R+                | ✅        | API Key (credgoo) |
+| **Groq**          | Llama 3.1 8B/70B          | ✅        | API Key (credgoo) |
+| **AI21**          | Jamba models              | ✅        | API Key (credgoo) |
+| **InternLM**      | InternLM models           | ✅        | API Key (credgoo) |
+| **Moonshot**      | Moonshot models           | ✅        | API Key (credgoo) |
+| **StepFun**       | Step-1 models             | ✅        | API Key (credgoo) |
+| **Upstage**       | Solar models              | ✅        | API Key (credgoo) |
+| **NGC**           | NVIDIA GPU Cloud          | ✅        | API Key (credgoo) |
+| **Cloudflare**    | Workers AI models         | ✅        | API Key (credgoo) |
 
 Below are examples for some of our newer providers (all using automatic API key management with credgoo):
 
@@ -302,7 +328,7 @@ print(response.message.content)
 # With credgoo, your API key is retrieved automatically
 # However, account_id is still required as it's specific to each request
 provider = ProviderFactory.get_provider(
-    "cloudflare", 
+    "cloudflare",
     account_id="your-cloudflare-account-id"  # API key retrieved automatically
 )
 
@@ -408,11 +434,13 @@ except ProviderError as e:
 ### Core Classes
 
 - **ChatMessage**: Represents a message in a chat conversation
+
   - `role`: The role of the message sender (user, assistant, system)
   - `content`: The content of the message
   - `to_dict()`: Convert to a dictionary format
 
 - **ChatCompletionRequest**: Represents a request for a chat completion
+
   - `messages`: List of ChatMessage objects
   - `model`: The model to use (optional)
   - `temperature`: Controls randomness (0-1)
@@ -420,6 +448,7 @@ except ProviderError as e:
   - `streaming`: Whether to stream the response
 
 - **ChatCompletionResponse**: Represents a response from a chat completion
+
   - `message`: The generated ChatMessage
   - `provider`: Name of the provider that generated the response
   - `model`: The model used for generation
@@ -427,6 +456,7 @@ except ProviderError as e:
   - `raw_response`: The raw response from the provider
 
 - **ChatProvider**: Abstract base class for chat providers
+
   - `complete(request, **kwargs)`: Make a chat completion request
   - `stream_complete(request, **kwargs)`: Stream a chat completion response
 
@@ -438,6 +468,7 @@ except ProviderError as e:
 ### Strategies
 
 - **FallbackStrategy**: Tries providers in order until one succeeds
+
   - `complete(request, **kwargs)`: Make a request with fallback
   - `stream_complete(request, **kwargs)`: Stream with fallback
   - `get_stats()`: Get provider statistics
