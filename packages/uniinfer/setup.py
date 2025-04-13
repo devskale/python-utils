@@ -2,10 +2,10 @@ from setuptools import setup, find_packages
 
 setup(
     name="uniinfer",
-    version="0.1.0",
+    version="0.1.2",
     description="Unified Inference API for LLM chat completions",
     author="Your Name",
-    author_email="your.email@example.com",
+    author_email="dev@skale.dev",
     packages=find_packages(),
     install_requires=[
         "requests>=2.25.0",

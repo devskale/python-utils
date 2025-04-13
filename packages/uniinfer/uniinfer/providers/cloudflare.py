@@ -60,7 +60,7 @@ class CloudflareProvider(ChatProvider):
             source (Optional[int]): Filter by Source Id.
 
         Returns:
-            list: A list of available model names with price = 0.
+            list: A list of model information in the format 'modelname, modeltype, cost'.
         """
         if api_key is None:
             try:
@@ -82,9 +82,7 @@ class CloudflareProvider(ChatProvider):
         }
 
         # Build query parameters
-        params = {
-            "task": "Text Generation"  # Always filter for Text Generation models
-        }
+        params = {}
 
         # Add optional parameters if provided
         if author is not None:
@@ -115,23 +113,38 @@ class CloudflareProvider(ChatProvider):
             if models_data.get("success", False) and "result" in models_data:
                 for model in models_data["result"]:
                     if isinstance(model, dict) and "id" in model:
-                        model_id = model["id"]
-                        model_name = model.get("name", model_id)
+                        # Extract model name
+                        model_name = model.get(
+                            "name", model.get("id", "Unknown"))
 
-                        # Check if model has price = 0 in properties
-                        has_free_price = False
+                        # Extract model type (task name)
+                        model_type = "Unknown"
+                        if "task" in model and isinstance(model["task"], dict):
+                            model_type = model["task"].get("name", "Unknown")
+
+                        # Extract cost information
+                        cost = "Free"
                         if "properties" in model:
                             for prop in model["properties"]:
                                 if prop.get("property_id") == "price" and isinstance(prop.get("value"), list):
-                                    # Check if any price component is 0
+                                    # Get the first price component
                                     for price_item in prop["value"]:
-                                        if isinstance(price_item, dict) and price_item.get("price") == 0:
-                                            has_free_price = True
+                                        if isinstance(price_item, dict) and "price" in price_item:
+                                            price_value = price_item.get(
+                                                "price")
+                                            unit = price_item.get("unit", "")
+                                            currency = price_item.get(
+                                                "currency", "USD")
+
+                                            if price_value == 0:
+                                                cost = "Free"
+                                            else:
+                                                cost = f"{price_value} {currency} {unit}"
                                             break
 
-                        # Only include models with price = 0
-                        if has_free_price:
-                            model_list.append(model_name)
+                        # Format the model information
+                        model_info = f"{model_name}, {model_type}, {cost}"
+                        model_list.append(model_info)
 
                 # Sort models alphabetically by name
                 model_list.sort()
@@ -213,6 +226,7 @@ class CloudflareProvider(ChatProvider):
             # Prepare the request data - Cloudflare doesn't expect a 'model' field in the body
             data = {
                 "prompt": prompt,
+                "max_tokens": request.max_tokens if request.max_tokens is not None else 1024,
             }
 
             # Add temperature if provided
@@ -307,6 +321,7 @@ class CloudflareProvider(ChatProvider):
             data = {
                 "prompt": prompt,
                 "stream": True,  # Enable streaming
+                "max_tokens": request.max_tokens if request.max_tokens is not None else 1024,
             }
 
             # Add temperature if provided
