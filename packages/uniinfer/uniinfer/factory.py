@@ -49,16 +49,25 @@ class ProviderFactory:
         if name not in ProviderFactory._providers:
             raise ValueError(f"Provider '{name}' not registered")
 
-        # If API key not provided, try to get it from credgoo
-        if api_key is None and HAS_CREDGOO and name != "ollama":  # Ollama doesn't need an API key
-            try:
-                api_key = get_api_key(name)
-            except Exception as e:
-                raise ValueError(
-                    f"Failed to get API key for '{name}': {str(e)}")
+        # If API key not provided, try to get it from credgoo or environment
+        if api_key is None and name != "ollama":  # Ollama doesn't need an API key
+            if HAS_CREDGOO:
+                try:
+                    api_key = get_api_key(name)
+                except Exception:
+                    pass  # Fall through to env var check
+
+            if api_key is None:
+                api_key = os.getenv(f"{name.upper()}_API_KEY")
 
         provider_class = ProviderFactory._providers[name]
-        return provider_class(api_key=api_key, **kwargs)
+        try:
+            return provider_class(api_key=api_key, **kwargs)
+        except ValueError as e:
+            raise  # Re-raise explicit value errors
+        except Exception as e:
+            raise ValueError(
+                f"Failed to initialize provider '{name}': {str(e)}") from e
 
     @staticmethod
     def list_providers() -> list:
