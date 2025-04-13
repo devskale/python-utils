@@ -7,6 +7,7 @@ from uniinfer import (
 )
 from credgoo import get_api_key
 import argparse
+import random
 # Cloudflare API Details
 
 from providers_config import PROVIDER_CONFIGS
@@ -76,7 +77,21 @@ def main():
         **({} if provider not in ['cloudflare', 'ollama'] else PROVIDER_CONFIGS[provider].get('extra_params', {}))
     )
 
-    prompt = args.query if args.query else "Erkläre mir bitte wie Transformer in maschinellem Lernen funktionieren in einfachen Worten und auf deutsch."
+    # List of machine learning topics in German
+    ml_topics = [
+        "Transformer in maschinellem Lernen",
+        "Neuronale Netze",
+        "Convolutional Neural Networks (CNNs)",
+        "Recurrent Neural Networks (RNNs)",
+        "Support Vector Machines (SVMs)",
+        "Entscheidungsbäume",
+        "Random Forests",
+        "Gradient Boosting",
+        "Unüberwachtes Lernen",
+        "Bestärkendes Lernen"
+    ]
+
+    prompt = args.query if args.query else f"Erkläre mir bitte {random.choice(ml_topics)} in einfachen Worten und auf deutsch."
 
     if args.file:
         try:
