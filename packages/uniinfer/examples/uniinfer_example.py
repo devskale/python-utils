@@ -15,10 +15,10 @@ from providers_config import PROVIDER_CONFIGS
 def main():
     # Initialize argument parser
     parser = argparse.ArgumentParser(description='UniInfer example script')
-    parser.add_argument('-l', '--list-providers', '--list', action='store_true',
+    parser.add_argument('-l', '--list-providers', '--list', '--list-provides', action='store_true',
                         help='List available providers')
     parser.add_argument('--list-models', action='store_true',
-                        help='List available models for the specified provider')
+                        help='List available models for the specified provider or all providers when combined with --list-providers')
     parser.add_argument('-p', '--provider', type=str, default='stepfun',
                         help='Specify which provider to use')
     parser.add_argument('-q', '--query', type=str,
@@ -30,6 +30,21 @@ def main():
     parser.add_argument('-t', '--tokens', type=int, default=4000,
                         help='Specify token limit for file context (default: 4000)')
     args = parser.parse_args()
+
+    if args.list_providers and args.list_models:
+        providers = ProviderFactory.list_providers()
+        for provider in providers:
+            try:
+                provider_class = ProviderFactory.get_provider_class(provider)
+                models = provider_class.list_models(
+                    **({} if provider not in ['cloudflare', 'ollama'] else PROVIDER_CONFIGS[provider].get('extra_params', {}))
+                )
+                print(f"\nAvailable models for {provider}:")
+                for model in models:
+                    print(f"- {model}")
+            except Exception as e:
+                print(f"\nError listing models for {provider}: {str(e)}")
+        return
 
     if args.list_providers:
         providers = ProviderFactory.list_providers()

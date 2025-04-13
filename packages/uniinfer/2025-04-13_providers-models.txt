@@ -1,0 +1,588 @@
+Using cached API key for mistral
+
+Available models for mistral:
+- ministral-3b-2410
+- ministral-3b-latest
+- ministral-8b-2410
+- ministral-8b-latest
+- open-mistral-7b
+- mistral-tiny
+- mistral-tiny-2312
+- open-mistral-nemo
+- open-mistral-nemo-2407
+- mistral-tiny-2407
+- mistral-tiny-latest
+- open-mixtral-8x7b
+- mistral-small
+- mistral-small-2312
+- open-mixtral-8x22b
+- open-mixtral-8x22b-2404
+- mistral-small-2402
+- mistral-small-2409
+- mistral-medium-2312
+- mistral-medium
+- mistral-medium-latest
+- mistral-large-2402
+- mistral-large-2407
+- mistral-large-2411
+- mistral-large-latest
+- pixtral-large-2411
+- pixtral-large-latest
+- mistral-large-pixtral-2411
+- codestral-2405
+- codestral-2501
+- codestral-latest
+- codestral-2412
+- codestral-2411-rc5
+- codestral-mamba-2407
+- open-codestral-mamba
+- codestral-mamba-latest
+- pixtral-12b-2409
+- pixtral-12b
+- pixtral-12b-latest
+- mistral-small-2501
+- mistral-small-2503
+- mistral-small-latest
+- mistral-saba-2502
+- mistral-saba-latest
+- mistral-embed
+- mistral-moderation-2411
+- mistral-moderation-latest
+- mistral-ocr-2503
+- mistral-ocr-latest
+
+Available models for anthropic:
+- claude-instant-1
+- claude-2
+- claude-3-opus
+- claude-3-sonnet
+- claude-3-haiku
+
+Available models for openai:
+- gpt-4
+- gpt-4-turbo
+- gpt-3.5-turbo
+Using Ollama endpoint: https://amp1.mooo.com:11444/api/tags
+Found 5 available models
+
+Available models for ollama:
+- moondream:v2
+- phi4-mini:latest
+- gemma3:4b
+- nomic-embed-text:latest
+- deepseek-r1:1.5b
+Using cached API key for openrouter
+
+Available models for openrouter:
+- moonshotai/kimi-vl-a3b-thinking:free
+- openrouter/optimus-alpha
+- nvidia/llama-3.1-nemotron-nano-8b-v1:free
+- nvidia/llama-3.3-nemotron-super-49b-v1:free
+- nvidia/llama-3.1-nemotron-ultra-253b-v1:free
+- meta-llama/llama-4-maverick:free
+- meta-llama/llama-4-scout:free
+- deepseek/deepseek-v3-base:free
+- allenai/molmo-7b-d:free
+- bytedance-research/ui-tars-72b:free
+- qwen/qwen2.5-vl-3b-instruct:free
+- google/gemini-2.5-pro-exp-03-25:free
+- qwen/qwen2.5-vl-32b-instruct:free
+- deepseek/deepseek-chat-v3-0324:free
+- featherless/qwerky-72b:free
+- mistralai/mistral-small-3.1-24b-instruct:free
+- open-r1/olympiccoder-7b:free
+- open-r1/olympiccoder-32b:free
+- google/gemma-3-1b-it:free
+- google/gemma-3-4b-it:free
+- google/gemma-3-12b-it:free
+- rekaai/reka-flash-3:free
+- google/gemma-3-27b-it:free
+- deepseek/deepseek-r1-zero:free
+- qwen/qwq-32b:free
+- moonshotai/moonlight-16b-a3b-instruct:free
+- nousresearch/deephermes-3-llama-3-8b-preview:free
+- cognitivecomputations/dolphin3.0-r1-mistral-24b:free
+- cognitivecomputations/dolphin3.0-mistral-24b:free
+- qwen/qwen2.5-vl-72b-instruct:free
+- mistralai/mistral-small-24b-instruct-2501:free
+- deepseek/deepseek-r1-distill-qwen-32b:free
+- deepseek/deepseek-r1-distill-qwen-14b:free
+- deepseek/deepseek-r1-distill-llama-70b:free
+- google/gemini-2.0-flash-thinking-exp:free
+- deepseek/deepseek-r1:free
+- sophosympatheia/rogue-rose-103b-v0.2:free
+- deepseek/deepseek-chat:free
+- google/gemini-2.0-flash-thinking-exp-1219:free
+- google/gemini-2.0-flash-exp:free
+- meta-llama/llama-3.3-70b-instruct:free
+- qwen/qwq-32b-preview:free
+- google/learnlm-1.5-pro-experimental:free
+- qwen/qwen-2.5-coder-32b-instruct:free
+- qwen/qwen-2.5-7b-instruct:free
+- nvidia/llama-3.1-nemotron-70b-instruct:free
+- meta-llama/llama-3.2-3b-instruct:free
+- meta-llama/llama-3.2-1b-instruct:free
+- meta-llama/llama-3.2-11b-vision-instruct:free
+- qwen/qwen-2.5-72b-instruct:free
+- qwen/qwen-2.5-vl-7b-instruct:free
+- google/gemini-flash-1.5-8b-exp
+- meta-llama/llama-3.1-8b-instruct:free
+- mistralai/mistral-nemo:free
+- google/gemma-2-9b-it:free
+- mistralai/mistral-7b-instruct:free
+- huggingfaceh4/zephyr-7b-beta:free
+Using cached API key for arli
+
+Available models for arli:
+- Mistral-Nemo-12B-ArliAI-RPMax-v1.1
+- Mistral-Nemo-12B-ArliAI-RPMax-v1.2
+- Mistral-Nemo-12B-ArliAI-RPMax-v1.3
+- Mistral-Nemo-12B-BackyardAI-Party-v1
+- Mistral-Nemo-12B-BD-RP
+- Mistral-Nemo-12B-Bigger-Body
+- Mistral-Nemo-12B-CelesteGold
+- Mistral-Nemo-12B-Chinofun-2
+- Mistral-Nemo-12B-Chunky-Lotus
+- Mistral-Nemo-12B-Dark-Planet-TITAN
+- Mistral-Nemo-12B-Eleucaro
+- Mistral-Nemo-12B-Eleusis-v2
+- Mistral-Nemo-12B-Estrella-v2.2
+- Mistral-Nemo-12B-Fireball-Philos
+- Mistral-Nemo-12B-Guns-And-Roses-R1
+- Mistral-Nemo-12B-Halide-v1.0
+- Mistral-Nemo-12B-Himeyuri-v0.1
+- Mistral-Nemo-12B-Inferor-v0.0
+- Mistral-Nemo-12B-Instruct-2407
+- Mistral-Nemo-12B-Instruct-2407
+- Mistral-Nemo-12B-Lumimaid-v0.2
+- Mistral-Nemo-12B-Lyra-v4
+- Mistral-Nemo-12B-Mag-Mell-R1
+- Mistral-Nemo-12B-Maghin
+- Mistral-Nemo-12B-Magnum-v4
+- Mistral-Nemo-12B-Mahou-1.3
+- Mistral-Nemo-12B-Mahou-1.5
+- Mistral-Nemo-12B-NemoMix-Unleashed
+- Mistral-Nemo-12B-Nemomix-v4.0
+- Mistral-Nemo-12B-NemoRemix
+- Mistral-Nemo-12B-Pantheon-RP-1.6
+- Mistral-Nemo-12B-Pantheon-RP-1.6-KTO
+- Mistral-Nemo-12B-Pantheon-RP-1.6.1
+- Mistral-Nemo-12B-Picaro-0.7-Magnum-v2
+- Mistral-Nemo-12B-Prismatic
+- Mistral-Nemo-12B-Pygmalion-3-v1
+- Mistral-Nemo-12B-Rei
+- Mistral-Nemo-12B-Rocinante-v1.1
+- Mistral-Nemo-12B-Rosier-v1
+- Mistral-Nemo-12B-RP-Ink
+- Mistral-Nemo-12B-SauerkrautLM
+- Mistral-Nemo-12B-Siskin-v0.2
+- Mistral-Nemo-12B-Slush
+- Mistral-Nemo-12B-Starcannon-Unleashed-v1.0
+- Mistral-Nemo-12B-Stellar-Odyssey-v0.0
+- Mistral-Nemo-12B-Sto-vo-kor
+- Mistral-Nemo-12B-Sunfall
+- Mistral-Nemo-12B-Sunrose
+- Mistral-Nemo-12B-Tarsus
+- Mistral-Nemo-12B-Tiramisu
+- Mistral-Nemo-12B-UnslopNemo-v4
+- Mistral-Nemo-12B-UnslopNemo-v4.1
+- Mistral-Nemo-12B-Vespa-x1
+- Mistral-Nemo-12B-Violet-Lotus
+- Mistral-Nemo-12B-Wayfarer
+Using cached API key for internlm
+
+Available models for internlm:
+- internlm2.5-latest
+- internlm3-8b-instruct
+- internlm3-latest
+- internvl2.5-latest
+- internvl2.5-78b
+- internvl-latest
+Using cached API key for stepfun
+
+Available models for stepfun:
+- step-1-32k
+- step-1v-32k
+- step-1-8k
+- step-1-128k
+- step-1-256k
+- step-1v-8k
+- step-2-16k
+- step-1-flash
+- step-1x-medium
+- step-1.5v-mini
+- step-tts-mini
+- step-2-16k-202411
+- step-asr
+- step-1o-vision-32k
+- step-2-mini
+- step-2-16k-exp
+- step-1o-turbo-vision
+- step-1o-audio
+- step-r1-v-mini
+Using cached API key for sambanova
+
+Available models for sambanova:
+- DeepSeek-R1
+- DeepSeek-R1-Distill-Llama-70B
+- DeepSeek-V3-0324
+- E5-Mistral-7B-Instruct
+- Llama-3.1-Swallow-70B-Instruct-v0.3
+- Llama-3.1-Swallow-8B-Instruct-v0.3
+- Llama-3.1-Tulu-3-405B
+- Llama-3.2-11B-Vision-Instruct
+- Llama-3.2-90B-Vision-Instruct
+- Llama-4-Maverick-17B-128E-Instruct
+- Llama-4-Scout-17B-16E-Instruct
+- Meta-Llama-3.1-405B-Instruct
+- Meta-Llama-3.1-70B-Instruct
+- Meta-Llama-3.1-8B-Instruct
+- Meta-Llama-3.2-1B-Instruct
+- Meta-Llama-3.2-3B-Instruct
+- Meta-Llama-3.3-70B-Instruct
+- Meta-Llama-Guard-3-8B
+- QwQ-32B
+- Qwen2-Audio-7B-Instruct
+- Qwen2.5-72B-Instruct
+- Qwen2.5-Coder-32B-Instruct
+Using cached API key for upstage
+
+Available models for upstage:
+- solar-docev-preview-250411
+- solar-pro-241126
+- solar-pro-sagemaker
+- solar-pro-kpf
+- solar-mini-250401
+- solar-mini-250123
+- solar-mini-ja-250123
+- solar-syn
+- translation-enko-241104
+- translation-koen-240507
+- groundedness-check-240502
+- solar-news-correction-zjwttv
+- ft:solar-news-correction
+- ft:solar-media-translate
+- kpf-g3-outline2report-250228
+- solar-mini-lnc
+- solar-mini-askup
+- openai/gpt-4o
+- openai/gpt-4o-mini
+- openai/gpt-4-1106-preview
+- openai/gpt-4
+- openai/gpt-4-turbo
+- openai/gpt-3.5-turbo
+- mistral/mixtral-8x7b-instruct-v0.1
+- naver/hcx-003
+- naver/hcx-dash-001
+- solar-mini-pipeline
+- solar-mini-rc
+Using cached API key for ngc
+
+Available models for ngc:
+- 01-ai/yi-large
+- abacusai/dracarys-llama-3.1-70b-instruct
+- adept/fuyu-8b
+- ai21labs/jamba-1.5-large-instruct
+- ai21labs/jamba-1.5-mini-instruct
+- aisingapore/sea-lion-7b-instruct
+- baai/bge-m3
+- baichuan-inc/baichuan2-13b-chat
+- bigcode/starcoder2-15b
+- bigcode/starcoder2-7b
+- databricks/dbrx-instruct
+- deepseek-ai/deepseek-coder-6.7b-instruct
+- deepseek-ai/deepseek-r1
+- deepseek-ai/deepseek-r1-distill-llama-8b
+- deepseek-ai/deepseek-r1-distill-qwen-14b
+- deepseek-ai/deepseek-r1-distill-qwen-32b
+- deepseek-ai/deepseek-r1-distill-qwen-7b
+- google/codegemma-1.1-7b
+- google/codegemma-7b
+- google/deplot
+- google/gemma-2-27b-it
+- google/gemma-2-2b-it
+- google/gemma-2-9b-it
+- google/gemma-2b
+- google/gemma-3-12b-it
+- google/gemma-3-1b-it
+- google/gemma-3-27b-it
+- google/gemma-3-4b-it
+- google/gemma-7b
+- google/paligemma
+- google/recurrentgemma-2b
+- google/shieldgemma-9b
+- ibm/granite-3.0-3b-a800m-instruct
+- ibm/granite-3.0-8b-instruct
+- ibm/granite-34b-code-instruct
+- ibm/granite-8b-code-instruct
+- ibm/granite-guardian-3.0-8b
+- igenius/colosseum_355b_instruct_16k
+- igenius/italia_10b_instruct_16k
+- institute-of-science-tokyo/llama-3.1-swallow-70b-instruct-v0.1
+- institute-of-science-tokyo/llama-3.1-swallow-8b-instruct-v0.1
+- mediatek/breeze-7b-instruct
+- meta/codellama-70b
+- meta/llama-3.1-405b-instruct
+- meta/llama-3.1-70b-instruct
+- meta/llama-3.1-8b-instruct
+- meta/llama-3.2-11b-vision-instruct
+- meta/llama-3.2-1b-instruct
+- meta/llama-3.2-3b-instruct
+- meta/llama-3.2-90b-vision-instruct
+- meta/llama-3.3-70b-instruct
+- meta/llama-4-maverick-17b-128e-instruct
+- meta/llama-4-scout-17b-16e-instruct
+- meta/llama2-70b
+- meta/llama3-70b-instruct
+- meta/llama3-8b-instruct
+- microsoft/kosmos-2
+- microsoft/phi-3-medium-128k-instruct
+- microsoft/phi-3-medium-4k-instruct
+- microsoft/phi-3-mini-128k-instruct
+- microsoft/phi-3-mini-4k-instruct
+- microsoft/phi-3-small-128k-instruct
+- microsoft/phi-3-small-8k-instruct
+- microsoft/phi-3-vision-128k-instruct
+- microsoft/phi-3.5-mini-instruct
+- microsoft/phi-3.5-moe-instruct
+- microsoft/phi-3.5-vision-instruct
+- microsoft/phi-4-mini-instruct
+- microsoft/phi-4-multimodal-instruct
+- mistralai/codestral-22b-instruct-v0.1
+- mistralai/mamba-codestral-7b-v0.1
+- mistralai/mathstral-7b-v0.1
+- mistralai/mistral-7b-instruct-v0.2
+- mistralai/mistral-7b-instruct-v0.3
+- mistralai/mistral-large
+- mistralai/mistral-large-2-instruct
+- mistralai/mistral-small-24b-instruct
+- mistralai/mixtral-8x22b-instruct-v0.1
+- mistralai/mixtral-8x22b-v0.1
+- mistralai/mixtral-8x7b-instruct-v0.1
+- nv-mistralai/mistral-nemo-12b-instruct
+- nvidia/embed-qa-4
+- nvidia/llama-3.1-nemoguard-8b-content-safety
+- nvidia/llama-3.1-nemoguard-8b-topic-control
+- nvidia/llama-3.1-nemotron-51b-instruct
+- nvidia/llama-3.1-nemotron-70b-instruct
+- nvidia/llama-3.1-nemotron-70b-reward
+- nvidia/llama-3.1-nemotron-nano-8b-v1
+- nvidia/llama-3.1-nemotron-ultra-253b-v1
+- nvidia/llama-3.2-nv-embedqa-1b-v1
+- nvidia/llama-3.2-nv-embedqa-1b-v2
+- nvidia/llama-3.3-nemotron-super-49b-v1
+- nvidia/llama3-chatqa-1.5-70b
+- nvidia/llama3-chatqa-1.5-8b
+- nvidia/mistral-nemo-minitron-8b-8k-instruct
+- nvidia/mistral-nemo-minitron-8b-base
+- nvidia/nemoretriever-parse
+- nvidia/nemotron-4-340b-instruct
+- nvidia/nemotron-4-340b-reward
+- nvidia/nemotron-4-mini-hindi-4b-instruct
+- nvidia/nemotron-mini-4b-instruct
+- nvidia/neva-22b
+- nvidia/nv-embed-v1
+- nvidia/nv-embedcode-7b-v1
+- nvidia/nv-embedqa-e5-v5
+- nvidia/nv-embedqa-mistral-7b-v2
+- nvidia/nvclip
+- nvidia/usdcode-llama-3.1-70b-instruct
+- nvidia/vila
+- qwen/qwen2-7b-instruct
+- qwen/qwen2.5-7b-instruct
+- qwen/qwen2.5-coder-32b-instruct
+- qwen/qwen2.5-coder-7b-instruct
+- qwen/qwq-32b
+- rakuten/rakutenai-7b-chat
+- rakuten/rakutenai-7b-instruct
+- snowflake/arctic-embed-l
+- thudm/chatglm3-6b
+- tiiuae/falcon3-7b-instruct
+- tokyotech-llm/llama-3-swallow-70b-instruct-v0.1
+- upstage/solar-10.7b-instruct
+- writer/palmyra-creative-122b
+- writer/palmyra-fin-70b-32k
+- writer/palmyra-med-70b
+- writer/palmyra-med-70b-32k
+- yentinglin/llama-3-taiwan-70b-instruct
+- zyphra/zamba2-7b-instruct
+Using cached API key for cloudflare
+
+Available models for cloudflare:
+- @cf/baai/bge-base-en-v1.5, Text Embeddings, 0.067 USD per M input tokens
+- @cf/baai/bge-large-en-v1.5, Text Embeddings, 0.2 USD per M input tokens
+- @cf/baai/bge-m3, Text Embeddings, 0.012 USD per M input tokens
+- @cf/baai/bge-reranker-base, Text Classification, 0.0031 USD per M input tokens
+- @cf/baai/bge-small-en-v1.5, Text Embeddings, 0.02 USD per M input tokens
+- @cf/black-forest-labs/flux-1-schnell, Text-to-Image, 5.3e-05 USD per 512 by 512 tile
+- @cf/bytedance/stable-diffusion-xl-lightning, Text-to-Image, Free
+- @cf/deepseek-ai/deepseek-math-7b-instruct, Text Generation, Free
+- @cf/deepseek-ai/deepseek-r1-distill-qwen-32b, Text Generation, 0.5 USD per M input tokens
+- @cf/defog/sqlcoder-7b-2, Text Generation, Free
+- @cf/facebook/bart-large-cnn, Summarization, Free
+- @cf/facebook/detr-resnet-50, Object Detection, 7.5e-06 USD per inference request
+- @cf/fblgit/una-cybertron-7b-v2-bf16, Text Generation, Free
+- @cf/google/gemma-2b-it-lora, Text Generation, Free
+- @cf/google/gemma-3-12b-it, Text Generation, 0.35 USD per M input tokens
+- @cf/google/gemma-7b-it-lora, Text Generation, Free
+- @cf/huggingface/distilbert-sst-2-int8, Text Classification, 0.026 USD per M input tokens
+- @cf/llava-hf/llava-1.5-7b-hf, Image-to-Text, Free
+- @cf/lykon/dreamshaper-8-lcm, Text-to-Image, Free
+- @cf/meta-llama/llama-2-7b-chat-hf-lora, Text Generation, Free
+- @cf/meta/llama-2-7b-chat-fp16, Text Generation, 0.56 USD per M input tokens
+- @cf/meta/llama-2-7b-chat-int8, Text Generation, Free
+- @cf/meta/llama-3-8b-instruct, Text Generation, 0.28 USD per M input tokens
+- @cf/meta/llama-3-8b-instruct-awq, Text Generation, 0.12 USD per M input tokens
+- @cf/meta/llama-3.1-8b-instruct, Text Generation, 0.28 USD per M input tokens
+- @cf/meta/llama-3.1-8b-instruct-awq, Text Generation, 0.12 USD per M input tokens
+- @cf/meta/llama-3.1-8b-instruct-fp8, Text Generation, 0.15 USD per M input tokens
+- @cf/meta/llama-3.2-11b-vision-instruct, Text Generation, 0.049 USD per M input tokens
+- @cf/meta/llama-3.2-1b-instruct, Text Generation, 0.027 USD per M input tokens
+- @cf/meta/llama-3.2-3b-instruct, Text Generation, 0.051 USD per M input tokens
+- @cf/meta/llama-3.3-70b-instruct-fp8-fast, Text Generation, 0.29 USD per M input tokens
+- @cf/meta/llama-4-scout-17b-16e-instruct, Text Generation, Free
+- @cf/meta/llama-guard-3-8b, Text Generation, 0.48 USD per M input tokens
+- @cf/meta/m2m100-1.2b, Translation, 0.34 USD per M input tokens
+- @cf/microsoft/phi-2, Text Generation, Free
+- @cf/microsoft/resnet-50, Image Classification, 2.5e-06 USD per inference request
+- @cf/mistral/mistral-7b-instruct-v0.1, Text Generation, 0.11 USD per M input tokens
+- @cf/mistral/mistral-7b-instruct-v0.2-lora, Text Generation, Free
+- @cf/mistralai/mistral-small-3.1-24b-instruct, Text Generation, 0.35 USD per M input tokens
+- @cf/myshell-ai/melotts, Text-to-Speech, 0.0002 USD per audio minute
+- @cf/openai/whisper, Automatic Speech Recognition, 0.00045 USD per audio minute
+- @cf/openai/whisper-large-v3-turbo, Automatic Speech Recognition, 0.00051 USD per audio minute
+- @cf/openai/whisper-tiny-en, Automatic Speech Recognition, Free
+- @cf/openchat/openchat-3.5-0106, Text Generation, Free
+- @cf/qwen/qwen1.5-0.5b-chat, Text Generation, Free
+- @cf/qwen/qwen1.5-1.8b-chat, Text Generation, Free
+- @cf/qwen/qwen1.5-14b-chat-awq, Text Generation, Free
+- @cf/qwen/qwen1.5-7b-chat-awq, Text Generation, Free
+- @cf/qwen/qwen2.5-coder-32b-instruct, Text Generation, 0.66 USD per M input tokens
+- @cf/qwen/qwq-32b, Text Generation, 0.66 USD per M input tokens
+- @cf/runwayml/stable-diffusion-v1-5-img2img, Text-to-Image, Free
+- @cf/runwayml/stable-diffusion-v1-5-inpainting, Text-to-Image, Free
+- @cf/stabilityai/stable-diffusion-xl-base-1.0, Text-to-Image, Free
+- @cf/thebloke/discolm-german-7b-v1-awq, Text Generation, Free
+- @cf/tiiuae/falcon-7b-instruct, Text Generation, Free
+- @cf/tinyllama/tinyllama-1.1b-chat-v1.0, Text Generation, Free
+- @cf/unum/uform-gen2-qwen-500m, Image-to-Text, Free
+- @hf/google/gemma-7b-it, Text Generation, Free
+- @hf/meta-llama/meta-llama-3-8b-instruct, Text Generation, Free
+- @hf/mistral/mistral-7b-instruct-v0.2, Text Generation, Free
+- @hf/nexusflow/starling-lm-7b-beta, Text Generation, Free
+- @hf/nousresearch/hermes-2-pro-mistral-7b, Text Generation, Free
+- @hf/thebloke/deepseek-coder-6.7b-base-awq, Text Generation, Free
+- @hf/thebloke/deepseek-coder-6.7b-instruct-awq, Text Generation, Free
+- @hf/thebloke/llama-2-13b-chat-awq, Text Generation, Free
+- @hf/thebloke/llamaguard-7b-awq, Text Generation, Free
+- @hf/thebloke/mistral-7b-instruct-v0.1-awq, Text Generation, Free
+- @hf/thebloke/neural-chat-7b-v3-1-awq, Text Generation, Free
+- @hf/thebloke/openhermes-2.5-mistral-7b-awq, Text Generation, Free
+- @hf/thebloke/zephyr-7b-beta-awq, Text Generation, Free
+
+Error listing models for huggingface: Providers must implement list_models
+Using cached API key for cohere
+
+Available models for cohere:
+- embed-english-light-v3.0
+- embed-multilingual-v2.0
+- rerank-v3.5
+- rerank-english-v3.0
+- command-r
+- embed-english-light-v3.0-image
+- embed-english-v3.0-image
+- command-a-03-2025
+- command-nightly
+- command-r7b-12-2024
+- command-r-plus
+- rerank-multilingual-v2.0
+- c4ai-aya-vision-32b
+- command-r7b-arabic-02-2025
+- command-light-nightly
+- embed-english-v3.0
+- rerank-english-v2.0
+- embed-multilingual-light-v3.0-image
+- embed-multilingual-v3.0-image
+- c4ai-aya-expanse-32b
+- command
+Using cached API key for moonshot
+
+Available models for moonshot:
+- moonshot-v1-128k
+- moonshot-v1-128k-vision-preview
+- moonshot-v1-32k
+- moonshot-v1-8k
+- moonshot-v1-8k-vision-preview
+- moonshot-v1-32k-vision-preview
+- moonshot-v1-auto
+- kimi-latest
+Using cached API key for groq
+
+Available models for groq:
+- llama-3.2-3b-preview
+- llama-3.2-1b-preview
+- llama-guard-3-8b
+- distil-whisper-large-v3-en
+- gemma2-9b-it
+- deepseek-r1-distill-qwen-32b
+- llama-3.3-70b-versatile
+- mistral-saba-24b
+- meta-llama/llama-4-maverick-17b-128e-instruct
+- qwen-qwq-32b
+- llama-3.2-11b-vision-preview
+- qwen-2.5-coder-32b
+- deepseek-r1-distill-llama-70b
+- meta-llama/llama-4-scout-17b-16e-instruct
+- allam-2-7b
+- playai-tts-arabic
+- playai-tts
+- llama3-70b-8192
+- whisper-large-v3
+- llama-3.1-8b-instant
+- llama-3.3-70b-specdec
+- qwen-2.5-32b
+- llama3-8b-8192
+- llama-3.2-90b-vision-preview
+- whisper-large-v3-turbo
+
+Error listing models for ai21: Providers must implement list_models
+Using cached API key for gemini
+
+Available models for gemini:
+- models/gemini-1.0-pro-vision-latest
+- models/gemini-pro-vision
+- models/gemini-1.5-pro-latest
+- models/gemini-1.5-pro-001
+- models/gemini-1.5-pro-002
+- models/gemini-1.5-pro
+- models/gemini-1.5-flash-latest
+- models/gemini-1.5-flash-001
+- models/gemini-1.5-flash-001-tuning
+- models/gemini-1.5-flash
+- models/gemini-1.5-flash-002
+- models/gemini-1.5-flash-8b
+- models/gemini-1.5-flash-8b-001
+- models/gemini-1.5-flash-8b-latest
+- models/gemini-1.5-flash-8b-exp-0827
+- models/gemini-1.5-flash-8b-exp-0924
+- models/gemini-2.5-pro-exp-03-25
+- models/gemini-2.5-pro-preview-03-25
+- models/gemini-2.0-flash-exp
+- models/gemini-2.0-flash
+- models/gemini-2.0-flash-001
+- models/gemini-2.0-flash-exp-image-generation
+- models/gemini-2.0-flash-lite-001
+- models/gemini-2.0-flash-lite
+- models/gemini-2.0-flash-lite-preview-02-05
+- models/gemini-2.0-flash-lite-preview
+- models/gemini-2.0-pro-exp
+- models/gemini-2.0-pro-exp-02-05
+- models/gemini-exp-1206
+- models/gemini-2.0-flash-thinking-exp-01-21
+- models/gemini-2.0-flash-thinking-exp
+- models/gemini-2.0-flash-thinking-exp-1219
+- models/learnlm-1.5-pro-experimental
+- models/gemma-3-1b-it
+- models/gemma-3-4b-it
+- models/gemma-3-12b-it
+- models/gemma-3-27b-it
