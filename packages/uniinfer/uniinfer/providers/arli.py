@@ -181,6 +181,8 @@ class ArliAIProvider(ChatProvider):
         # Add max_tokens if provided
         if request.max_tokens is not None:
             payload["max_tokens"] = request.max_tokens
+        else:
+            payload["max_tokens"] = 1024
 
         # ArliAI default parameters
         if "repetition_penalty" not in provider_specific_kwargs:
