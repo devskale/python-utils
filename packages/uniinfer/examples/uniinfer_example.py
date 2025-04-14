@@ -88,7 +88,17 @@ def main():
         "Random Forests",
         "Gradient Boosting",
         "Unüberwachtes Lernen",
-        "Bestärkendes Lernen"
+        "Bestärkendes Lernen",
+        "Natural Language Processing (NLP)",
+        "Computer Vision",
+        "Generative Adversarial Networks (GANs)",
+        "Transfer Learning",
+        "Anomalie-Erkennung",
+        "Zeitreihenanalyse",
+        "Empfehlungssysteme",
+        "Clustering-Algorithmen",
+        "Deep Reinforcement Learning",
+        "Federated Learning"
     ]
 
     prompt = args.query if args.query else f"Erkläre mir bitte {random.choice(ml_topics)} in einfachen Worten und auf deutsch."
