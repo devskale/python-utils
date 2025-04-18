@@ -81,6 +81,18 @@ pip install credgoo  # For seamless API key management
 
 ### Basic Usage with Automatic Key Management
 
+```python
+# ... existing quick start example ...
+```
+
+### Example Wrapper (`uniioai.py`)
+
+For a practical example of using UniInfer to wrap a specific provider like OpenAI, see the `uniioai.py` script located in the parent `python-utils` directory. It demonstrates how to set up a streaming request easily.
+
+### Example API Server (`uniioai_api.py`)
+
+An example FastAPI server (`uniioai_api.py`) is also available in the parent `python-utils` directory. It provides an OpenAI-compatible `/v1/chat/completions` endpoint that uses `uniioai.py` internally. You can run it using `python uniioai_api.py` (requires `fastapi` and `uvicorn`).
+
 ## Advanced Usage
 
 ### Model Discovery
