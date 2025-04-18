@@ -249,11 +249,12 @@ if __name__ == "__main__":
     print("Starting UniIOAI API server...")
     # Ensure the path adjustment happens before this point if running directly
     # The sys.path modification at the top should handle this.
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Set workers to 1 for low-memory environments
+    uvicorn.run(app, host="0.0.0.0", port=8123, workers=1)
 
     # Example curl commands:
     # Non-streaming:
-    # curl -X POST http://localhost:8000/v1/chat/completions -H "Content-Type: application/json" -d '{"model": "groq@llama3-8b-8192", "messages": [{"role": "user", "content": "Say hello!"}], "stream": false}'
+    # curl -X POST http://localhost:8123/v1/chat/completions -H "Content-Type: application/json" -d '{"model": "groq@llama3-8b-8192", "messages": [{"role": "user", "content": "Say hello!"}], "stream": false}'
 
     # Streaming:
-    # curl -N -X POST http://localhost:8000/v1/chat/completions -H "Content-Type: application/json" -d '{"model": "groq@llama3-8b-8192", "messages": [{"role": "user", "content": "Tell me a short story about a robot learning to paint."}], "stream": true}'
+    # curl -N -X POST http://localhost:8123/v1/chat/completions -H "Content-Type: application/json" -d '{"model": "groq@llama3-8b-8192", "messages": [{"role": "user", "content": "Tell me a short story about a robot learning to paint."}], "stream": true}'
