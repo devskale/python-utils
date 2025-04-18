@@ -2,11 +2,11 @@ from setuptools import setup, find_packages
 
 setup(
     name="uniinfer",
-    version="0.1.2",
+    version="0.1.3",
     description="Unified Inference API for LLM chat completions",
-    author="Your Name",
+    author="Han Woo",
     author_email="dev@skale.dev",
-    packages=find_packages(),
+    packages=find_packages(where='.', include=['uniinfer*']),
     install_requires=[
         "requests>=2.25.0",
     ],
@@ -20,4 +20,9 @@ setup(
         "Programming Language :: Python :: 3.10",
     ],
     python_requires=">=3.7",
+    entry_points={
+        'console_scripts': [
+            'uniinfer=uniinfer.cli:main'
+        ],
+    },
 )
