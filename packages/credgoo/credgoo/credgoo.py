@@ -73,7 +73,7 @@ def decrypt_local_key(encrypted_api_key, encryption_key):
 def get_api_key_from_google(service, bearer_token, encryption_key, api_url=None):
     """Retrieve and decrypt an API key for the specified service from Google Sheets."""
     # Use provided URL or fall back to default
-    url = api_url  # or "https://script.google.com/macros/s/AKfycbxMGfhXS9GNFyoMtwXNryXykxZ0sWXgPv_R4MTyiXOQNexfRzzly64c5IDjLAm8rGczww/exec"
+    url = api_url
 
     print(f"Fetching key for service: {service} from Google Sheets")
     print(f"Using URL: {url}")
