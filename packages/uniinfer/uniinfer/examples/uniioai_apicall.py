@@ -4,8 +4,8 @@ from openai import OpenAI
 provider = 'arli'
 model = 'Mistral-Nemo-12B-Instruct-2407'
 
-provider = 'groq'
-model = 'qwen-qwq-32b'
+# provider = 'groq'
+# model = 'qwen-qwq-32b'
 
 baseurl = 'http://localhost:8000/v1'
 
@@ -18,8 +18,9 @@ client = OpenAI(
 )
 
 # Get user input dynamically
-# user_message = input("Please enter your message: ")
-user_message = "what temperature has the sun"
+user_message = input("Please enter your message: ").strip()
+if not user_message:
+    user_message = "what temperature has the sun?"
 print('\n\n--')
 
 
