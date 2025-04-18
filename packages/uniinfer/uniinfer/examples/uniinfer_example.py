@@ -1,4 +1,5 @@
 # Import uniinfer components
+from uniinfer.examples.providers_config import PROVIDER_CONFIGS
 from uniinfer import (
     ChatMessage,
     ChatCompletionRequest,
@@ -9,8 +10,17 @@ from credgoo import get_api_key
 import argparse
 import random
 # Cloudflare API Details
+from dotenv import load_dotenv
+import os
+# load_dotenv(verbose=True, override=True)
+# Load environment variables from .env file
+dotenv_path = os.path.join(os.getcwd(), '.env')  # Explicitly check current dir
+# Add verbose=True and override=True
+found_dotenv = load_dotenv(dotenv_path=dotenv_path,
+                           verbose=True, override=True)
 
-from uniinfer.examples.providers_config import PROVIDER_CONFIGS
+# print(f"DEBUG: Attempted to load .env from: {dotenv_path}")  # Debug print
+# print(f"DEBUG: .env file found and loaded: {found_dotenv}")  # Debug print
 
 
 def main():
@@ -30,6 +40,10 @@ def main():
                         help='Specify a file to use as context')
     parser.add_argument('-t', '--tokens', type=int, default=4000,
                         help='Specify token limit for file context (default: 4000)')
+    parser.add_argument('--encryption-key', type=str,
+                        help='Specify the CREDGOO encryption key')
+    parser.add_argument('--bearer-token', type=str,
+                        help='Specify the CREDGOO bearer token')
     args = parser.parse_args()
 
     if args.list_providers and args.list_models:
@@ -69,11 +83,22 @@ def main():
             return
 
     provider = args.provider
+    # Retrieve credentials: prioritize CLI args, then environment variables
+    encryption_key = args.encryption_key or os.getenv('CREDGOO_ENCRYPTION_KEY')
+    bearer_token = args.bearer_token or os.getenv('CREDGOO_BEARER_TOKEN')
+
+    if not encryption_key or not bearer_token:
+        print("Error: CREDGOO_ENCRYPTION_KEY or CREDGOO_BEARER_TOKEN not found.")
+        print("Please provide them either via command-line arguments (--encryption-key, --bearer-token) or environment variables.")
+        return
 
     # Initialize the provider factory
     uni = ProviderFactory().get_provider(
         name=provider,
-        api_key=get_api_key(provider),
+        api_key=get_api_key(
+            service=provider,
+            encryption_key=encryption_key,
+            bearer_token=bearer_token,),
         **({} if provider not in ['cloudflare', 'ollama'] else PROVIDER_CONFIGS[provider].get('extra_params', {}))
     )
 
