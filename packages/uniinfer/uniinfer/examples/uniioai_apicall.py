@@ -4,13 +4,15 @@ from openai import OpenAI
 provider = 'arli'
 model = 'Mistral-Nemo-12B-Instruct-2407'
 
-# provider = 'groq'
-# model = 'qwen-qwq-32b'
+provider = 'groq'
+model = 'qwen-qwq-32b'
+
+provider = 'ollama'
+model = 'gemma3:4b'
 
 baseurl = 'http://localhost:8000/v1'
 
-
-api_key = get_api_key(provider)
+api_key = "test23@test34"
 
 client = OpenAI(
     base_url=baseurl,
@@ -18,11 +20,12 @@ client = OpenAI(
 )
 
 # Get user input dynamically
-user_message = input("Please enter your message: ").strip()
+user_message = input("Please enter your message (ENTER for default): ").strip()
 if not user_message:
-    user_message = "what temperature has the sun?"
+    user_message = "Berlin, Sao Paulo or Mumbai. choose only one. explain your decision briefly in the style: CITY: Because: EXPLANATIONSENTENCE"
 print('\n\n--')
-
+print(f"{provider}@{model}")
+print(f"User message: {user_message}")
 
 completion = client.chat.completions.create(
     model=f"{provider}@{model}",  # Specify the model here

@@ -186,19 +186,24 @@ async def chat_completions(request_input: ChatCompletionRequestInput, token: str
     OpenAI-compatible chat completions endpoint.
     Uses the 'model' field in the format 'provider@modelname'.
     Requires Bearer token authentication (used for key retrieval).
-    Optionally accepts a 'base_url'.
+    Optionally accepts a 'base_url'. If provider is 'ollama' and no base_url is provided,
+    it defaults to 'https://amp1.mooo.com:11444'.
     """
     api_bearer_token = token.credentials  # This is the token from the header
-    base_url = request_input.base_url
+    base_url = request_input.base_url  # Get base_url from request first
     provider_model = request_input.model
     messages_dict = [msg.model_dump() for msg in request_input.messages]
 
     try:
-        # --- API Key Retrieval ---
+        # --- API Key Retrieval & Base URL Logic ---
         if '@' not in provider_model:
             raise HTTPException(
                 status_code=400, detail="Invalid model format. Expected 'provider@modelname'.")
         provider_name = provider_model.split('@', 1)[0]
+
+        # Set default base_url for ollama if not provided
+        if provider_name == "ollama" and base_url is None:
+            base_url = "https://amp1.mooo.com:11444"
 
         try:
             # Call the helper function from uniioai.py
@@ -208,7 +213,7 @@ async def chat_completions(request_input: ChatCompletionRequestInput, token: str
             # Handle errors during key retrieval specifically
             raise HTTPException(
                 status_code=401, detail=f"API Key Retrieval Failed: {e}")
-        # --- End API Key Retrieval ---
+        # --- End API Key Retrieval & Base URL Logic ---
 
         if request_input.stream:
             # Use the async generator with StreamingResponse
@@ -219,7 +224,7 @@ async def chat_completions(request_input: ChatCompletionRequestInput, token: str
                     temp=request_input.temperature,
                     max_tok=request_input.max_tokens,
                     provider_api_key=provider_api_key,  # Pass retrieved key
-                    base_url=base_url
+                    base_url=base_url  # Pass potentially modified base_url
                 ),
                 media_type="text/event-stream"
             )
@@ -232,7 +237,7 @@ async def chat_completions(request_input: ChatCompletionRequestInput, token: str
                 temperature=request_input.temperature,
                 max_tokens=request_input.max_tokens,
                 provider_api_key=provider_api_key,  # Pass retrieved key
-                base_url=base_url
+                base_url=base_url  # Pass potentially modified base_url
             )
 
             # Format the response according to OpenAI spec
