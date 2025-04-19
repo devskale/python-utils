@@ -12,7 +12,7 @@ import sys  # Import sys for exiting
 # model = 'phi4-mini:latest'
 
 # the baseurl where uniinfer oai proxy server is running
-baseurl = 'http://localhost:8000/v1'
+baseurl = 'http://localhost:8123/v1'
 
 # IMPORTANT
 # the key is required for underlying uniinfer package to retrieve provider specific apikeys

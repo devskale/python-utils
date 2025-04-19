@@ -7,7 +7,9 @@ from typing import List, Optional, Dict, Any, AsyncGenerator
 import inspect  # Import inspect for debugging
 
 from fastapi import FastAPI, HTTPException, Request, Depends  # Add Depends
-from fastapi.responses import StreamingResponse
+# Add FileResponse and CORSMiddleware imports
+from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 # Import run_in_threadpool
 from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
@@ -36,6 +38,16 @@ app = FastAPI(
     title="UniIOAI API",
     description="OpenAI-compatible API wrapper using UniInfer",
     version="0.1.0",
+)
+
+# --- Add CORS Middleware ---
+# Allow requests from any origin for the web demo
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
 )
 
 # Define the security scheme
@@ -285,6 +297,19 @@ async def stream_response_generator(messages: List[Dict], provider_model: str, t
 
 # --- API Endpoints ---
 
+# --- Add Endpoint to Serve Web Demo HTML ---
+@app.get("/webdemo", include_in_schema=False)
+async def get_web_demo():
+    """Serves the web demo HTML file."""
+    # Calculate the path relative to this script file
+    html_file_path = os.path.join(
+        script_dir, "examples", "webdemo", "webdemo.html")
+    if not os.path.exists(html_file_path):
+        raise HTTPException(status_code=404, detail="webdemo.html not found")
+    return FileResponse(html_file_path)
+# --- End Web Demo Endpoint ---
+
+
 @app.get("/v1/models", response_model=ModelList)
 async def list_models():
     """
@@ -396,7 +421,7 @@ async def chat_completions(request_input: ChatCompletionRequestInput, token: str
 
 @app.get("/")
 async def root():
-    return {"message": "UniIOAI API is running. Use POST /v1/chat/completions or GET /v1/models"}
+    return {"message": "UniIOAI API is running. Visit /webdemo for the interactive demo, or use POST /v1/chat/completions or GET /v1/models"}
 
 
 # --- Run the API (for local development) ---

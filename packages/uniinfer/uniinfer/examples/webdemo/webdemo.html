@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UniInfer Web Demo</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      #chat-container {
+        border: 1px solid #ccc;
+        padding: 10px;
+        height: 400px;
+        overflow-y: auto;
+        margin-bottom: 10px;
+      }
+      #message-input {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+      }
+      button {
+        padding: 8px 15px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      .message {
+        margin-bottom: 10px;
+        padding: 8px;
+        border-radius: 5px;
+      }
+      .user-message {
+        background-color: #e6f7ff;
+        text-align: right;
+      }
+      .assistant-message {
+        background-color: #f0f0f0;
+      }
+      /* Add styles for system and error messages */
+      .system-message {
+        background-color: #f8f9fa; /* Light grey */
+        color: #6c757d; /* Muted text color */
+        font-style: italic;
+        text-align: center;
+      }
+      .error-message {
+        background-color: #f8d7da; /* Light red */
+        color: #721c24; /* Dark red text */
+        border: 1px solid #f5c6cb; /* Red border */
+      }
+      /* Style for the stop button */
+      #stop-button {
+        background-color: #f44336; /* Red */
+        display: none; /* Hidden by default */
+      }
+      #stop-button:hover {
+        background-color: #da190b;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>UniInfer Web Demo</h1>
+
+    <div>
+      <label for="model-select">Select Model:</label>
+      <select id="model-select">
+        <option value="">Loading models...</option>
+      </select>
+    </div>
+
+    <div id="chat-container"></div>
+
+    <div>
+      <input
+        type="text"
+        id="message-input"
+        placeholder="Type your message here..." />
+      <button id="send-button">Send</button>
+      <button id="stop-button">Stop</button>
+      <!-- Added Stop button -->
+      <button id="predefined-button">Predefined Messages</button>
+    </div>
+
+    <div id="predefined-messages" style="display: none">
+      <h3>Predefined Messages:</h3>
+      <button class="predefined-message">Tell me a joke</button>
+      <button class="predefined-message">Explain quantum computing</button>
+      <button class="predefined-message">Write a short poem</button>
+      <button class="predefined-message">Close</button>
+    </div>
+
+    <script>
+      const apiBaseUrl = "http://localhost:8123/v1";
+      const apiKey = "test23@test34";
+
+      // DOM elements
+      const modelSelect = document.getElementById("model-select");
+      const chatContainer = document.getElementById("chat-container");
+      const messageInput = document.getElementById("message-input");
+      const sendButton = document.getElementById("send-button");
+      const stopButton = document.getElementById("stop-button"); // Get stop button
+      const predefinedButton = document.getElementById("predefined-button");
+      const predefinedMessages = document.getElementById("predefined-messages");
+
+      let currentAbortController = null; // To hold the AbortController for the current request
+
+      // Load available models
+      async function loadModels() {
+        try {
+          const response = await fetch(`${apiBaseUrl}/models`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            mode: "cors",
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to load models");
+          }
+
+          const data = await response.json();
+
+          // Clear loading message
+          modelSelect.innerHTML = "";
+
+          // Add models to select
+          data.data.forEach((model) => {
+            const option = document.createElement("option");
+            option.value = model.id;
+            option.textContent = model.id;
+            modelSelect.appendChild(option);
+          });
+
+          // Set default model
+          if (data.data.length > 0) {
+            modelSelect.value = "groq@llama3-8b-8192";
+          }
+        } catch (error) {
+          console.error("Error loading models:", error);
+          addMessage(
+            "Error loading models. Please check console for details.",
+            "error"
+          );
+        }
+      }
+
+      // Add message to chat
+      function addMessage(content, role = "user") {
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message ${role}-message`;
+        messageDiv.textContent = content;
+        chatContainer.appendChild(messageDiv);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+        return messageDiv; // Return the created element
+      }
+
+      // Send message to API
+      async function sendMessage(message) {
+        const selectedModel = modelSelect.value;
+
+        if (!selectedModel) {
+          addMessage("Please select a model first", "error");
+          return;
+        }
+
+        addMessage(message, "user");
+        messageInput.disabled = true; // Disable input during streaming
+        sendButton.style.display = "none"; // Hide send button
+        stopButton.style.display = "inline-block"; // Show stop button
+        predefinedButton.disabled = true; // Disable predefined button
+
+        // Create a placeholder for the assistant's response
+        let assistantMessageDiv = addMessage("...", "assistant");
+
+        // Create a new AbortController for this request
+        currentAbortController = new AbortController();
+        const signal = currentAbortController.signal;
+
+        try {
+          const response = await fetch(`${apiBaseUrl}/chat/completions`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+            },
+            mode: "cors",
+            body: JSON.stringify({
+              model: selectedModel,
+              messages: [
+                {
+                  role: "user",
+                  content: message,
+                },
+              ],
+              stream: true,
+            }),
+            signal: signal, // Pass the signal to fetch
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let firstChunk = true;
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            // Check if aborted before processing chunk
+            if (signal.aborted) {
+              console.log("Stream reading aborted by user.");
+              addMessage("Generation stopped by user.", "system");
+              break; // Exit the loop
+            }
+
+            const chunk = decoder.decode(value);
+            const lines = chunk
+              .split("\n")
+              .filter((line) => line.trim() !== "");
+
+            for (const line of lines) {
+              if (line === "data: [DONE]") continue;
+
+              try {
+                // Check if the line contains an error structure (simple check)
+                if (line.includes('"error":')) {
+                  console.warn("Received error chunk:", line);
+                  // Attempt to parse and display the error message
+                  try {
+                    const errorData = JSON.parse(line.replace("data: ", ""));
+                    if (errorData.error && errorData.error.message) {
+                      addMessage(
+                        `Stream Error: ${errorData.error.message}`,
+                        "error"
+                      );
+                    } else {
+                      addMessage(
+                        "Received an unknown error structure in stream.",
+                        "error"
+                      );
+                    }
+                  } catch (parseError) {
+                    console.error("Could not parse error chunk:", parseError);
+                    addMessage("Received an unparsable error chunk.", "error");
+                  }
+                  continue; // Skip further processing for this line
+                }
+
+                const data = JSON.parse(line.replace("data: ", ""));
+
+                if (
+                  data.choices &&
+                  data.choices[0].delta &&
+                  data.choices[0].delta.content // Check if content exists and is not null/empty
+                ) {
+                  const contentChunk = data.choices[0].delta.content;
+
+                  // Update the single assistant message div
+                  if (firstChunk) {
+                    assistantMessageDiv.textContent = contentChunk; // Replace "..." on first chunk
+                    firstChunk = false;
+                  } else {
+                    assistantMessageDiv.textContent += contentChunk; // Append subsequent chunks
+                  }
+                  // Scroll to bottom
+                  chatContainer.scrollTop = chatContainer.scrollHeight;
+                } else if (
+                  data.choices &&
+                  data.choices[0].delta &&
+                  !data.choices[0].delta.content
+                ) {
+                  // Handle potential empty content chunks if necessary (e.g., log or ignore)
+                  // console.log("Received chunk with empty content delta.");
+                }
+              } catch (e) {
+                console.error("Error parsing chunk:", e, "Line:", line);
+                // Display a generic error for parsing failures during the stream
+                addMessage(
+                  `Error processing stream chunk. See console.`,
+                  "error"
+                );
+              }
+            }
+          }
+          // Final scroll after loop finishes
+          chatContainer.scrollTop = chatContainer.scrollHeight;
+        } catch (error) {
+          if (error.name === "AbortError") {
+            console.log("Fetch aborted.");
+            // Message already added in the read loop or no message needed
+            // Ensure the placeholder is handled if aborted very early
+            if (
+              assistantMessageDiv &&
+              assistantMessageDiv.textContent === "..."
+            ) {
+              assistantMessageDiv.textContent = "[Stopped]"; // Or remove it: assistantMessageDiv.remove();
+            }
+          } else {
+            console.error("Error sending message:", error);
+            // Remove the placeholder and add an error message
+            if (
+              assistantMessageDiv &&
+              assistantMessageDiv.textContent === "..."
+            ) {
+              assistantMessageDiv.remove(); // Remove only if it's still the placeholder
+            }
+            addMessage(
+              `Connection Error: ${error.message}. Check console for details.`,
+              "error"
+            );
+          }
+        } finally {
+          messageInput.disabled = false; // Re-enable input
+          sendButton.style.display = "inline-block"; // Show send button
+          stopButton.style.display = "none"; // Hide stop button
+          predefinedButton.disabled = false; // Re-enable predefined button
+          currentAbortController = null; // Clear the controller
+        }
+      }
+
+      // Event listeners
+      sendButton.addEventListener("click", () => {
+        const message = messageInput.value.trim();
+        if (message) {
+          sendMessage(message);
+          messageInput.value = "";
+        }
+      });
+
+      messageInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          const message = messageInput.value.trim();
+          if (message) {
+            sendMessage(message);
+            messageInput.value = "";
+          }
+        }
+      });
+
+      // Add event listener for the stop button
+      stopButton.addEventListener("click", () => {
+        if (currentAbortController) {
+          currentAbortController.abort(); // Abort the fetch request
+          console.log("Stop button clicked, aborting request.");
+        }
+      });
+
+      predefinedButton.addEventListener("click", () => {
+        predefinedMessages.style.display =
+          predefinedMessages.style.display === "none" ? "block" : "none";
+      });
+
+      document.querySelectorAll(".predefined-message").forEach((button) => {
+        button.addEventListener("click", (e) => {
+          if (e.target.textContent === "Close") {
+            predefinedMessages.style.display = "none";
+          } else {
+            sendMessage(e.target.textContent);
+            predefinedMessages.style.display = "none";
+          }
+        });
+      });
+
+      // Initialize
+      loadModels();
+      addMessage(
+        "Welcome to UniInfer Web Demo! Select a model and start chatting.",
+        "system"
+      );
+    </script>
+  </body>
+</html>
