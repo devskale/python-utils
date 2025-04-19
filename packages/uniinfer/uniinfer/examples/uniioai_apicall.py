@@ -24,6 +24,20 @@ client = OpenAI(
     api_key=api_key,
 )
 
+# --- Example: List Models ---
+print("--- Available Models ---")
+try:
+    models = client.models.list()
+    for model in models.data:
+        print(f"- {model.id}")
+except Exception as e:
+    print(f"Error listing models: {e}")
+print("------------------------\n")
+# --- End Example ---
+
+provider = 'groq'
+model = 'llama3-8b-8192'
+
 # Get user input dynamically
 user_message = input("Please enter your message (ENTER for default): ").strip()
 if not user_message:
@@ -37,7 +51,7 @@ completion = client.chat.completions.create(
     messages=[{"role": "user",
                "content": user_message}],
     stream=True,  # Enable streaming
-    max_tokens=1024,
+    max_tokens=2048,
 )
 
 
