@@ -127,12 +127,22 @@ class CohereProvider(ChatProvider):
             raise Exception(f"Cohere API error: {str(e)}")
 
     @classmethod
-    def list_models(cls) -> list:
+    def list_models(cls, api_key: Optional[str] = None) -> list:
         """
         List available models from Cohere.
 
+        Args:
+            api_key (Optional[str]): The Cohere API key. If not provided,
+                                     it attempts to retrieve it from the environment
+                                     or credgoo.
+
         Returns:
             list: A list of available model names.
+
+        Raises:
+            ImportError: If the cohere package is not installed.
+            ValueError: If no API key is provided or found.
+            Exception: If the API request fails.
         """
         if not HAS_COHERE:
             raise ImportError(
@@ -140,16 +150,25 @@ class CohereProvider(ChatProvider):
                 "Install it with: pip install cohere"
             )
 
-        try:
-            # Get API key from same source as __init__ method
+        # Determine the API key to use
+        if not api_key:
             api_key = os.getenv("COHERE_API_KEY")
             if not api_key:
-                from credgoo.credgoo import get_api_key
-                api_key = get_api_key("cohere")
-                if not api_key:
+                try:
+                    from credgoo.credgoo import get_api_key
+                    api_key = get_api_key("cohere")
+                except ImportError:
                     raise ValueError(
-                        "API key is required to list Cohere models")
+                        "credgoo not installed. Please provide an API key, set COHERE_API_KEY, or install credgoo.")
+                except Exception as e:
+                    raise ValueError(
+                        f"Failed to get Cohere API key from credgoo: {e}")
 
+        if not api_key:
+            raise ValueError(
+                "Cohere API key is required. Provide it directly, set COHERE_API_KEY, or configure credgoo.")
+
+        try:
             client = cohere.ClientV2(api_key=api_key)
             response = client.models.list()
 

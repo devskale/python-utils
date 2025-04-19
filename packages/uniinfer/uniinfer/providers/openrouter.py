@@ -29,20 +29,36 @@ class OpenRouterProvider(ChatProvider):
         self.base_url = "https://openrouter.ai/api/v1"
 
     @classmethod
-    def list_models(cls) -> list:
+    def list_models(cls, api_key: Optional[str] = None) -> list:
         """
         List available models from OpenRouter.
+
+        Args:
+            api_key (Optional[str]): The OpenRouter API key. If not provided,
+                                     it attempts to retrieve it using credgoo.
 
         Returns:
             list: A list of available free model IDs.
 
         Raises:
-            Exception: If the request fails.
+            ValueError: If no API key is provided or found.
+            Exception: If the API request fails.
         """
-        from credgoo.credgoo import get_api_key
-        api_key = get_api_key('openrouter') or self.api_key
-        if api_key is None:
-            raise ValueError("OpenRouter API key is required")
+        # Determine the API key to use
+        if not api_key:
+            try:
+                from credgoo.credgoo import get_api_key
+                api_key = get_api_key('openrouter')
+            except ImportError:
+                raise ValueError(
+                    "credgoo not installed. Please provide an API key or install credgoo.")
+            except Exception as e:
+                raise ValueError(
+                    f"Failed to get OpenRouter API key from credgoo: {e}")
+
+        if not api_key:
+            raise ValueError(
+                "OpenRouter API key is required. Provide it directly or configure credgoo.")
 
         endpoint = "https://openrouter.ai/api/v1/models"
 

@@ -24,19 +24,36 @@ class MistralProvider(ChatProvider):
         self.base_url = "https://api.mistral.ai/v1"
 
     @classmethod
-    def list_models(cls) -> list:
+    def list_models(cls, api_key: Optional[str] = None) -> list:
         """
         List available models from Mistral AI.
 
+        Args:
+            api_key (Optional[str]): The Mistral API key. If not provided,
+                                     it attempts to retrieve it using credgoo.
+
         Returns:
             list: A list of available model names.
-        """
-        from credgoo.credgoo import get_api_key
 
-        # Get API key from credgoo
-        api_key = get_api_key("mistral")
+        Raises:
+            ValueError: If no API key is provided or found.
+            Exception: If the API request fails.
+        """
         if not api_key:
-            raise ValueError("Failed to get Mistral API key from credgoo")
+            try:
+                from credgoo.credgoo import get_api_key
+                # Get API key from credgoo
+                api_key = get_api_key("mistral")
+            except ImportError:
+                raise ValueError(
+                    "credgoo not installed. Please provide an API key or install credgoo.")
+            except Exception as e:
+                raise ValueError(
+                    f"Failed to get Mistral API key from credgoo: {e}")
+
+        if not api_key:
+            raise ValueError(
+                "Mistral API key is required. Provide it directly or configure credgoo.")
 
         endpoint = "https://api.mistral.ai/v1/models"
         headers = {

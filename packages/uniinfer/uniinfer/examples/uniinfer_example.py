@@ -56,13 +56,23 @@ def main():
         print("Error: CREDGOO_ENCRYPTION_KEY or CREDGOO_BEARER_TOKEN not found.")
         print("Please provide them either via command-line arguments (--encryption-key, --bearer-token) or environment variables.")
         return
+    provider = args.provider
+    retrieved_api_key = get_api_key(
+        service=provider,
+        encryption_key=credgoo_encryption_token,
+        bearer_token=credgoo_api_token,)
 
     if args.list_providers and args.list_models:
         providers = ProviderFactory.list_providers()
         for provider in providers:
             try:
                 provider_class = ProviderFactory.get_provider_class(provider)
+                retrieved_api_key = get_api_key(
+                    service=provider,
+                    encryption_key=credgoo_encryption_token,
+                    bearer_token=credgoo_api_token,)
                 models = provider_class.list_models(
+                    api_key=retrieved_api_key,
                     **({} if provider not in ['cloudflare', 'ollama'] else PROVIDER_CONFIGS[provider].get('extra_params', {}))
                 )
                 print(f"\nAvailable models for {provider}:")
@@ -83,6 +93,7 @@ def main():
         try:
             provider_class = ProviderFactory.get_provider_class(args.provider)
             models = provider_class.list_models(
+                api_key=retrieved_api_key,
                 **({} if args.provider not in ['cloudflare', 'ollama'] else PROVIDER_CONFIGS[args.provider].get('extra_params', {}))
             )
             print(f"Available models for {args.provider}:")
@@ -93,16 +104,11 @@ def main():
             print(f"Error listing models for {args.provider}: {str(e)}")
             return
 
-    provider = args.provider
-
     # Initialize the provider factory
     # for that i need credgoo api token and credgoo encryption key
     uni = ProviderFactory().get_provider(
         name=provider,
-        api_key=get_api_key(
-            service=provider,
-            encryption_key=credgoo_encryption_token,
-            bearer_token=credgoo_api_token,),
+        api_key=retrieved_api_key,
         **({} if provider not in ['cloudflare', 'ollama'] else PROVIDER_CONFIGS[provider].get('extra_params', {}))
     )
 
