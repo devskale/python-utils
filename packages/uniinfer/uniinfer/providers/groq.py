@@ -122,21 +122,35 @@ class GroqProvider(ChatProvider):
             raise Exception(f"Groq API error: {str(e)}")
 
     @classmethod
-    def list_models(cls) -> List[str]:
+    def list_models(cls, api_key: Optional[str] = None) -> List[str]:
         """
         List available models from Groq.
 
+        Args:
+            api_key (Optional[str]): The Groq API key. If not provided,
+                it will try GROQ_API_KEY environment variable or credgoo.
+
         Returns:
             List[str]: A list of available model names.
+
+        Raises:
+            ValueError: If no API key can be found.
+            Exception: If the API request fails.
         """
         try:
-            # Get API key from environment or credgoo
-            api_key = os.getenv("GROQ_API_KEY")
+            # Prioritize the provided api_key parameter
             if not api_key:
-                from credgoo.credgoo import get_api_key
-                api_key = get_api_key("groq")
-                if not api_key:
-                    raise ValueError("API key is required to list Groq models")
+                api_key = os.getenv("GROQ_API_KEY")
+            if not api_key:
+                try:
+                    from credgoo.credgoo import get_api_key
+                    api_key = get_api_key("groq")
+                except ImportError:
+                    api_key = None  # credgoo not available
+
+            if not api_key:
+                raise ValueError(
+                    "API key is required to list Groq models. Provide it as an argument, set GROQ_API_KEY, or configure credgoo.")
 
             # Initialize client and fetch models
             client = Groq(api_key=api_key)

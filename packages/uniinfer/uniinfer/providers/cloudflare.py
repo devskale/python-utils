@@ -148,6 +148,9 @@ class CloudflareProvider(ChatProvider):
 
                 # Sort models alphabetically by name
                 model_list.sort()
+                # Filter out models containing the word "USD"
+                model_list = [
+                    model for model in model_list if "USD" not in model]
 
             return model_list
         except Exception as e:

@@ -6,6 +6,8 @@ A Python package for securely retrieving API keys from Google Sheets with local 
 
 Credgoo provides a secure way to manage API keys by retrieving them from Google Sheets and implementing local caching for better performance. This approach allows teams to centrally manage API credentials while providing secure access to individual developers.
 
+Credgoo combines the convenience of centralized credential management with the security of local storage and encryption.
+
 ## Features
 
 - **Secure Key Retrieval**: Fetch encrypted API keys from Google Sheets
@@ -13,11 +15,13 @@ Credgoo provides a secure way to manage API keys by retrieving them from Google 
 - **Local Caching**: Store retrieved keys locally to reduce API calls
 - **Command-line Interface**: Easy-to-use CLI for key retrieval
 - **Secure Storage**: Cached keys are stored with restrictive permissions (0600)
+- **Centralized Management**: Update keys in one place (your spreadsheet)
+- **Encrypted Transmission**: Keys are encrypted before network transmission
 
 ## Installation
 
 ```bash
-pip install credgoo
+pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/credgoo
 ```
 
 ## Usage
@@ -69,7 +73,7 @@ store_credentials("your_token", "your_key", "optional_url", Path("~/.config/api_
 
 ### Caching Behavior
 
-By default, retrieved keys are cached in `~/.config/api_keys/api_keys.json`. The cache:
+By default, retrieved keys are cached in `~/.config/api_keys/api_keys.json` with restrictive permissions (0600). The cache:
 
 - Is automatically used for subsequent requests
 - Can be bypassed with `--no-cache` flag
