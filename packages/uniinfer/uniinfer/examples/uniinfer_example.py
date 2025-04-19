@@ -46,6 +46,17 @@ def main():
                         help='Specify the CREDGOO bearer token')
     args = parser.parse_args()
 
+    # Retrieve credentials: prioritize CLI args, then environment variables
+    credgoo_encryption_token = args.encryption_key or os.getenv(
+        'CREDGOO_ENCRYPTION_KEY')
+    credgoo_api_token = args.bearer_token or os.getenv('CREDGOO_BEARER_TOKEN')
+    bearer_token = f"{credgoo_api_token}@{credgoo_encryption_token}" if credgoo_api_token and credgoo_encryption_token else None
+
+    if not credgoo_api_token or not credgoo_encryption_token:
+        print("Error: CREDGOO_ENCRYPTION_KEY or CREDGOO_BEARER_TOKEN not found.")
+        print("Please provide them either via command-line arguments (--encryption-key, --bearer-token) or environment variables.")
+        return
+
     if args.list_providers and args.list_models:
         providers = ProviderFactory.list_providers()
         for provider in providers:
@@ -83,22 +94,15 @@ def main():
             return
 
     provider = args.provider
-    # Retrieve credentials: prioritize CLI args, then environment variables
-    encryption_key = args.encryption_key or os.getenv('CREDGOO_ENCRYPTION_KEY')
-    bearer_token = args.bearer_token or os.getenv('CREDGOO_BEARER_TOKEN')
-
-    if not encryption_key or not bearer_token:
-        print("Error: CREDGOO_ENCRYPTION_KEY or CREDGOO_BEARER_TOKEN not found.")
-        print("Please provide them either via command-line arguments (--encryption-key, --bearer-token) or environment variables.")
-        return
 
     # Initialize the provider factory
+    # for that i need credgoo api token and credgoo encryption key
     uni = ProviderFactory().get_provider(
         name=provider,
         api_key=get_api_key(
             service=provider,
-            encryption_key=encryption_key,
-            bearer_token=bearer_token,),
+            encryption_key=credgoo_encryption_token,
+            bearer_token=credgoo_api_token,),
         **({} if provider not in ['cloudflare', 'ollama'] else PROVIDER_CONFIGS[provider].get('extra_params', {}))
     )
 

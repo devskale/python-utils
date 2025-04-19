@@ -40,10 +40,7 @@ class ArliAIProvider(ChatProvider):
             Exception: If API request fails
         """
         if not api_key:
-            from credgoo.credgoo import get_api_key
-            api_key = get_api_key("arli")
-            if not api_key:
-                raise ValueError("API key is required to list models")
+            raise ValueError("API key is required to list models")
 
         endpoint = "https://api.arliai.com/v1/models"
         headers = {

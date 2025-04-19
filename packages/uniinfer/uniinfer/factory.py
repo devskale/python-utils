@@ -1,15 +1,11 @@
 """
 Provider factory for managing and instantiating chat providers.
 """
+import os  # Added import
 from typing import Dict, Type, Optional, Any
 from .core import ChatProvider
 
 # Try to import credgoo for API key management
-try:
-    from credgoo import get_api_key
-    HAS_CREDGOO = True
-except ImportError:
-    HAS_CREDGOO = False
 
 
 class ProviderFactory:
@@ -35,37 +31,47 @@ class ProviderFactory:
         Get a provider instance.
 
         Args:
-            name (str): The name of the provider.
+            name (str): The name of the provider (e.g., 'openai', 'ollama').
             api_key (Optional[str]): The API key for authentication.
-                If None and credgoo is available, will attempt to get the key from credgoo.
+                If None, will attempt to get the key from the environment
+                variable formatted as PROVIDERNAME_API_KEY (e.g., OPENAI_API_KEY).
             **kwargs: Additional provider-specific arguments (e.g., base_url for Ollama).
 
         Returns:
             ChatProvider: The provider instance.
 
         Raises:
-            ValueError: If the provider is not registered.
+            ValueError: If the provider is not registered or initialization fails.
         """
-        if name not in ProviderFactory._providers:
+        provider_name_lower = name.lower()  # Ensure consistent casing for lookup
+        if provider_name_lower not in ProviderFactory._providers:
             raise ValueError(f"Provider '{name}' not registered")
 
-        # If API key not provided, try to get it from credgoo or environment
-        if api_key is None and name != "ollama":  # Ollama doesn't need an API key
-            if HAS_CREDGOO:
-                try:
-                    api_key = get_api_key(name)
-                except Exception:
-                    pass  # Fall through to env var check
+        # If API key not provided, try to get it from environment
+        # Ollama typically doesn't require an API key in the standard sense
+        if api_key is None and provider_name_lower != "ollama":
+            env_var_name = f"{provider_name_lower.upper()}_API_KEY"
+            api_key = os.getenv(env_var_name)
+            if not api_key:
+                # Optionally print a warning if the key is not found in env either
+                print(
+                    f"Warning: API key for '{name}' not provided and not found in environment variable '{env_var_name}'.")
 
-            if api_key is None:
-                api_key = os.getenv(f"{name.upper()}_API_KEY")
-
-        provider_class = ProviderFactory._providers[name]
+        provider_class = ProviderFactory._providers[provider_name_lower]
         try:
+            # Pass the potentially retrieved api_key and other kwargs
+            # Ensure api_key is only passed if it's expected by the constructor or not None
+            # Most provider classes should accept api_key=None gracefully if not needed
             return provider_class(api_key=api_key, **kwargs)
+        except TypeError as e:
+            # Catch TypeError if api_key is passed unexpectedly or required but None
+            # This might indicate an issue with the specific provider's __init__ signature
+            raise ValueError(
+                f"Failed to initialize provider '{name}' due to argument mismatch: {str(e)}") from e
         except ValueError as e:
-            raise  # Re-raise explicit value errors
+            raise  # Re-raise explicit value errors from provider init
         except Exception as e:
+            # Catch other potential initialization errors
             raise ValueError(
                 f"Failed to initialize provider '{name}': {str(e)}") from e
 

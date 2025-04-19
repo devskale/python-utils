@@ -60,11 +60,7 @@ class OllamaProvider(ChatProvider):
             print(f"Error listing models from Ollama: {str(e)}")
             # Fallback to default models if API call fails
             return [
-                "llama2",
-                "mistral",
-                "codellama",
-                "llava",
-                "gemma"
+                "error listing models",
             ]
 
     def complete(
