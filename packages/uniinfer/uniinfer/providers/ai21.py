@@ -42,6 +42,29 @@ class AI21Provider(ChatProvider):
             api_key=self.api_key or os.environ.get("AI21_API_KEY")
         )
 
+    @staticmethod
+    def list_models(api_key: Optional[str] = None) -> list[str]:
+        """
+        List available AI21 models.
+
+        Args:
+            api_key (Optional[str]): The AI21 API key (currently unused as models are hardcoded).
+
+        Returns:
+            list[str]: A list of model names.
+        """
+        # Note: AI21 client library doesn't provide a direct way to list models via API.
+        # Returning a list of known models. The api_key parameter is included
+        # for consistency but is not used in this implementation.
+        return [
+            "jamba-1.6-mini",
+            "jamba-1.6-large",
+            # Older models (may or may not be available via chat endpoint)
+            # "j2-ultra",
+            # "j2-mid",
+            # "j2-light"
+        ]
+
     def complete(
         self,
         request: ChatCompletionRequest,
@@ -63,15 +86,19 @@ class AI21Provider(ChatProvider):
         # Convert messages to AI21 format
         messages = []
         for msg in request.messages:
+            # Ensure role is one of the allowed values ('user', 'assistant')
+            # AI21 might have specific role requirements, adjust if needed
+            role = msg.role if msg.role in ['user', 'assistant'] else 'user'
             messages.append(
-                AI21ChatMessage(content=msg.content, role=msg.role)
+                AI21ChatMessage(content=msg.content, role=role)
             )
 
         # Prepare parameters
         params = {
-            "model": request.model or "jamba-mini-1.6-2025-03",  # Default model
+            "model": request.model or "jamba-instruct",  # Updated default model
             "messages": messages,
-            "temperature": request.temperature,
+            # Default temp if None
+            "temperature": request.temperature if request.temperature is not None else 0.7,
         }
 
         # Add max_tokens if provided
