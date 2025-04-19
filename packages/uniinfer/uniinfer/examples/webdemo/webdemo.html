@@ -5,97 +5,290 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>UniInfer Web Demo</title>
     <style>
+      :root {
+        --primary-color: #007bff;
+        --secondary-color: #6c757d;
+        --light-bg: #f8f9fa;
+        --dark-text: #343a40;
+        --light-text: #ffffff;
+        --user-message-bg: #e7f5ff;
+        --assistant-message-bg: #f1f3f5;
+        --error-bg: #f8d7da;
+        --error-text: #721c24;
+        --error-border: #f5c6cb;
+        --success-color: #28a745;
+        --danger-color: #dc3545;
+        --border-color: #dee2e6;
+        --input-bg: #fff;
+        --body-bg: #e9ecef; /* Lighter grey background */
+      }
+
       body {
-        font-family: Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+          "Segoe UI Symbol";
         max-width: 800px;
-        margin: 0 auto;
+        margin: 20px auto; /* Add top/bottom margin */
         padding: 20px;
+        background-color: var(--body-bg);
+        color: var(--dark-text);
+        display: flex; /* Use flexbox for layout */
+        flex-direction: column;
+        height: calc(100vh - 40px); /* Full viewport height minus body margin */
+        box-sizing: border-box;
       }
-      #chat-container {
-        border: 1px solid #ccc;
+
+      h1 {
+        text-align: center;
+        color: var(--primary-color);
+        margin-bottom: 20px;
+      }
+
+      #model-select-container {
+        /* Wrapper for select */
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
         padding: 10px;
-        height: 400px;
-        overflow-y: auto;
-        margin-bottom: 10px;
+        background-color: var(--light-bg);
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
       }
-      #message-input {
-        width: 100%;
-        padding: 8px;
-        margin-bottom: 10px;
+
+      #model-select-container label {
+        font-weight: bold;
+        color: var(--secondary-color);
       }
-      button {
-        padding: 8px 15px;
-        background-color: #4caf50;
-        color: white;
-        border: none;
+
+      #model-select {
+        flex-grow: 1;
+        padding: 8px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        background-color: var(--input-bg);
         cursor: pointer;
       }
+
+      #chat-container {
+        border: 1px solid var(--border-color);
+        padding: 15px;
+        height: 100%; /* Take remaining height */
+        overflow-y: auto;
+        margin-bottom: 15px;
+        background-color: var(--input-bg); /* White background for chat */
+        border-radius: 8px;
+        flex-grow: 1; /* Allow chat to grow */
+        display: flex;
+        flex-direction: column;
+        gap: 10px; /* Space between messages */
+      }
+
+      #input-area {
+        /* Wrapper for input and buttons */
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 10px;
+        background-color: var(--light-bg);
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+      }
+
+      #message-input {
+        flex-grow: 1; /* Take available space */
+        padding: 10px 15px;
+        border: 1px solid var(--border-color);
+        border-radius: 20px; /* Rounded input */
+        margin-bottom: 0; /* Remove default margin */
+        resize: none; /* Prevent textarea resize */
+        height: 40px; /* Fixed height */
+        box-sizing: border-box;
+      }
+
+      button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 20px; /* Rounded buttons */
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.2s ease, transform 0.1s ease;
+        white-space: nowrap; /* Prevent button text wrapping */
+      }
+
       button:hover {
-        background-color: #45a049;
+        opacity: 0.9;
+        transform: scale(1.02); /* Slight scale effect */
       }
-      .message {
-        margin-bottom: 10px;
-        padding: 8px;
-        border-radius: 5px;
+
+      button:active {
+        transform: scale(0.98); /* Press effect */
       }
-      .user-message {
-        background-color: #e6f7ff;
-        text-align: right;
+
+      #send-button {
+        background-color: var(--primary-color);
+        color: var(--light-text);
       }
-      .assistant-message {
-        background-color: #f0f0f0;
+      #send-button:hover {
+        background-color: #0056b3; /* Darker blue */
       }
-      /* Add styles for system and error messages */
-      .system-message {
-        background-color: #f8f9fa; /* Light grey */
-        color: #6c757d; /* Muted text color */
-        font-style: italic;
-        text-align: center;
-      }
-      .error-message {
-        background-color: #f8d7da; /* Light red */
-        color: #721c24; /* Dark red text */
-        border: 1px solid #f5c6cb; /* Red border */
-      }
-      /* Style for the stop button */
+
       #stop-button {
-        background-color: #f44336; /* Red */
+        background-color: var(--danger-color);
+        color: var(--light-text);
         display: none; /* Hidden by default */
       }
       #stop-button:hover {
-        background-color: #da190b;
+        background-color: #c82333; /* Darker red */
+      }
+
+      #predefined-button {
+        background-color: var(--secondary-color);
+        color: var(--light-text);
+      }
+      #predefined-button:hover {
+        background-color: #5a6268; /* Darker grey */
+      }
+
+      button:disabled {
+        background-color: #adb5bd;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .message {
+        padding: 10px 15px;
+        border-radius: 15px; /* Rounded message bubbles */
+        max-width: 80%; /* Limit message width */
+        word-wrap: break-word; /* Wrap long words */
+        line-height: 1.4;
+      }
+
+      .user-message {
+        background-color: var(--user-message-bg);
+        color: var(--dark-text);
+        align-self: flex-end; /* Align user messages to the right */
+        border-bottom-right-radius: 5px; /* Slightly different corner */
+        margin-left: auto; /* Push to right */
+      }
+
+      .assistant-message {
+        background-color: var(--assistant-message-bg);
+        color: var(--dark-text);
+        align-self: flex-start; /* Align assistant messages to the left */
+        border-bottom-left-radius: 5px; /* Slightly different corner */
+        margin-right: auto; /* Push to left */
+      }
+
+      .system-message {
+        background-color: transparent; /* No background */
+        color: var(--secondary-color);
+        font-style: italic;
+        text-align: center;
+        font-size: 0.9em;
+        align-self: center; /* Center system messages */
+        max-width: 100%;
+        padding: 5px 10px;
+      }
+
+      .error-message {
+        background-color: var(--error-bg);
+        color: var(--error-text);
+        border: 1px solid var(--error-border);
+        align-self: stretch; /* Stretch error messages */
+        text-align: center;
+        max-width: 100%;
+      }
+
+      #predefined-messages {
+        margin-top: 15px;
+        padding: 15px;
+        background-color: var(--light-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+      }
+      #predefined-messages h3 {
+        margin-top: 0;
+        margin-bottom: 10px;
+        color: var(--secondary-color);
+        text-align: center;
+      }
+      #predefined-messages button {
+        background-color: var(--input-bg);
+        color: var(--primary-color);
+        border: 1px solid var(--primary-color);
+        margin: 5px;
+        padding: 8px 15px;
+        border-radius: 15px;
+      }
+      #predefined-messages button:hover {
+        background-color: var(--primary-color);
+        color: var(--light-text);
+      }
+      #predefined-messages button:last-child {
+        /* Style the close button differently */
+        background-color: var(--secondary-color);
+        color: var(--light-text);
+        border: 1px solid var(--secondary-color);
+      }
+      #predefined-messages button:last-child:hover {
+        background-color: #5a6268;
+      }
+
+      /* Custom Scrollbar (optional, WebKit browsers) */
+      #chat-container::-webkit-scrollbar {
+        width: 8px;
+      }
+      #chat-container::-webkit-scrollbar-track {
+        background: var(--light-bg);
+        border-radius: 4px;
+      }
+      #chat-container::-webkit-scrollbar-thumb {
+        background-color: var(--secondary-color);
+        border-radius: 4px;
+        border: 2px solid var(--light-bg);
+      }
+      #chat-container::-webkit-scrollbar-thumb:hover {
+        background-color: #5a6268;
       }
     </style>
   </head>
   <body>
     <h1>UniInfer Web Demo</h1>
 
-    <div>
+    <!-- Wrap model select for better styling -->
+    <div id="model-select-container">
       <label for="model-select">Select Model:</label>
       <select id="model-select">
         <option value="">Loading models...</option>
       </select>
     </div>
 
-    <div id="chat-container"></div>
+    <div id="chat-container">
+      <!-- Messages will be added here by JS -->
+    </div>
 
-    <div>
+    <!-- Wrap input and buttons for better layout -->
+    <div id="input-area">
       <input
         type="text"
         id="message-input"
         placeholder="Type your message here..." />
       <button id="send-button">Send</button>
       <button id="stop-button">Stop</button>
-      <!-- Added Stop button -->
-      <button id="predefined-button">Predefined Messages</button>
+      <button id="predefined-button">?</button>
+      <!-- Changed text -->
     </div>
 
     <div id="predefined-messages" style="display: none">
       <h3>Predefined Messages:</h3>
-      <button class="predefined-message">Tell me a joke</button>
-      <button class="predefined-message">Explain quantum computing</button>
-      <button class="predefined-message">Write a short poem</button>
-      <button class="predefined-message">Close</button>
+      <!-- Consider wrapping buttons for better flow on small screens -->
+      <div>
+        <button class="predefined-message">Tell me a joke</button>
+        <button class="predefined-message">Explain quantum computing</button>
+        <button class="predefined-message">Write a short poem</button>
+        <button class="predefined-message">Close</button>
+      </div>
     </div>
 
     <script>
@@ -161,7 +354,10 @@
         messageDiv.className = `message ${role}-message`;
         messageDiv.textContent = content;
         chatContainer.appendChild(messageDiv);
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+        chatContainer.scrollTo({
+          top: chatContainer.scrollHeight,
+          behavior: "smooth",
+        });
         return messageDiv; // Return the created element
       }
 
@@ -276,8 +472,11 @@
                   } else {
                     assistantMessageDiv.textContent += contentChunk; // Append subsequent chunks
                   }
-                  // Scroll to bottom
-                  chatContainer.scrollTop = chatContainer.scrollHeight;
+                  // Scroll to bottom smoothly during streaming
+                  chatContainer.scrollTo({
+                    top: chatContainer.scrollHeight,
+                    behavior: "smooth",
+                  });
                 } else if (
                   data.choices &&
                   data.choices[0].delta &&
@@ -296,8 +495,11 @@
               }
             }
           }
-          // Final scroll after loop finishes
-          chatContainer.scrollTop = chatContainer.scrollHeight;
+          // Final smooth scroll after loop finishes
+          chatContainer.scrollTo({
+            top: chatContainer.scrollHeight,
+            behavior: "smooth",
+          });
         } catch (error) {
           if (error.name === "AbortError") {
             console.log("Fetch aborted.");
