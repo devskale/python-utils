@@ -6,11 +6,12 @@ import uuid
 from typing import List, Optional, Dict, Any, AsyncGenerator
 import inspect  # Import inspect for debugging
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends  # Add Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 # Import run_in_threadpool
 from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
+from fastapi.security import HTTPBearer  # Import HTTPBearer
 
 # Ensure the uniinfer package directory is in the Python path
 # Adjust the path as necessary based on your project structure
@@ -21,7 +22,8 @@ if uniinfer_package_path not in sys.path:
 
 # Now import from uniioai (assuming it's inside the uniinfer package structure)
 try:
-    from uniinfer.uniioai import stream_completion, get_completion
+    # Import get_provider_api_key as well
+    from uniinfer.uniioai import stream_completion, get_completion, get_provider_api_key
     from uniinfer.errors import UniInferError, AuthenticationError, ProviderError, RateLimitError
 except ImportError as e:
     print(f"Error importing from uniinfer.uniioai: {e}")
@@ -35,6 +37,9 @@ app = FastAPI(
     description="OpenAI-compatible API wrapper using UniInfer",
     version="0.1.0",
 )
+
+# Define the security scheme
+security = HTTPBearer()
 
 # --- Pydantic Models for OpenAI Compatibility ---
 
@@ -50,6 +55,7 @@ class ChatCompletionRequestInput(BaseModel):
     temperature: Optional[float] = 0.7
     max_tokens: Optional[int] = 500
     stream: Optional[bool] = False
+    base_url: Optional[str] = None  # Add base_url field
     # Add other common OpenAI parameters if needed, e.g., top_p, frequency_penalty
 
 
@@ -95,7 +101,8 @@ class NonStreamingChatCompletion(BaseModel):
 
 # --- Helper Functions ---
 
-async def stream_response_generator(messages: List[Dict], provider_model: str, temp: float, max_tok: int) -> AsyncGenerator[str, None]:
+# Update signature: remove api_bearer_token, add provider_api_key
+async def stream_response_generator(messages: List[Dict], provider_model: str, temp: float, max_tok: int, provider_api_key: Optional[str], base_url: Optional[str]) -> AsyncGenerator[str, None]:
     """Generates OpenAI-compatible SSE chunks from uniioai.stream_completion using a thread pool."""
     completion_id = f"chatcmpl-{uuid.uuid4()}"
     created_time = int(time.time())
@@ -111,9 +118,10 @@ async def stream_response_generator(messages: List[Dict], provider_model: str, t
     yield f"data: {first_chunk_data.model_dump_json()}\n\n"
 
     try:
-        # Create the synchronous generator instance
+        # Create the synchronous generator instance, passing the retrieved key
         sync_generator = stream_completion(
-            messages, provider_model, temp, max_tok)
+            # Pass provider_api_key
+            messages, provider_model, temp, max_tok, provider_api_key=provider_api_key, base_url=base_url)
 
         # --- Debugging ---
         print(f"DEBUG: Type of sync_generator: {type(sync_generator)}")
@@ -172,23 +180,46 @@ async def stream_response_generator(messages: List[Dict], provider_model: str, t
 # --- API Endpoint ---
 
 @app.post("/v1/chat/completions")
-async def chat_completions(request_input: ChatCompletionRequestInput, raw_request: Request):
+# Add the security dependency
+async def chat_completions(request_input: ChatCompletionRequestInput, token: str = Depends(security)):
     """
     OpenAI-compatible chat completions endpoint.
     Uses the 'model' field in the format 'provider@modelname'.
+    Requires Bearer token authentication (used for key retrieval).
+    Optionally accepts a 'base_url'.
     """
+    api_bearer_token = token.credentials  # This is the token from the header
+    base_url = request_input.base_url
     provider_model = request_input.model
     messages_dict = [msg.model_dump() for msg in request_input.messages]
 
     try:
+        # --- API Key Retrieval ---
+        if '@' not in provider_model:
+            raise HTTPException(
+                status_code=400, detail="Invalid model format. Expected 'provider@modelname'.")
+        provider_name = provider_model.split('@', 1)[0]
+
+        try:
+            # Call the helper function from uniioai.py
+            provider_api_key = get_provider_api_key(
+                api_bearer_token, provider_name)
+        except (ValueError, AuthenticationError) as e:
+            # Handle errors during key retrieval specifically
+            raise HTTPException(
+                status_code=401, detail=f"API Key Retrieval Failed: {e}")
+        # --- End API Key Retrieval ---
+
         if request_input.stream:
             # Use the async generator with StreamingResponse
             return StreamingResponse(
-                stream_response_generator(  # This now uses iterate_in_threadpool
+                stream_response_generator(
                     messages=messages_dict,
                     provider_model=provider_model,
                     temp=request_input.temperature,
-                    max_tok=request_input.max_tokens
+                    max_tok=request_input.max_tokens,
+                    provider_api_key=provider_api_key,  # Pass retrieved key
+                    base_url=base_url
                 ),
                 media_type="text/event-stream"
             )
@@ -199,7 +230,9 @@ async def chat_completions(request_input: ChatCompletionRequestInput, raw_reques
                 messages=messages_dict,
                 provider_model_string=provider_model,
                 temperature=request_input.temperature,
-                max_tokens=request_input.max_tokens
+                max_tokens=request_input.max_tokens,
+                provider_api_key=provider_api_key,  # Pass retrieved key
+                base_url=base_url
             )
 
             # Format the response according to OpenAI spec
@@ -215,17 +248,20 @@ async def chat_completions(request_input: ChatCompletionRequestInput, raw_reques
             )
             return response_data
 
+    # Catches ValueErrors from uniioai completion functions (e.g., model format)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    # Note: AuthenticationError from uniioai.py key retrieval is handled above
     except AuthenticationError as e:
+        # This might now only catch auth errors *within* the provider call itself, if any
         raise HTTPException(
-            status_code=401, detail=f"Authentication Error: {e}")
+            status_code=401, detail=f"Provider Authentication Error: {e}")
     except RateLimitError as e:
         raise HTTPException(status_code=429, detail=f"Rate Limit Error: {e}")
     except ProviderError as e:
         raise HTTPException(
-            status_code=500, detail=f"Provider Error ({provider_model.split('@')[0]}): {e}")
-    except UniInferError as e:
+            status_code=500, detail=f"Provider Error ({provider_name}): {e}")
+    except UniInferError as e:  # Catches general uniinfer errors
         raise HTTPException(status_code=500, detail=f"UniInfer Error: {e}")
     except Exception as e:
         # Catch-all for unexpected errors
@@ -253,8 +289,12 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8123, workers=1)
 
     # Example curl commands:
-    # Non-streaming:
-    # curl -X POST http://localhost:8123/v1/chat/completions -H "Content-Type: application/json" -d '{"model": "groq@llama3-8b-8192", "messages": [{"role": "user", "content": "Say hello!"}], "stream": false}'
+    # Non-streaming (replace YOUR_API_TOKEN):
+    # curl -X POST http://localhost:8123/v1/chat/completions -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_API_TOKEN" -d '{"model": "groq@llama3-8b-8192", "messages": [{"role": "user", "content": "Say hello!"}], "stream": false}'
+    # Non-streaming with base_url (e.g., for Ollama):
+    # curl -X POST http://localhost:8123/v1/chat/completions -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_API_TOKEN_OR_CREDGOO_COMBO" -d '{"model": "ollama@llama3", "messages": [{"role": "user", "content": "Say hello!"}], "stream": false, "base_url": "http://localhost:11434"}'
 
-    # Streaming:
-    # curl -N -X POST http://localhost:8123/v1/chat/completions -H "Content-Type: application/json" -d '{"model": "groq@llama3-8b-8192", "messages": [{"role": "user", "content": "Tell me a short story about a robot learning to paint."}], "stream": true}'
+    # Streaming (replace YOUR_API_TOKEN):
+    # curl -N -X POST http://localhost:8123/v1/chat/completions -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_API_TOKEN" -d '{"model": "groq@llama3-8b-8192", "messages": [{"role": "user", "content": "Tell me a short story about a robot learning to paint."}], "stream": true}'
+    # Streaming with base_url (e.g., for Ollama):
+    # curl -N -X POST http://localhost:8123/v1/chat/completions -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_API_TOKEN_OR_CREDGOO_COMBO" -d '{"model": "ollama@llama3", "messages": [{"role": "user", "content": "Tell me a short story."}], "stream": true, "base_url": "http://localhost:11434"}'

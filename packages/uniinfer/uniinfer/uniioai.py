@@ -2,9 +2,11 @@
 A simple wrapper for LLM APIs using uniinfer, supporting streaming and non-streaming.
 """
 import os
+from typing import Optional  # Import Optional
+import random  # Import random
 
 from uniinfer import ProviderFactory, ChatMessage, ChatCompletionRequest, ChatCompletionResponse
-from uniinfer.errors import UniInferError
+from uniinfer.errors import UniInferError, AuthenticationError
 from dotenv import load_dotenv
 from credgoo import get_api_key
 # Load environment variables from .env file
@@ -13,18 +15,73 @@ dotenv_path = os.path.join(os.getcwd(), '.env')  # Explicitly check current dir
 found_dotenv = load_dotenv(dotenv_path=dotenv_path,
                            verbose=True, override=True)
 
-# Retrieve credgoo tokens from environment variables once
-credgoo_api_token = os.getenv("CREDGOO_BEARER_TOKEN")
-credgoo_encryption_token = os.getenv("CREDGOO_ENCRYPTION_KEY")
-
-print(f"DEBUG: Attempted to load .env from: {dotenv_path}")  # Debug print
-print(f"DEBUG: .env file found and loaded: {found_dotenv}")  # Debug print
-# Debug print for credgoo tokens (consider removing in production)
-print(f"DEBUG: CREDGOO_BEARER_TOKEN: {credgoo_api_token}")
-print(f"DEBUG: CREDGOO_ENCRYPTION_KEY: {credgoo_encryption_token}")
+# print(f"DEBUG: Attempted to load .env from: {dotenv_path}")  # Debug print
+# print(f"DEBUG: .env file found and loaded: {found_dotenv}")  # Debug print
 
 
-def stream_completion(messages, provider_model_string, temperature=0.7, max_tokens=500):
+# --- Helper Function for API Key Retrieval ---
+
+# Rename to make it public
+def get_provider_api_key(api_bearer_token: str, provider_name: str) -> Optional[str]:
+    """
+    Determines the provider API key based on the input token format.
+
+    Args:
+        api_bearer_token (str): The API token. Can be a direct provider API key
+                                or a combined credgoo token ('bearer@encryption').
+        provider_name (str): The name of the provider (e.g., 'openai', 'ollama').
+
+    Returns:
+        str | None: The determined provider API key (can be None for providers like Ollama).
+
+    Raises:
+        ValueError: If the combined credgoo token format is invalid or api_bearer_token is missing.
+        AuthenticationError: If credgoo fails to retrieve a key using a combined token.
+    """
+    if not api_bearer_token:
+        raise ValueError(
+            "API Bearer Token is required (provider key or credgoo combo).")
+
+    provider_api_key = None
+    if '@' in api_bearer_token:
+        # Treat as credgoo combined token: bearer@encryption
+        try:
+            credgoo_bearer, credgoo_encryption = api_bearer_token.split('@', 1)
+            if not credgoo_bearer or not credgoo_encryption:
+                raise ValueError(
+                    "Invalid combined credgoo token format. Both parts are required.")
+            provider_api_key = get_api_key(
+                service=provider_name,
+                encryption_key=credgoo_encryption,
+                bearer_token=credgoo_bearer,
+            )
+            if not provider_api_key and provider_name not in ['ollama']:
+                raise AuthenticationError(
+                    f"Failed to retrieve API key for '{provider_name}' using the provided credgoo token.")
+#            print(
+#                f"DEBUG: Successfully retrieved key for {provider_name}@{provider_api_key} via credgoo.")
+        except ValueError as e:
+            raise ValueError(
+                f"Invalid combined credgoo token format ('bearer@encryption'): {e}")
+        except Exception as e:
+            raise AuthenticationError(
+                f"Error retrieving key from credgoo for '{provider_name}': {e}")
+    else:
+        print(
+            f"DEBUG: Using provided token directly as API key for {provider_name}.")
+        provider_api_key = api_bearer_token
+
+    if not provider_api_key and provider_name not in ['ollama']:
+        print(
+            f"Warning: API key for {provider_name} is missing or empty after processing.")
+
+    return provider_api_key
+
+
+# --- Main Completion Functions ---
+
+# Update signature: remove api_bearer_token, add provider_api_key
+def stream_completion(messages, provider_model_string, temperature=0.7, max_tokens=500, provider_api_key: Optional[str] = None, base_url: Optional[str] = None):
     """
     Initiates a streaming chat completion request via uniinfer.
 
@@ -35,7 +92,8 @@ def stream_completion(messages, provider_model_string, temperature=0.7, max_toke
                                      e.g., "openai@gpt-4", "arli@Mistral-Nemo-12B-Instruct-2407".
         temperature (float): The sampling temperature.
         max_tokens (int): The maximum number of tokens to generate.
-
+        provider_api_key (str, optional): The pre-retrieved API key for the provider. Defaults to None.
+        base_url (str, optional): The base URL for the provider's API (e.g., for Ollama). Defaults to None.
     Yields:
         str: Chunks of the generated content.
 
@@ -54,22 +112,14 @@ def stream_completion(messages, provider_model_string, temperature=0.7, max_toke
             raise ValueError(
                 "Invalid provider_model_string format. Provider or model name is empty.")
 
-        # Get API key using credgoo
-        api_key = get_api_key(
-            service=provider_name,  # Use provider_name here
-            encryption_key=credgoo_encryption_token,
-            bearer_token=credgoo_api_token,
-        )
-        # Ollama might not need a key
-        if not api_key and provider_name not in ['ollama']:
-            print(
-                f"Warning: Could not retrieve API key for {provider_name} via credgoo.")
-            # Optionally, you could raise an error here or rely on the factory's env var fallback
+        # Get the specified provider, passing base_url if provided
+        provider_kwargs = {'api_key': provider_api_key}  # Use passed key
+        if base_url:
+            provider_kwargs['base_url'] = base_url
 
-        # Get the specified provider
         provider = ProviderFactory.get_provider(
             provider_name,
-            api_key=api_key  # Pass the retrieved key
+            **provider_kwargs
         )
 
         # Prepare uniinfer messages
@@ -90,17 +140,18 @@ def stream_completion(messages, provider_model_string, temperature=0.7, max_toke
         for chunk in provider.stream_complete(request):
             if chunk.message and chunk.message.content:
                 yield chunk.message.content
-        # print("\n--- Stream finished ---")
 
     except (UniInferError, ValueError) as e:
         print(f"An error occurred: {e}")
-        raise  # Re-raise the exception for handling upstream if needed
+        raise
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
-        raise  # Re-raise
+        raise UniInferError(
+            f"An unexpected error occurred in stream_completion: {e}")
 
 
-def get_completion(messages, provider_model_string, temperature=0.7, max_tokens=500) -> str:
+# Update signature: remove api_bearer_token, add provider_api_key
+def get_completion(messages, provider_model_string, temperature=0.7, max_tokens=500, provider_api_key: Optional[str] = None, base_url: Optional[str] = None) -> str:
     """
     Initiates a non-streaming chat completion request via uniinfer.
 
@@ -109,7 +160,8 @@ def get_completion(messages, provider_model_string, temperature=0.7, max_tokens=
         provider_model_string (str): Combined provider and model name, e.g., "openai@gpt-4".
         temperature (float): The sampling temperature.
         max_tokens (int): The maximum number of tokens to generate.
-
+        provider_api_key (str, optional): The pre-retrieved API key for the provider. Defaults to None.
+        base_url (str, optional): The base URL for the provider's API (e.g., for Ollama). Defaults to None.
     Returns:
         str: The complete generated content.
 
@@ -128,22 +180,14 @@ def get_completion(messages, provider_model_string, temperature=0.7, max_tokens=
             raise ValueError(
                 "Invalid provider_model_string format. Provider or model name is empty.")
 
-        # Get API key using credgoo
-        api_key = get_api_key(
-            service=provider_name,
-            encryption_key=credgoo_encryption_token,
-            bearer_token=credgoo_api_token,
-        )
-        # Ollama might not need a key
-        if not api_key and provider_name not in ['ollama']:
-            print(
-                f"Warning: Could not retrieve API key for {provider_name} via credgoo.")
-            # Optionally, you could raise an error here or rely on the factory's env var fallback
+        # Get the specified provider, passing base_url if provided
+        provider_kwargs = {'api_key': provider_api_key}  # Use passed key
+        if base_url:
+            provider_kwargs['base_url'] = base_url
 
-        # Get the specified provider
         provider = ProviderFactory.get_provider(
             provider_name,
-            api_key=api_key  # Pass the retrieved key
+            **provider_kwargs
         )
 
         # Prepare uniinfer messages
@@ -155,7 +199,7 @@ def get_completion(messages, provider_model_string, temperature=0.7, max_tokens=
             model=model_name,
             temperature=temperature,
             max_tokens=max_tokens,
-            streaming=False  # Explicitly set streaming to False
+            streaming=False
         )
 
         # Get the response
@@ -167,7 +211,6 @@ def get_completion(messages, provider_model_string, temperature=0.7, max_tokens=
         if response.message and response.message.content:
             return response.message.content
         else:
-            # Handle cases where the response might be empty or malformed
             print("Warning: Received empty content in response.")
             return ""
 
@@ -177,53 +220,92 @@ def get_completion(messages, provider_model_string, temperature=0.7, max_tokens=
     except Exception as e:
         print(
             f"An unexpected error occurred during non-streaming completion: {e}")
-        raise
+        raise UniInferError(
+            f"An unexpected error occurred in get_completion: {e}")
 
 
 # Example Usage
 if __name__ == "__main__":
-    example_messages = [
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user", "content": "Explain the concept of reinforcement learning in AI/ML in simple terms and in 3 sentences."}
+    test_credgootoken = f"{os.getenv('CREDGOO_BEARER_TOKEN')}@{os.getenv('CREDGOO_ENCRYPTION_KEY')}"
+    test_provider_model = os.getenv("TEST_PROVIDER_MODEL", "ollama@gemma3:4b")
+    test_base_url = "http://amp1.mooo.com:11444" if "ollama" in test_provider_model else None
+
+    # List of cities
+    cities = [
+        "Tokyo", "Delhi", "Shanghai", "Sao Paulo", "Mumbai", "Mexico City",
+        "Beijing", "Osaka", "Cairo", "New York", "Dhaka", "Karachi",
+        "Buenos Aires", "Kolkata", "Istanbul", "Chongqing", "Lagos",
+        "Rio de Janeiro", "Tianjin", "Kinshasa", "Guangzhou", "Los Angeles",
+        "Moscow", "Shenzhen", "Lahore", "Bangalore", "Paris", "Bogota",
+        "Jakarta", "Chennai", "Lima", "Bangkok", "Seoul", "Nagoya", "Hyderabad", "Vienna",
+        "London", "Chennai", "Hangzhou", "Wuhan", "Ahmedabad", "Hong Kong", "Berlin"
     ]
 
-    # Define the provider and model to use
-    # provider_model = "openai@gpt-3.5-turbo"
-    # provider_model = "ollama@gemma3:4b"
-    provider_model = "groq@llama3-8b-8192"  # Example for Groq
-    # provider_model = "cloudflare@meta/llama-3-8b-instruct" # Example for Cloudflare
+    # Select 3 unique random cities
+    if len(cities) >= 3:
+        chosen_cities = random.sample(cities, 3)
+        city_a, city_b, city_c = chosen_cities
+    else:
+        city_a, city_b, city_c = "CityA", "CityB", "CityC"
 
-    # credgoo tokens are retrieved from environment variables at the start of the script
-    # No need for bearer_token_example anymore
+    # Construct the dynamic prompt
+    user_prompt = f"{city_a}, {city_b} or {city_c}. choose one. explain by just using one word in the style: CITY: Because: \"EXPLANATIONWORD\""
 
-    # --- Streaming Example ---
-    print("\n--- Running Streaming Example ---")
+    example_messages = [
+        {"role": "system", "content": "You follow instructions precisely and provide concise answers in the requested format."},
+        {"role": "user", "content": user_prompt}
+    ]
+    print(f"Using prompt: {user_prompt}")
+
+    provider_model = test_provider_model
+    provider_name_example = provider_model.split('@')[0]
+
     try:
-        # Call stream_completion without bearer_token
-        full_streamed_response = ""
-        for content_chunk in stream_completion(
-            example_messages,
-            provider_model_string=provider_model
-        ):
-            print(content_chunk, end="", flush=True)
-            full_streamed_response += content_chunk  # Accumulate response if needed later
-        print("\n")  # Add a newline after streaming finishes
-    except (UniInferError, ValueError) as e:
-        print(f"\nError during streaming example: {e}")
-    except Exception as e:
-        print(f"\nUnexpected error during streaming example: {e}")
+        print(
+            f"Retrieving API key for '{provider_name_example}' using token {test_credgootoken}")
+        test_provider_api_key = get_provider_api_key(
+            test_credgootoken, provider_name_example)
+        # print("API Key retrieval successful (or not needed).")
 
-    # --- Non-Streaming Example ---
-    print("\n--- Running Non-Streaming Example ---")
-    try:
-        # Call get_completion without bearer_token
-        full_response = get_completion(
-            example_messages,
-            provider_model_string=provider_model
-        )
-        print("\nFull Response:")
-        print(full_response)
-    except (UniInferError, ValueError) as e:
-        print(f"Error during non-streaming example: {e}")
+        # --- Streaming Example ---
+        print("\n--- Running Streaming Example ---")
+#        if test_base_url:
+#            print(f"Using TEST_BASE_URL: {test_base_url}")
+        try:
+            full_streamed_response = ""
+            for content_chunk in stream_completion(
+                example_messages,
+                provider_model_string=provider_model,
+                provider_api_key=test_provider_api_key,
+                base_url=test_base_url
+            ):
+                print(content_chunk, end="", flush=True)
+                full_streamed_response += content_chunk
+            print("\n")
+        except (UniInferError, ValueError) as e:
+            print(f"\nError during streaming example: {e}")
+        except Exception as e:
+            print(f"\nUnexpected error during streaming example: {e}")
+
+        # --- Non-Streaming Example ---
+        print("\n--- Running Non-Streaming Example ---")
+#        if test_base_url:
+#            print(f"Using TEST_BASE_URL: {test_base_url}")
+        try:
+            full_response = get_completion(
+                example_messages,
+                provider_model_string=provider_model,
+                provider_api_key=test_provider_api_key,
+                base_url=test_base_url
+            )
+            print("\nFull Response:")
+            print(full_response)
+        except (UniInferError, ValueError) as e:
+            print(f"Error during non-streaming example: {e}")
+        except Exception as e:
+            print(f"Unexpected error during non-streaming example: {e}")
+
+    except (ValueError, AuthenticationError) as e:
+        print(f"\nFATAL ERROR during API key retrieval: {e}")
     except Exception as e:
-        print(f"Unexpected error during non-streaming example: {e}")
+        print(f"\nUNEXPECTED FATAL ERROR during setup/key retrieval: {e}")

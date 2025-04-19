@@ -179,7 +179,7 @@ def get_cached_api_key(service, encryption_key, cache_dir):
                 decrypted_key = decrypt_local_key(
                     encrypted_cached_key, encryption_key)
                 if decrypted_key:
-                    print(f"Cache Hit ", end="")
+                    print(f"credgoo: Cache Hit")
                     return decrypted_key
                 else:
                     print(
@@ -346,7 +346,7 @@ def main():
     )
 
     if api_key:
-        print(f" API key {args.service}: {api_key}")
+        print(f" credgoo: Success {args.service}: {api_key}")
         return 0
     else:
         print("Failed to retrieve API key")
