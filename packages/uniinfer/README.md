@@ -501,6 +501,62 @@ We welcome contributions! Here's how to get started:
 
 Before contributing, please read our [Contribution Guidelines](CONTRIBUTING.md).
 
+## Deployment Guide
+
+### Setting up the OpenAI Proxy Server
+
+1. **Prerequisites**
+
+   - Python 3.8+
+   - FastAPI (`pip install fastapi`)
+   - Uvicorn (`pip install uvicorn`)
+   - credgoo (`pip install credgoo`)
+
+2. **Installation**
+
+   ```bash
+   pip install uniinfer
+   ```
+
+3. **Configuration**
+
+   - Set up your API keys in credgoo (see [Key Benefits](#key-benefits) section)
+   - No additional configuration needed for basic usage
+
+4. **Running the Server**
+
+   ```bash
+   uvicorn uniinfer:app --reload
+   ```
+
+   - The server will be available at `http://localhost:8000`
+   - Provides OpenAI-compatible `/v1/chat/completions` endpoint
+
+5. **Production Deployment** (Optional)
+
+   - **Docker**:
+     ```dockerfile
+     FROM python:3.9
+     WORKDIR /app
+     COPY . .
+     RUN pip install uniinfer fastapi uvicorn
+     CMD ["uvicorn", "uniinfer:app", "--host", "0.0.0.0", "--port", "8000"]
+     ```
+   - **NGINX Reverse Proxy**:
+
+     ```nginx
+     server {
+         listen 80;
+         server_name yourdomain.com;
+
+         location / {
+             proxy_pass http://localhost:8000;
+             proxy_set_header Host $host;
+             proxy_set_header X-Real-IP $remote_addr;
+         }
+     }
+     ```
+
 ## License
 
 [MIT License](LICENSE)
