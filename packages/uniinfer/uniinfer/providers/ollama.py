@@ -8,6 +8,25 @@ from typing import Dict, Any, Iterator, Optional
 from ..core import ChatProvider, ChatCompletionRequest, ChatCompletionResponse, ChatMessage
 
 
+def _normalize_base_url(base_url: str) -> str:
+    """
+    Normalize the base URL to ensure it has a scheme and upgrade non-localhost http to https.
+
+    Args:
+        base_url (str): The base URL to normalize.
+
+    Returns:
+        str: The normalized base URL.
+    """
+    # Ensure scheme present; allow plain URLs
+    if not base_url.startswith(("http://", "https://")):
+        base_url = "http://" + base_url
+    # Upgrade non-localhost http to https
+    if base_url.startswith("http://") and not base_url.startswith(("http://localhost", "http://127.0.0.1")):
+        base_url = "https://" + base_url[len("http://"):]
+    return base_url
+
+
 class OllamaProvider(ChatProvider):
     """
     Provider for Ollama API.
@@ -40,11 +59,10 @@ class OllamaProvider(ChatProvider):
             list: A list of available model names.
         """
         try:
-            # Use provided base_url or fallback to instance/class attribute or default
-            base_url = kwargs.get('base_url') or getattr(
-                cls, 'base_url', "http://localhost:11434")
-            base_url = base_url.replace(
-                'http://', 'https://') if not base_url.startswith('https://') else base_url
+            # Use provided base_url or fallback
+            raw_url = kwargs.get("base_url") or getattr(
+                cls, "base_url", "localhost:11434")
+            base_url = _normalize_base_url(raw_url)
             endpoint = f"{base_url}/api/tags"
             print(f"Using Ollama endpoint: {endpoint}")  # Verbose logging
 
@@ -81,9 +99,8 @@ class OllamaProvider(ChatProvider):
         Raises:
             Exception: If the request fails.
         """
-        # Ensure URL starts with https
-        base_url = self.base_url.replace(
-            'http://', 'https://') if not self.base_url.startswith('https://') else self.base_url
+        # Ensure URL normalized (localhost allowed)
+        base_url = _normalize_base_url(self.base_url)
         endpoint = f"{base_url}/api/chat"
 
         # Prepare the request payload
@@ -174,9 +191,8 @@ class OllamaProvider(ChatProvider):
         Raises:
             Exception: If the request fails.
         """
-        # Ensure URL starts with https
-        base_url = self.base_url.replace(
-            'http://', 'https://') if not self.base_url.startswith('https://') else self.base_url
+        # Ensure URL normalized (localhost allowed)
+        base_url = _normalize_base_url(self.base_url)
         endpoint = f"{base_url}/api/chat"
 
         # Prepare the request payload
