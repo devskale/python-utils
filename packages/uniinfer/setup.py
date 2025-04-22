@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name="uniinfer",
     version="0.1.4",
-    url="https://github.com/skale-dev/uniinfer
+    url="https://github.com/skale-dev/uniinfer",
     description="Unified Inference API for LLM chat completions",
     author="Han Woo",
     author_email="dev@skale.dev",
