@@ -21,9 +21,13 @@ setup(
         "Programming Language :: Python :: 3.10",
     ],
     python_requires=">=3.7",
+    package_data={
+        'uniinfer': ['examples/*.py', 'examples/webdemo/*'],
+    },
+    include_package_data=True,
     entry_points={
         'console_scripts': [
-            'uniinfer=uniinfer.cli:main'
+            'uniinfer=uniinfer.examples.uniinfer_example:main'
         ],
     },
 )
