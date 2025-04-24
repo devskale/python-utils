@@ -36,8 +36,8 @@ class GeminiProvider(ChatProvider):
                 "Install it with 'pip install google-generativeai'"
             )
 
-        # Initialize the Gemini client
-        self.client = genai.Client(api_key=self.api_key)
+        # Configure the Gemini client
+        genai.configure(api_key=self.api_key)
 
         # Save any additional configuration
         self.config = kwargs
@@ -124,11 +124,13 @@ class GeminiProvider(ChatProvider):
             # Prepare the content and config
             content, config = self._prepare_content_and_config(request)
 
+            # Get the model instance
+            model_instance = genai.GenerativeModel(model)
+
             # Make the API call
-            response = self.client.models.generate_content(
-                model=model,
+            response = model_instance.generate_content(
                 contents=content,
-                config=config
+                generation_config=config
             )
 
             # Extract response text
@@ -189,15 +191,13 @@ class GeminiProvider(ChatProvider):
                 raise ValueError(
                     "Gemini API key is required when credgoo is not available")
 
-        client = genai.Client(api_key=api_key)
+        genai.configure(api_key=api_key)
         models = []
 
         # Get models that support generateContent
-        for m in client.models.list():
-            for action in m.supported_actions:
-                if action == "generateContent":
-                    models.append(m.name)
-                    break
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                models.append(m.name)
 
         return models
 
@@ -229,11 +229,14 @@ class GeminiProvider(ChatProvider):
             # Prepare the content and config
             content, config = self._prepare_content_and_config(request)
 
+            # Get the model instance
+            model_instance = genai.GenerativeModel(model)
+
             # Make the streaming API call
-            stream = self.client.models.generate_content_stream(
-                model=model,
+            stream = model_instance.generate_content(
                 contents=content,
-                config=config
+                generation_config=config,
+                stream=True
             )
 
             # Process the streaming response
