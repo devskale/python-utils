@@ -1,0 +1,74 @@
+body {
+    font-family: sans-serif;
+    line-height: 1.6;
+    margin: 20px;
+    background-color: #f4f4f4;
+}
+
+h1 {
+    color: #333;
+}
+
+input[type="file"] {
+    margin-bottom: 20px;
+}
+
+#output {
+    background-color: #fff;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    white-space: pre-wrap; /* Preserve whitespace and wrap text */
+    font-family: monospace; /* Better for showing text offsets */
+}
+
+.entity {
+    display: inline-block; /* Allows padding and margins */
+    padding: 0.1em 0.3em;
+    margin: 0 0.1em;
+    line-height: 1;
+    border-radius: 0.35em;
+    font-weight: bold;
+    border: 1px solid;
+    position: relative; /* For tooltip */
+}
+
+.entity::after {
+    content: attr(data-label); /* Show label after the text */
+    font-size: 0.6em;
+    font-weight: bold;
+    line-height: 1;
+    border-radius: 0.35em;
+    text-transform: uppercase;
+    vertical-align: middle;
+    margin-left: 0.3em;
+    padding: 0.1em 0.3em;
+    background-color: inherit; /* Use same background */
+    border: 1px solid;
+    opacity: 0.8;
+}
+
+/* Define colors for different entity types */
+.entity-Person { background-color: #ffcc99; border-color: #e6b88a; }
+.entity-Firma { background-color: #99ccff; border-color: #8ab8e6; }
+.entity-Location { background-color: #ccff99; border-color: #b8e68a; }
+.entity-City { background-color: #c2d4ff; border-color: #a9bcdc; }
+.entity-Country { background-color: #ff99cc; border-color: #e68ab8; }
+.entity-Date { background-color: #99ffcc; border-color: #8ae6b8; }
+.entity-Money { background-color: #ffff99; border-color: #e6e68a; }
+.entity-Product, .entity-Produkt { background-color: #ffccff; border-color: #e6b8e6; } /* Handle both spellings */
+.entity-Email { background-color: #cccccc; border-color: #b8b8b8; }
+.entity-Phone-Number { background-color: #e6ccff; border-color: #d1b8e6; }
+.entity-Address { background-color: #99ffff; border-color: #8ae6e6; }
+
+/* Default for unknown entities */
+.entity-DEFAULT { background-color: #e0e0e0; border-color: #c0c0c0; }
+
+.chunk-separator {
+    border-top: 2px dashed #ccc;
+    margin: 20px 0;
+    padding-top: 10px;
+    font-style: italic;
+    color: #666;
+    font-size: 0.9em;
+}
