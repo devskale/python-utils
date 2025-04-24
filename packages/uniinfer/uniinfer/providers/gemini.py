@@ -6,10 +6,10 @@ from typing import Dict, Any, Iterator, Optional, List
 from ..core import ChatProvider, ChatCompletionRequest, ChatCompletionResponse, ChatMessage
 from ..errors import map_provider_error
 
-# Try to import the google.genai package
+# Try to import the google.generativeai package
 try:
-    from google import genai
-    from google.genai import types
+    import google.generativeai as genai
+    from google.generativeai import types
     HAS_GENAI = True
 except ImportError:
     HAS_GENAI = False
@@ -32,7 +32,7 @@ class GeminiProvider(ChatProvider):
 
         if not HAS_GENAI:
             raise ImportError(
-                "The 'google.genai' package is required to use the Gemini provider. "
+                "The 'google-generativeai' package is required to use the Gemini provider. "
                 "Install it with 'pip install google-generativeai'"
             )
 
@@ -173,7 +173,7 @@ class GeminiProvider(ChatProvider):
         """
         if not HAS_GENAI:
             raise ImportError(
-                "The 'google.genai' package is required to use the Gemini provider. "
+                "The 'google-generativeai' package is required to use the Gemini provider. "
                 "Install it with 'pip install google-generativeai'"
             )
 
