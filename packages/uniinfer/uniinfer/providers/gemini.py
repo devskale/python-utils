@@ -74,7 +74,7 @@ class GeminiProvider(ChatProvider):
             config_params["system_instruction"] = system_message
 
         # Create the config object
-        config = types.GenerateContentConfig(**config_params)
+        config = types.GenerationConfig(**config_params)
 
         # Prepare the content based on non-system messages
         # For simple queries with just one user message, use a simple string
