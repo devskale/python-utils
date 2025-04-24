@@ -21,6 +21,9 @@ setup(
         "Programming Language :: Python :: 3.10",
     ],
     python_requires=">=3.7",
+    extras_require={
+        'gemini': ['google-generativeai>=0.4.0']
+    },
     package_data={
         'uniinfer': ['examples/*.py', 'examples/webdemo/*'],
     },
