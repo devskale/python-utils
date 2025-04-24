@@ -5,12 +5,83 @@ body {
     background-color: #f4f4f4;
 }
 
-h1 {
+h1, h2 {
     color: #333;
+    margin-top: 0;
 }
 
-input[type="file"] {
+.card-container {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    gap: 20px; /* Space between cards */
     margin-bottom: 20px;
+}
+
+.card {
+    background-color: #fff;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    flex: 1; /* Allow cards to grow */
+    min-width: 300px; /* Minimum width before wrapping */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#controls label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+#controls select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+
+input[type="file"] {
+    margin-bottom: 10px; /* Adjusted margin */
+}
+
+#statsContent ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#statsContent li {
+    margin-bottom: 5px;
+    font-size: 0.9em;
+}
+#statsContent li strong {
+   display: inline-block;
+   min-width: 100px; /* Align counts */
+}
+
+#statsContent table {
+    width: 100%; /* Make table take full width of the card */
+    border-collapse: collapse; /* Optional: for cleaner borders */
+    font-size: 0.9em; /* Reduce font size slightly */
+}
+
+#statsContent th,
+#statsContent td {
+    text-align: left;
+    padding: 4px 8px; /* Reduce padding for compactness */
+    border-bottom: 1px solid #eee; /* Optional: add separators */
+}
+
+#statsContent th {
+    font-weight: bold;
+    background-color: #f8f8f8; /* Optional: header background */
+}
+
+/* Optional: Style for the examples column to prevent overly long text */
+#statsContent td:last-child {
+    word-break: break-word; /* Break long examples if needed */
+    color: #555; /* Slightly dimmer color for examples */
 }
 
 #output {
@@ -20,8 +91,10 @@ input[type="file"] {
     border-radius: 5px;
     white-space: pre-wrap; /* Preserve whitespace and wrap text */
     font-family: monospace; /* Better for showing text offsets */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Added shadow */
 }
 
+/* ... existing entity styles ... */
 .entity {
     display: inline-block; /* Allows padding and margins */
     padding: 0.1em 0.3em;
@@ -58,7 +131,7 @@ input[type="file"] {
 .entity-Money { background-color: #ffff99; border-color: #e6e68a; }
 .entity-Product, .entity-Produkt { background-color: #ffccff; border-color: #e6b8e6; } /* Handle both spellings */
 .entity-Email { background-color: #cccccc; border-color: #b8b8b8; }
-.entity-Phone-Number { background-color: #e6ccff; border-color: #d1b8e6; }
+.entity-Phone-Number { background-color: #cccccc; border-color: #b8b8b8; } /* Use same as email for now */
 .entity-Address { background-color: #99ffff; border-color: #8ae6e6; }
 
 /* Default for unknown entities */
