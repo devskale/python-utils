@@ -353,7 +353,7 @@ def main():
             if args.provider == 'gliner':
                 labels = [
                     "Person", "Firma", "Ort", "Stadt", "Land", "Datum",
-                    "Geld", "Produkt", "Email", "Telefonnummer", "Addresse"
+                    "Geld", "Produkt", "Email", "Telefonnummer", "Adresse"
                 ]
                 ebyl = aggregate_entities(entities_all, labels)
                 print("\nAggregated Entities Found:")

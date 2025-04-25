@@ -152,11 +152,17 @@ def get_entities_from_text(chunk_data):
                 full_response += content
 
         stream_end_time = time.time()
+        total_chunks = metadata.get('total_chunks', '?')  # Added total chunks from metadata if available
         if is_verbose:
-            print(f"unipii.py get_entities (Chunk {chunk_number}): Stream finished in {stream_end_time - stream_start_time:.2f} seconds. Full response length: {len(full_response)}", file=sys.stderr)
-            print(f"--- Raw LLM Response (Chunk {chunk_number}) ---", file=sys.stderr)
+            print(f"unipii.py get_entities (Chunk {chunk_number}/{total_chunks}): Stream finished in {stream_end_time - stream_start_time:.2f} seconds. Full response length: {len(full_response)}", file=sys.stderr)
+            print(f"--- Raw LLM Response (Chunk {chunk_number}/{total_chunks}) ---", file=sys.stderr)
             print(full_response, file=sys.stderr)
             print(f"---------------------------------------", file=sys.stderr)
+
+        # Added check for empty LLM response
+        if not full_response.strip():
+            print(f"Warning (Chunk {chunk_number}): Empty LLM response.", file=sys.stderr)
+            return []
 
         # Parse response into structured format similar to GLiNER
         entities = []
@@ -167,7 +173,8 @@ def get_entities_from_text(chunk_data):
                 entity_type, entity_value = line.split(':', 1)
                 entity_type = entity_type.strip()
                 entity_value = entity_value.strip()
-
+                if len(entity_value) < 3:  # Skip too tiny entity values
+                    continue
                 # Find *all* occurrences of the entity_value in the original text_chunk
                 try:
                     # Escape potential regex special characters in the entity value
@@ -341,7 +348,8 @@ if __name__ == "__main__":
                 'chunk_number': chunk_num,
                 'provider': args.provider,
                 'model': args.model,
-                'source_filename': input_filename # Use derived input_filename
+                'source_filename': input_filename, # Use derived input_filename
+                'total_chunks': len(chunks) # Add total chunks to metadata
             }
         }
 
