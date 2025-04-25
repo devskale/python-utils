@@ -197,6 +197,18 @@ def main():
                     })
 
                     if chunk_entities:
+                        # --> Update verbose printing for direct import results <--
+                        if args.verbose:
+                            print(f"--- Entitäten von unipii (chunk {i+1}) ---")
+                            if isinstance(chunk_entities, list):
+                                for entity in chunk_entities:
+                                    entity_type = entity.get('type', 'N/A')
+                                    entity_value = entity.get('value', 'N/A')
+                                    print(f"  - Typ: {entity_type} : {entity_value}")
+                            else:
+                                # Fallback if not a list (unexpected format)
+                                print(json.dumps(chunk_entities, indent=2))
+                            print("------------------------------------------")
                         entities_all.extend(chunk_entities)
 
                     processed_chunk_count += 1
@@ -252,7 +264,33 @@ def main():
                         if os.path.exists(entities_path):
                             with open(entities_path, 'r', encoding='utf-8') as f:
                                 entity_content = f.read()
-                            # ... (parsing entities remains the same) ...
+                            # --> Update verbose printing for subprocess results <--
+                            if args.verbose:
+                                print(f"--- Raw entity content from unipii subprocess output file ({entities_path}) ---")
+                                try:
+                                    parsed_entities = json.loads(entity_content)
+                                    if isinstance(parsed_entities, list):
+                                        for entity in parsed_entities:
+                                            entity_type = entity.get('type', 'N/A')
+                                            entity_value = entity.get('value', 'N/A')
+                                            print(f"  - Type: {entity_type}")
+                                            print(f"    Value: {entity_value}")
+                                    else:
+                                        # Fallback if not a list
+                                        print(json.dumps(parsed_entities, indent=2))
+                                except json.JSONDecodeError:
+                                    print("  (Could not parse content as JSON)")
+                                    print(entity_content) # Print raw content if parsing fails
+                                print("-----------------------------------------------------------------------------")
+
+                            # Attempt to parse and add entities if possible
+                            try:
+                                parsed_entities = json.loads(entity_content)
+                                if isinstance(parsed_entities, list):
+                                     entities_all.extend(parsed_entities)
+                            except json.JSONDecodeError:
+                                 print(f"Warning: Could not parse entities from {entities_path}. Entities from this file will be missing.", file=sys.stderr)
+
                             processed_chunk_count = len(chunks_info.get('chunks', [])[:args.max_chunks])
                         else:
                              print(f"Warning: unipii process succeeded but output file '{entities_path}' not found.", file=sys.stderr)
@@ -312,7 +350,7 @@ def main():
             }
         elif args.verbose:
             # If not gliner, but verbose, mention that entities won't be saved
-            print(f"\nNote: Entities from provider '{args.provider}' will be shown below but not saved to the JSON file.")
+            print(f"\nNote: Entities from provider '{args.provider}' will be shown above but not saved to the JSON file.")
 
         if args.verbose:
             print(f"\nExtracted {len(entities_all)} entities from {processed_chunk_count} chunks.")
