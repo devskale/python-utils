@@ -3,11 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JSON Entity Viewer</title>
+    <title>Blanker</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>JSON Entity Viewer</h1>
+    <header>
+        <!-- Group title and subtitle -->
+        <div class="header-text">
+            <h1>Blanker</h1>
+            <p style="font-size: small;">Entfernung von persönlich identifizierbaren Informationen (PII)</p>
+            <p style="font-size: small;">mittels NER Modellen und LLMs</p>
+        </div>
+        <!-- Logo container -->
+        <div class="logos" style="margin-top: 10px;">
+            <img src="./logo-skale.png" alt="skale.dev logo placeholder" style="height: 30px; vertical-align: middle; margin-right: 10px;">
+            <img src="./logo-wwhb.png" alt="WWHB logo placeholder" style="height: 30px; vertical-align: middle;">
+        </div>
+    </header>
+
 
     <div class="card-container">
         <div class="card" id="controlsCard">

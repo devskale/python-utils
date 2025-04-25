@@ -40,7 +40,6 @@ h1, h2 {
     border-radius: 4px;
 }
 
-
 input[type="file"] {
     margin-bottom: 10px; /* Adjusted margin */
 }
@@ -96,26 +95,29 @@ input[type="file"] {
 
 /* Basic entity styling - colors are now inline */
 .entity {
-    display: inline;
-    padding: 0;       /* Remove extra padding */
-    margin: 0;        /* Remove extra margin */
-    background-color: transparent; /* Rely on inline style if any */
+    display: inline-block; /* Changed to inline-block to allow padding/radius */
+    padding: 0.1em 0.4em;  /* Added padding for larger area */
+    margin: 0.1em 0;       /* Added slight vertical margin */
+    border-radius: 0.4em;    /* Pill shape */
+    line-height: 1.2;      /* Adjust line height slightly */
+    /* background-color is set inline via JS */
 }
 
-/* Styling for the inner label span for a subtle pill-style appearance */
+/* Styling for the inner label span */
 .entity-label {
-    display: inline;       /* Inline to avoid a separate block */
-    font-size: 0.65em;      /* Slightly smaller text */
-    font-weight: normal;    /* Normal weight for subtlety */
+    display: inline;
+    font-size: 0.65em;
+    font-weight: bold;     /* Make label bold */
     line-height: 1;
-    border-radius: 0.5em;   /* Rounded corners */
+    border-radius: 0;      /* Remove individual radius */
     text-transform: uppercase;
-    vertical-align: middle; /* Changed from baseline to middle */
-    margin-left: 0;         /* Remove extra space before the label */
-    padding: 0.05em 0.3em;  /* Reduced padding for a smaller pill */
-    border: none;          /* Remove the border */
-    background: rgba(150,150,150,0.2);  /* Soft, subtle background */
-    white-space: nowrap; /* Prevent label text from wrapping */
+    vertical-align: baseline; /* Adjusted alignment */
+    margin-left: 0.3em;    /* Space between entity text and label */
+    padding: 0.1em 0.3em;  /* Adjust padding */
+    border: none;
+    background: none;      /* Remove background, parent has it */
+    color: inherit;        /* Inherit color from parent */
+    white-space: nowrap;
 }
 
 .chunk-separator {
@@ -125,4 +127,27 @@ input[type="file"] {
     font-style: italic;
     color: #666;
     font-size: 0.9em;
+}
+
+/* Header styling */
+header {
+    display: flex;            /* Enable Flexbox */
+    justify-content: space-between; /* Push items to opposite ends */
+    align-items: center;      /* Vertically align items in the center */
+    padding: 10px 20px;       /* Add some padding */
+    border-bottom: 1px solid #ccc; /* Optional: add a bottom border */
+    margin-bottom: 20px;      /* Space below header */
+}
+
+.header-text h1 {
+    margin: 0; /* Remove default margin */
+}
+
+.header-text p {
+    margin: 0; /* Remove default margin */
+    color: #555; /* Optional: style the subtitle */
+}
+
+.logos {
+    margin-top: 0; /* Reset margin-top as flex handles alignment */
 }
