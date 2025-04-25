@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import subprocess
 import tempfile  # Ensure tempfile is imported
+import time  # Import time for sleep functionality
 
 # Import the necessary functions from glinerfy
 # Make sure predict_entities_from_texts returns (entities, processed_count)
@@ -169,50 +170,41 @@ def main():
 
         else:  # Handle all non-gliner providers using unipii (direct import or fallback)
             if get_entities_from_text:  # Check if import was successful
-                # Use direct import of unipii function
                 if args.verbose:
-                    # Display the actual provider name being used by unipii
-                    print(f"Using imported unipii module with provider: {args.provider}, model: {args.model}") 
-
+                    print(f"Using imported unipii module with provider: {args.provider}, model: {args.model}")
                 processed_chunk_count = 0
                 chunk_limit = min(len(chunks_info.get('chunks', [])), args.max_chunks)
-
                 for i, chunk in enumerate(chunks_info.get('chunks', [])[:chunk_limit]):
                     if args.verbose:
                         print(f"Processing chunk {i+1}/{chunk_limit} via unipii import...")
-
                     chunk_text = chunk.get('text', '')
                     if not chunk_text:
                         continue
-
                     # Extract entities using imported function
                     chunk_entities = get_entities_from_text({
                         'text': chunk_text,
                         'metadata': {
                             'chunk_number': i + 1,
-                            'provider': args.provider,  # Pass provider from main args
-                            'model': args.model,  # Pass model from main args
-                            'source_filename': chunks_info['filename']  # Add source filename
-                        }
+                            'provider': args.provider,
+                            'model': args.model,
+                            'source_filename': chunks_info['filename']
+                        },
                     })
-
                     if chunk_entities:
-                        # --> Update verbose printing for direct import results <--
                         if args.verbose:
                             print(f"--- Entitäten von unipii (chunk {i+1}) ---")
                             if isinstance(chunk_entities, list):
                                 for entity in chunk_entities:
-                                    entity_type = entity.get('type', 'N/A')
-                                    entity_value = entity.get('value', 'N/A')
+                                    entity_type = entity.get('label', 'N/A')
+                                    entity_value = entity.get('text', 'N/A')
                                     print(f"  - Typ: {entity_type} : {entity_value}")
                             else:
-                                # Fallback if not a list (unexpected format)
                                 print(json.dumps(chunk_entities, indent=2))
                             print("------------------------------------------")
                         entities_all.extend(chunk_entities)
-
                     processed_chunk_count += 1
-
+                    time.sleep(3)  # <-- Added 3-second pause between LLM calls by unipii.py
+ 
             else:  # Fallback to external process if import failed
                 print("Using external unipii process as fallback...", file=sys.stderr)
                 temp_chunked_path = None # Initialize path variable
@@ -232,7 +224,7 @@ def main():
                     # Derive expected entities path based on the temporary input path
                     entities_path = temp_chunked_path.replace('.chunked.md', '.entities.md')
 
-                    # Run unipii as external process, passing the FULL path
+                    # Run unipii as external process, passing the FULL paths
                     cmd = [
                         sys.executable,
                         os.path.join(os.path.dirname(__file__), "unipii.py"),
@@ -240,7 +232,6 @@ def main():
                         "-p", args.provider,
                         "-m", args.model
                     ]
-
                     if args.verbose:
                         print(f"Running command: {' '.join(cmd)}")
                         print(f"Timeout set to {SUBPROCESS_TIMEOUT} seconds.")
@@ -253,7 +244,6 @@ def main():
                         encoding='utf-8',
                         timeout=SUBPROCESS_TIMEOUT  # Add timeout
                     )
-
                     if result.returncode != 0:
                         # Print stderr from the subprocess if it failed
                         print(f"Error running unipii (return code {result.returncode}):\n--- stderr ---\n{result.stderr}\n--- stdout ---\n{result.stdout}\n--------------", file=sys.stderr)
@@ -282,7 +272,6 @@ def main():
                                     print("  (Could not parse content as JSON)")
                                     print(entity_content) # Print raw content if parsing fails
                                 print("-----------------------------------------------------------------------------")
-
                             # Attempt to parse and add entities if possible
                             try:
                                 parsed_entities = json.loads(entity_content)
@@ -329,18 +318,19 @@ def main():
         sanitized_model_name = args.model.replace('/', '_').replace('\\', '_')
         entity_key = f"{args.provider}_{sanitized_model_name}_{args.chunk_size}"  # Uses the actual provider name
 
-        # Conditionally add entity data to output_data ONLY for gliner
-        if args.provider == 'gliner':
-            # Remove existing entity data ONLY for the current provider/model/chunk_size combination.
-            # Other entity entries in the JSON will be preserved.
-            if entity_key in output_data["entities"]:
-                if args.verbose:
-                    print(f"Removing existing entity data for key: 'entities.{entity_key}'")
-                output_data["entities"].pop(entity_key, None)  # Remove only the specific key
-
-            # Add new entity data under "entities" for the specific key
+        # Remove existing entity data ONLY for the current provider/model/chunk_size combination.
+        # Other entity entries in the JSON will be preserved.
+        if entity_key in output_data["entities"]:
             if args.verbose:
-                print(f"Adding/updating entity data under key: 'entities.{entity_key}'")
+                print(f"Removing existing entity data for key: 'entities.{entity_key}'")
+            output_data["entities"].pop(entity_key, None)  # Remove only the specific key
+
+        # Add new entity data under "entities" for the specific key
+        if args.verbose:
+            print(f"Adding/updating entity data under key: 'entities.{entity_key}'")
+        
+        # Structure the entity data based on the provider
+        if args.provider == 'gliner':
             output_data["entities"][entity_key] = {
                 "provider": args.provider,
                 "model": args.model,
@@ -348,10 +338,14 @@ def main():
                 "max_chunks_processed": processed_chunk_count,
                 "entities": entities_all
             }
-        elif args.verbose:
-            # If not gliner, but verbose, mention that entities won't be saved
-            print(f"\nNote: Entities from provider '{args.provider}' will be shown above but not saved to the JSON file.")
-
+        else: # For unipii providers
+             output_data["entities"][entity_key] = {
+                "provider": args.provider,
+                "model": args.model,
+                # No threshold for LLM-based extraction
+                "max_chunks_processed": processed_chunk_count,
+                "entities": entities_all # entities_all already contains the list from unipii
+            }
         if args.verbose:
             print(f"\nExtracted {len(entities_all)} entities from {processed_chunk_count} chunks.")
 
@@ -364,34 +358,34 @@ def main():
                 ebyl = aggregate_entities(entities_all, labels)
                 print("\nAggregated Entities Found:")
                 print_formatted_entities(ebyl)
-            else:  # Assumes unipii or other LLM provider
+            else:  # Assumes unipii or other LLM providers
                 print("\nEntity types found (verbose output only):")
                 entity_types = set()
                 for entity in entities_all:
-                    entity_types.add(entity.get('type', 'Unknown'))
+                    # Use 'label' key as returned by unipii
+                    entity_types.add(entity.get('label', 'Unknown'))
                 if not entity_types:
                     print("  (None)")
                 else:
                     for entity_type in sorted(entity_types):
-                        type_count = sum(1 for e in entities_all if e.get('type') == entity_type)
+                        # Use 'label' key for counting
+                        type_count = sum(1 for e in entities_all if e.get('label') == entity_type)
                         print(f"- {entity_type}: {type_count} instances")
 
         # 4. Save the updated, structured output_data to the JSON file
         # The entire output_data dictionary (with potentially updated chunks
-        # and potentially updated gliner entities for the specific key) is saved.
+        # and potentially updated entities for the specific key) is saved.
         # Existing entity data for other keys remains untouched.
         try:
             with open(output_file, 'w') as f:
-                # output_data now only contains 'entities' if provider was 'gliner'
+                # output_data now contains entities for the current run regardless of provider
                 json.dump(output_data, f, indent=2)
             if args.verbose:
                 print(f"\nSaved updated data to {output_file}")
                 print(f"  - Chunk data under key: 'chunks.{chunk_key}'")
-                # Only mention saved entity data if it was actually saved
-                if args.provider == 'gliner' and entity_key in output_data["entities"]:
+                # Always mention saved entity data if entities were found
+                if entity_key in output_data["entities"]:
                     print(f"  - Entity data under key: 'entities.{entity_key}' ({len(entities_all)} entities)")
-                elif args.provider != 'gliner':
-                    print(f"  - Entity data for provider '{args.provider}' was not saved to the file.")
         except Exception as e:
             print(f"Error writing JSON to {output_file}: {e}", file=sys.stderr)
 

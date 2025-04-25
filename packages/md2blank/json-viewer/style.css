@@ -94,48 +94,29 @@ input[type="file"] {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Added shadow */
 }
 
-/* ... existing entity styles ... */
+/* Basic entity styling - colors are now inline */
 .entity {
-    display: inline-block; /* Allows padding and margins */
-    padding: 0.1em 0.3em;
-    margin: 0 0.1em;
-    line-height: 1;
-    border-radius: 0.35em;
-    font-weight: bold;
-    border: 1px solid;
-    position: relative; /* For tooltip */
+    display: inline;
+    padding: 0;       /* Remove extra padding */
+    margin: 0;        /* Remove extra margin */
+    background-color: transparent; /* Rely on inline style if any */
 }
 
-.entity::after {
-    content: attr(data-label); /* Show label after the text */
-    font-size: 0.6em;
-    font-weight: bold;
+/* Styling for the inner label span for a subtle pill-style appearance */
+.entity-label {
+    display: inline;       /* Inline to avoid a separate block */
+    font-size: 0.65em;      /* Slightly smaller text */
+    font-weight: normal;    /* Normal weight for subtlety */
     line-height: 1;
-    border-radius: 0.35em;
+    border-radius: 0.5em;   /* Rounded corners */
     text-transform: uppercase;
-    vertical-align: middle;
-    margin-left: 0.3em;
-    padding: 0.1em 0.3em;
-    background-color: inherit; /* Use same background */
-    border: 1px solid;
-    opacity: 0.8;
+    vertical-align: middle; /* Changed from baseline to middle */
+    margin-left: 0;         /* Remove extra space before the label */
+    padding: 0.05em 0.3em;  /* Reduced padding for a smaller pill */
+    border: none;          /* Remove the border */
+    background: rgba(150,150,150,0.2);  /* Soft, subtle background */
+    white-space: nowrap; /* Prevent label text from wrapping */
 }
-
-/* Define colors for different entity types */
-.entity-Person { background-color: #ffcc99; border-color: #e6b88a; }
-.entity-Firma { background-color: #99ccff; border-color: #8ab8e6; }
-.entity-Location { background-color: #ccff99; border-color: #b8e68a; }
-.entity-City { background-color: #c2d4ff; border-color: #a9bcdc; }
-.entity-Country { background-color: #ff99cc; border-color: #e68ab8; }
-.entity-Date { background-color: #99ffcc; border-color: #8ae6b8; }
-.entity-Money { background-color: #ffff99; border-color: #e6e68a; }
-.entity-Product, .entity-Produkt { background-color: #ffccff; border-color: #e6b8e6; } /* Handle both spellings */
-.entity-Email { background-color: #cccccc; border-color: #b8b8b8; }
-.entity-Phone-Number { background-color: #cccccc; border-color: #b8b8b8; } /* Use same as email for now */
-.entity-Address { background-color: #99ffff; border-color: #8ae6e6; }
-
-/* Default for unknown entities */
-.entity-DEFAULT { background-color: #e0e0e0; border-color: #c0c0c0; }
 
 .chunk-separator {
     border-top: 2px dashed #ccc;
