@@ -23,3 +23,7 @@ htmlcov/
 .pytest_cache/
 .*
 test/
+
+# Node
+node_modules/
+credgoo-node/
