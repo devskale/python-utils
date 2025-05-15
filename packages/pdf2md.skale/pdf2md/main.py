@@ -31,8 +31,8 @@ def count_files_by_type(directory: str, recursive: bool = False) -> dict:
     def process_dir(current_dir: str) -> None:
         """Process files in a single directory."""
         for item in os.listdir(current_dir):
-            # Skip hidden files/directories and ./md subdirs
-            if item.startswith('.') or item == 'md':
+            # Skip hidden files/directories, ./md subdirs, and files starting with '_'
+            if item.startswith('.') or item.startswith('_') or item == 'md':
                 continue
 
             item_path = os.path.join(current_dir, item)
@@ -78,8 +78,8 @@ def print_directory_stats(input_dir: str, recursive: bool = False) -> None:
     if recursive:
         # Process subdirectories
         for root, dirs, files in os.walk(input_dir):
-            # Skip hidden directories and ./md subdirs
-            dirs[:] = [d for d in dirs if not d.startswith('.') and d != 'md']
+            # Skip hidden directories, ./md subdirs, and directories starting with '_'
+            dirs[:] = [d for d in dirs if not d.startswith('.') and not d.startswith('_') and d != 'md']
 
             for dir_name in dirs:
                 dir_path = os.path.join(root, dir_name)
@@ -120,17 +120,17 @@ def process_directory(input_dir: str, converter: PDFtoMarkdown, args) -> tuple[i
     # Filter files based on extractor type
     if all(parser not in ['docling', 'marker'] for parser in args.parsers):
         supported_files = [f for f in os.listdir(input_dir)
-                           if f.lower().endswith('.pdf')]
+                           if not f.startswith('.') and not f.startswith('_') and f.lower().endswith('.pdf')]
         if not supported_files:
             print(f"No PDF files found in {input_dir}")
             return (0, 0)
     else:
         if 'marker' in args.parsers:
             supported_files = [f for f in os.listdir(input_dir)
-                               if f.lower().endswith('.pdf')]
+                               if not f.startswith('.') and not f.startswith('_') and f.lower().endswith('.pdf')]
         else:
             supported_files = [f for f in os.listdir(input_dir)
-                               if f.lower().endswith(('.pdf', '.docx', '.xlsx', '.pptx'))]
+                               if not f.startswith('.') and not f.startswith('_') and f.lower().endswith(('.pdf', '.docx', '.xlsx', '.pptx'))]
         if not supported_files:
             print(
                 f"No supported files (PDF/DOCX/XLSX/PPTX) found in {input_dir}")
@@ -300,8 +300,8 @@ def main():
         print("Starting conversion...\n")
 
         for root, dirs, files in os.walk(input_directory):
-            # Skip hidden directories and ./md subdirs
-            dirs[:] = [d for d in dirs if not d.startswith('.') and d != 'md']
+            # Skip hidden directories, ./md subdirs, and directories starting with '_'
+            dirs[:] = [d for d in dirs if not d.startswith('.') and not d.startswith('_') and d != 'md']
 
             # Process current directory
             print(
