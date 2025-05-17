@@ -76,11 +76,27 @@ def create_index(directory: str, recursive: bool = False) -> None:
                                 if potential_parser_name and potential_parser_name != 'marker' and potential_parser_name not in parsers:
                                     parsers.append(potential_parser_name)
 
+                # Determine default parser based on hierarchy
+                default_parser = ''
+                parser_hierarchy = ['docling', 'marker',
+                                    'llamaparse', 'pdfplumber']
+                if parsers:
+                    for p_hier in parser_hierarchy:
+                        if p_hier in parsers:
+                            default_parser = p_hier
+                            break
+                    if not default_parser and parsers:  # if no hierarchy match, pick first available
+                        default_parser = parsers[0]
+
                 index_data['files'].append({
                     'name': file,
                     'size': file_size,
                     'hash': file_hash,
-                    'parser': parsers if parsers else ''
+                    'parsers': {
+                        'det': parsers if parsers else [],
+                        'default': default_parser,
+                        'status': ''
+                    }
                 })
 
         # Process directories
