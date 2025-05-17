@@ -39,6 +39,9 @@ class ConfigManager:
             # Default parser
             'default_parser': 'pdfplumber',
 
+            # Index file name
+            'index_file_name': '.pdf2md_index.json',
+
             # API keys
             'llama_cloud_api_key': os.getenv('LLAMA_CLOUD_API_KEY', ''),
 

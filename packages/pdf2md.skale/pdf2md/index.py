@@ -4,6 +4,7 @@ import os
 import time
 import json
 import hashlib
+from .config import ConfigManager
 
 
 def create_index(directory: str, recursive: bool = False) -> None:
@@ -99,7 +100,9 @@ def create_index(directory: str, recursive: bool = False) -> None:
                 })
 
         # Write index file
-        index_path = os.path.join(root, '.pdf2md_index.json')
+        config = ConfigManager()
+        index_file_name = config.get('index_file_name')
+        index_path = os.path.join(root, index_file_name)
         with open(index_path, 'w') as f:
             json.dump(index_data, f)
 
@@ -120,7 +123,9 @@ def update_index(directory: str, max_age: int = 30, recursive: bool = False) -> 
         dirs[:] = [d for d in dirs if not d.startswith(
             '.') and not d.startswith('_') and d != 'md']
 
-        index_path = os.path.join(root, '.pdf2md_index.json')
+        config = ConfigManager()
+        index_file_name = config.get('index_file_name')
+        index_path = os.path.join(root, index_file_name)
 
         if os.path.exists(index_path):
             # Check if index needs updating
@@ -150,7 +155,9 @@ def clear_index(directory: str, recursive: bool = False) -> None:
         dirs[:] = [d for d in dirs if not d.startswith(
             '.') and not d.startswith('_') and d != 'md']
 
-        index_path = os.path.join(root, '.pdf2md_index.json')
+        config = ConfigManager()
+        index_file_name = config.get('index_file_name')
+        index_path = os.path.join(root, index_file_name)
         if os.path.exists(index_path):
             os.remove(index_path)
 
