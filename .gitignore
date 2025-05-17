@@ -27,3 +27,5 @@ test/
 # Node
 node_modules/
 credgoo-node/
+syncdata/
+syncdata
