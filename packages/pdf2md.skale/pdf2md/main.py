@@ -1,15 +1,18 @@
 # main.py - Main entry point for PDF to Markdown conversion
 
+from pdf2md.config import config
+from pdf2md.converter import PDFtoMarkdown
+from pdf2md.factory import ExtractorFactory
+from pdf2md.index import create_index, update_index, clear_index
 import os
 import argparse
 import platform
 import glob
 from typing import List, Optional
-
+import time
+import json
+import hashlib
 # Import local modules
-from pdf2md.factory import ExtractorFactory
-from pdf2md.converter import PDFtoMarkdown
-from pdf2md.config import config
 
 
 def count_files_by_type(directory: str, recursive: bool = False) -> dict:
@@ -323,6 +326,10 @@ def main():
                         help="Update pdf2md to the latest version from GitHub")
     parser.add_argument("--clear-parser",
                         help="Clear markdown files for a specific parser (e.g. 'marker')")
+    parser.add_argument("--index", choices=['create', 'update', 'clear'], default='update',
+                        help="Index operations: create new index, update existing (default), or clear all indexes")
+    parser.add_argument("--index-age", type=int, default=30,
+                        help="Maximum age (in seconds) for index files before they're considered stale (default: 30)")
     args = parser.parse_args()
 
     if args.version:
@@ -351,6 +358,24 @@ def main():
             return
 
     input_directory = args.input_directory
+
+    # Handle index operations
+    if args.index == 'create':
+        print(f"Creating new indexes in {input_directory}")
+        create_index(input_directory, args.recursive)
+        print("Index creation complete!")
+        return
+    elif args.index == 'update':
+        print(
+            f"Updating indexes in {input_directory} (max age: {args.index_age}s)")
+        update_index(input_directory, args.index_age, args.recursive)
+        print("Index update complete!")
+        return
+    elif args.index == 'clear':
+        print(f"Clearing indexes in {input_directory}")
+        clear_index(input_directory, args.recursive)
+        print("Index clearing complete!")
+        return
 
     if not os.path.exists(input_directory):
         print(f"Error: The input directory {input_directory} does not exist.")
