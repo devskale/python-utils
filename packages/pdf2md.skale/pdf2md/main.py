@@ -298,6 +298,8 @@ def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(
         description="Convert PDF to Markdown\n\nInstallation:\n  pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/pdf2md.skale")
+    parser.add_argument("--version", action="store_true",
+                        help="Show version and exit")
     parser.add_argument("input_directory", nargs='?', default=default_input,
                         help=f"Directory containing PDF files (default: {default_input})")
     parser.add_argument("--overwrite", action="store_true",
@@ -322,6 +324,12 @@ def main():
     parser.add_argument("--clear-parser",
                         help="Clear markdown files for a specific parser (e.g. 'marker')")
     args = parser.parse_args()
+
+    if args.version:
+        from pkg_resources import get_distribution
+        version = get_distribution('pdf2md-skale').version
+        print(f"pdf2md version {version}")
+        return
 
     if args.clear_parser:
         print(f"Clearing markdown files for parser: {args.clear_parser}")

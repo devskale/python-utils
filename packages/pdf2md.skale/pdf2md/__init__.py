@@ -1,4 +1,6 @@
-# pdf2md package initialization
+"""
+PDF to Markdown converter package.
+"""
 
 # Import only essential components for immediate access
 from pdf2md.base import PDFExtractor
@@ -9,6 +11,8 @@ from pdf2md.config import config
 from pdf2md.main import main
 
 # Lazy imports for other components
+
+
 def __getattr__(name):
     """Lazily import components when they are first accessed."""
     if name == 'MetadataGenerator':
@@ -22,4 +26,5 @@ def __getattr__(name):
         return locals()[name]
     raise AttributeError(f"module 'pdf2md' has no attribute '{name}'")
 
-__version__ = '0.3.0'
+
+# Version is defined in setup.py
