@@ -545,13 +545,13 @@ class PDFtoMarkdown:
 
 def main():
     # Set default input and output directories
-    root_folder = os.getenv('ROOT_FOLDER', '../vDaten')
+    root_folder = os.getenv('ROOT_FOLDER', '')
     default_input = os.path.join(root_folder, '')
     default_output = os.path.join(root_folder, 'md')
 
     parser = argparse.ArgumentParser(description="Convert PDF to Markdown")
     parser.add_argument("input_directory", nargs='?', default=default_input,
-                        help="Directory containing PDF files (default: ../vDaten/work)")
+                        help="Directory containing PDF files")
     parser.add_argument("output_directory", nargs='?', default=None,
                         help="Directory to save Markdown files (default: input_directory/md)")
     parser.add_argument("--overwrite", action="store_true",
@@ -570,7 +570,7 @@ def main():
     overwrite = args.overwrite
 
     if not os.path.exists(input_directory):
-        print(f"Error: The input directory {input_directory} does not exist.")
+        print(f"Error: The source directory {input_directory} does not exist.")
         return
 
     print(f"\nProcessing PDF files in: {os.path.abspath(input_directory)}")

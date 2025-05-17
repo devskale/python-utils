@@ -3,6 +3,7 @@
 import os
 import argparse
 import platform
+import glob
 from typing import List, Optional
 
 # Import local modules
@@ -79,7 +80,8 @@ def print_directory_stats(input_dir: str, recursive: bool = False) -> None:
         # Process subdirectories
         for root, dirs, files in os.walk(input_dir):
             # Skip hidden directories, ./md subdirs, and directories starting with '_'
-            dirs[:] = [d for d in dirs if not d.startswith('.') and not d.startswith('_') and d != 'md']
+            dirs[:] = [d for d in dirs if not d.startswith(
+                '.') and not d.startswith('_') and d != 'md']
 
             for dir_name in dirs:
                 dir_path = os.path.join(root, dir_name)
@@ -195,6 +197,99 @@ def process_directory(input_dir: str, converter: PDFtoMarkdown, args) -> tuple[i
     return processed_files, skipped_files
 
 
+def clear_parser_files(directory: str, parser_name: Optional[str] = None, recursive: bool = False) -> None:
+    """Recursively remove markdown files for a specific parser or all .md files if no parser specified.
+    For Marker parser, also removes the nested 'md/{basename}' directories.
+
+    Args:
+        directory: Path to directory to scan
+        parser_name: Name of parser to clear files for (None to clear all .md files)
+        recursive: Whether to scan subdirectories recursively
+    """
+    def clear_dir(current_dir: str) -> None:
+        """Clear files in a single directory."""
+        # First check for md subdirectory
+        md_dir = os.path.join(current_dir, 'md')
+        if os.path.exists(md_dir):
+            for item in os.listdir(md_dir):
+                # Skip hidden files/directories and files starting with '_'
+                if item.startswith('.') or item.startswith('_'):
+                    continue
+
+                item_path = os.path.join(md_dir, item)
+
+                # Handle Marker's special directory structure
+                if parser_name and parser_name.lower() == 'marker' and os.path.isdir(item_path):
+                    # Remove all .marker.md files in the directory
+                    for marker_file in glob.glob(os.path.join(item_path, '*.marker.md')):
+                        try:
+                            os.remove(marker_file)
+                            print(f"Removed: {marker_file}")
+                        except OSError as e:
+                            print(f"Error removing {marker_file}: {e}")
+                    # Remove the directory itself if empty or contains only non-Marker files
+                    try:
+                        remaining_files = [f for f in os.listdir(item_path)
+                                           if not f.startswith(('.', '_'))
+                                           and not f.endswith('.marker.md')]
+                        if not remaining_files:
+                            os.rmdir(item_path)
+                            print(f"Removed directory: {item_path}")
+                        else:
+                            print(
+                                f"Directory not empty (contains non-Marker files): {item_path}")
+                    except OSError as e:
+                        print(f"Error removing directory {item_path}: {e}")
+                    continue
+
+                # Remove files matching the pattern
+                if parser_name:
+                    if item.lower().endswith(f'.{parser_name.lower()}.md'):
+                        try:
+                            os.remove(item_path)
+                            print(f"Removed: {item_path}")
+                        except OSError as e:
+                            print(f"Error removing {item_path}: {e}")
+                else:
+                    if item.lower().endswith('.md'):
+                        try:
+                            os.remove(item_path)
+                            print(f"Removed: {item_path}")
+                        except OSError as e:
+                            print(f"Error removing {item_path}: {e}")
+
+        # Process regular files in current directory (for backward compatibility)
+        for item in os.listdir(current_dir):
+            # Skip hidden files/directories and files starting with '_'
+            if item.startswith('.') or item.startswith('_') or item == 'md':
+                continue
+
+            item_path = os.path.join(current_dir, item)
+
+            if os.path.isdir(item_path):
+                if recursive:
+                    clear_dir(item_path)
+                continue
+
+            # Remove files matching the pattern
+            if parser_name:
+                if item.lower().endswith(f'.{parser_name.lower()}.md'):
+                    try:
+                        os.remove(item_path)
+                        print(f"Removed: {item_path}")
+                    except OSError as e:
+                        print(f"Error removing {item_path}: {e}")
+            else:
+                if item.lower().endswith('.md'):
+                    try:
+                        os.remove(item_path)
+                        print(f"Removed: {item_path}")
+                    except OSError as e:
+                        print(f"Error removing {item_path}: {e}")
+
+    clear_dir(directory)
+
+
 def main():
     """Main entry point for the PDF to Markdown converter."""
     # Get default input directory from config
@@ -224,7 +319,16 @@ def main():
                         help="Dry run - show file counts without conversion")
     parser.add_argument("--update", action="store_true",
                         help="Update pdf2md to the latest version from GitHub")
+    parser.add_argument("--clear-parser",
+                        help="Clear markdown files for a specific parser (e.g. 'marker')")
     args = parser.parse_args()
+
+    if args.clear_parser:
+        print(f"Clearing markdown files for parser: {args.clear_parser}")
+        clear_parser_files(args.input_directory,
+                           args.clear_parser, args.recursive)
+        print("Clear operation complete!")
+        return
 
     if args.update:
         print("Updating pdf2md from GitHub...")
@@ -301,7 +405,8 @@ def main():
 
         for root, dirs, files in os.walk(input_directory):
             # Skip hidden directories, ./md subdirs, and directories starting with '_'
-            dirs[:] = [d for d in dirs if not d.startswith('.') and not d.startswith('_') and d != 'md']
+            dirs[:] = [d for d in dirs if not d.startswith(
+                '.') and not d.startswith('_') and d != 'md']
 
             # Process current directory
             print(
