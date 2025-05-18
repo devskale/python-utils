@@ -234,9 +234,11 @@ def clear_parser_files(directory: str, parser_name: Optional[str] = None, recurs
                     # Remove the directory itself, regardless of its contents
                     try:
                         shutil.rmtree(item_path)
-                        print(f"Removed directory and its contents: {item_path}")
+                        print(
+                            f"Removed directory and its contents: {item_path}")
                     except OSError as e:
-                        print(f"Error removing directory {item_path} and its contents: {e}")
+                        print(
+                            f"Error removing directory {item_path} and its contents: {e}")
                     continue
 
                 # Remove files matching the pattern
@@ -320,8 +322,8 @@ def main():
                         help="Update pdf2md to the latest version from GitHub")
     parser.add_argument("--clear-parser",
                         help="Clear markdown files for a specific parser (e.g. 'marker')")
-    parser.add_argument("--index", choices=['create', 'update', 'clear'], default='update',
-                        help="Index operations: create new index, update existing (default), or clear all indexes")
+    parser.add_argument("--index", choices=['create', 'update', 'clear'],
+                        help="Index operations: create new index, update existing, or clear all indexes")
     parser.add_argument("--index-age", type=int, default=30,
                         help="Maximum age (in seconds) for index files before they're considered stale (default: 30)")
     args = parser.parse_args()
@@ -330,6 +332,24 @@ def main():
         from pkg_resources import get_distribution
         version = get_distribution('pdf2md-skale').version
         print(f"pdf2md version {version}")
+        return
+
+    # Handle index operations
+    if args.index == 'create':
+        print(f"Creating new indexes in {input_directory}")
+        create_index(input_directory, args.recursive)
+        print("Index creation complete!")
+        return
+    elif args.index == 'update':
+        print(
+            f"Updating indexes in {input_directory} (max age: {args.index_age}s)")
+        update_index(input_directory, args.index_age, args.recursive)
+        print("Index update complete!")
+        return
+    elif args.index == 'clear':
+        print(f"Clearing indexes in {input_directory}")
+        clear_index(input_directory, args.recursive)
+        print("Index clearing complete!")
         return
 
     if args.clear_parser:
@@ -352,24 +372,6 @@ def main():
             return
 
     input_directory = args.input_directory
-
-    # Handle index operations
-    if args.index == 'create':
-        print(f"Creating new indexes in {input_directory}")
-        create_index(input_directory, args.recursive)
-        print("Index creation complete!")
-        return
-    elif args.index == 'update':
-        print(
-            f"Updating indexes in {input_directory} (max age: {args.index_age}s)")
-        update_index(input_directory, args.index_age, args.recursive)
-        print("Index update complete!")
-        return
-    elif args.index == 'clear':
-        print(f"Clearing indexes in {input_directory}")
-        clear_index(input_directory, args.recursive)
-        print("Index clearing complete!")
-        return
 
     if not os.path.exists(input_directory):
         print(f"Error: The input directory {input_directory} does not exist.")
