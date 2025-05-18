@@ -325,7 +325,7 @@ def main():
     parser.add_argument("--index", choices=['create', 'update', 'clear'],
                         help="Index operations: create new index, update existing, or clear all indexes")
     parser.add_argument("--index-age", type=int, default=30,
-                        help="Maximum age (in seconds) for index files before they're considered stale (default: 30)")
+                        help="Maximum age (in seconds) for index files before they're considered stale (default: 5)")
     args = parser.parse_args()
 
     if args.version:
@@ -336,19 +336,19 @@ def main():
 
     # Handle index operations
     if args.index == 'create':
-        print(f"Creating new indexes in {input_directory}")
-        create_index(input_directory, args.recursive)
+        print(f"Creating new indexes in {args.input_directory}")
+        create_index(args.input_directory, args.recursive)
         print("Index creation complete!")
         return
     elif args.index == 'update':
         print(
-            f"Updating indexes in {input_directory} (max age: {args.index_age}s)")
-        update_index(input_directory, args.index_age, args.recursive)
+            f"Updating indexes in {args.input_directory} (max age: {args.index_age}s)")
+        update_index(args.input_directory, args.index_age, args.recursive)
         print("Index update complete!")
         return
     elif args.index == 'clear':
-        print(f"Clearing indexes in {input_directory}")
-        clear_index(input_directory, args.recursive)
+        print(f"Clearing indexes in {args.input_directory}")
+        clear_index(args.input_directory, args.recursive)
         print("Index clearing complete!")
         return
 

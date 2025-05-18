@@ -210,9 +210,38 @@ def _compare_and_print_index_changes(old_data: Optional[Dict], new_data: Dict, i
                 diffs.append(
                     f"hash ({old_file_meta['hash'][:7]}... -> {new_file_meta['hash'][:7]}...)")
             if old_file_meta['parsers'] != new_file_meta['parsers']:
-                # Comparing default for brevity
-                diffs.append(
-                    f"parsers ({old_file_meta['parsers']['default'] or 'None'} -> {new_file_meta['parsers']['default'] or 'None'})")
+                old_parsers_info = old_file_meta['parsers']
+                new_parsers_info = new_file_meta['parsers']
+                parser_diff_parts = []
+
+                # Check default parser change
+                if old_parsers_info.get('default', '') != new_parsers_info.get('default', ''):
+                    parser_diff_parts.append(
+                        f"default: '{old_parsers_info.get('default', '') or 'None'}' -> '{new_parsers_info.get('default', '') or 'None'}'"
+                    )
+
+                # Check detected parsers changes
+                old_det_set = set(old_parsers_info.get('det', []))
+                new_det_set = set(new_parsers_info.get('det', []))
+
+                added_parsers = sorted(list(new_det_set - old_det_set))
+                removed_parsers = sorted(list(old_det_set - new_det_set))
+
+                if added_parsers:
+                    parser_diff_parts.append(
+                        f"detected_added: {', '.join(added_parsers)}")
+                if removed_parsers:
+                    parser_diff_parts.append(
+                        f"detected_removed: {', '.join(removed_parsers)}")
+
+                # Check status change
+                if old_parsers_info.get('status', '') != new_parsers_info.get('status', ''):
+                    parser_diff_parts.append(
+                        f"status: '{old_parsers_info.get('status', '')}' -> '{new_parsers_info.get('status', '')}'"
+                    )
+
+                if parser_diff_parts:  # Only add to diffs if there are actual parser changes to report
+                    diffs.append(f"parsers ({'; '.join(parser_diff_parts)})")
             if diffs:
                 print(f"  ~ Modified file: {name} ({', '.join(diffs)})")
                 changes_made = True
@@ -388,7 +417,7 @@ def create_index(directory: str, recursive: bool = False) -> None:
             break
 
 
-def update_index(directory: str, max_age: int = 30, recursive: bool = False) -> None:
+def update_index(directory: str, max_age: int = 5, recursive: bool = False) -> None:
     """Update existing index files if they're older than max_age seconds.
 
     Args:

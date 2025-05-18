@@ -103,7 +103,7 @@ class LlamaParseExtractor(PDFExtractor):
             try:
                 from credgoo import get_api_key
                 self.api_key = get_api_key("llamacloud")
-                print("Using cached API key for llamacloud")
+#                print("Using cached API key for llamacloud")
             except ImportError:
                 raise ValueError(
                     "LLAMA_CLOUD_API_KEY not found in environment variables and credgoo not available")

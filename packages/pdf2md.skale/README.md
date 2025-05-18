@@ -29,6 +29,7 @@
 - **Environment Variable Support:** Uses `.env` file for API keys (e.g., `LLAMA_CLOUD_API_KEY`).
 - **Multiple Parsers:** You can select multiple parsers to use.
 - **System Architecture:** Updated architecture supports modular extractors and processors.
+- **Indexing System:** Comprehensive file tracking with hash-based change detection and parser status tracking.
 
 ## Prerequisites
 
@@ -121,6 +122,34 @@
     pdf2md <input_directory> --parsers pdfplumber pymupdf
     ```
     - This will create two markdown files for each pdf, one with the pdfplumber parser and one with the pymupdf parser.
+
+## Indexing System
+
+The pdf2md tool includes a sophisticated indexing system that tracks:
+
+- File metadata (name, size, hash)
+- Parser status for each file
+- Directory structure changes
+
+The index helps with:
+
+1. **Incremental Updates:** Only processes changed files by comparing hashes
+2. **Parser Status Tracking:** Knows which parsers have already processed each file
+3. **Change Detection:** Identifies added, removed or modified files
+4. **Directory Monitoring:** Tracks nested directory structures
+
+Index files (`.pdf2md_index.json`) are created in each processed directory. You can manage indexes using these CLI options:
+
+```bash
+# Create fresh indexes
+pdf2md --index create
+
+# Update existing indexes
+pdf2md --index update
+
+# Clear all indexes
+pdf2md --index clear
+```
 
 ## Example
 
