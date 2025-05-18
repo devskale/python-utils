@@ -8,6 +8,7 @@ import os
 import argparse
 import platform
 import glob
+import shutil
 from typing import List, Optional
 import time
 import json
@@ -230,19 +231,12 @@ def clear_parser_files(directory: str, parser_name: Optional[str] = None, recurs
                             print(f"Removed: {marker_file}")
                         except OSError as e:
                             print(f"Error removing {marker_file}: {e}")
-                    # Remove the directory itself if empty or contains only non-Marker files
+                    # Remove the directory itself, regardless of its contents
                     try:
-                        remaining_files = [f for f in os.listdir(item_path)
-                                           if not f.startswith(('.', '_'))
-                                           and not f.endswith('.marker.md')]
-                        if not remaining_files:
-                            os.rmdir(item_path)
-                            print(f"Removed directory: {item_path}")
-                        else:
-                            print(
-                                f"Directory not empty (contains non-Marker files): {item_path}")
+                        shutil.rmtree(item_path)
+                        print(f"Removed directory and its contents: {item_path}")
                     except OSError as e:
-                        print(f"Error removing directory {item_path}: {e}")
+                        print(f"Error removing directory {item_path} and its contents: {e}")
                     continue
 
                 # Remove files matching the pattern
