@@ -121,7 +121,7 @@ def _generate_index_data_for_path(current_root: str, sub_dir_names: List[str], f
 
 
 # Helper function to compare index data and print changes
-def _compare_and_print_index_changes(old_data: Optional[Dict], new_data: Dict, index_file_path: str):
+def _compare_and_print_index_changes(old_data: Optional[Dict], new_data: Dict, index_file_path: str, test_mode: bool = False):
     """Compares old and new index data and prints changes verbosely.
 
     Args:
@@ -260,19 +260,31 @@ def _compare_and_print_index_changes(old_data: Optional[Dict], new_data: Dict, i
         else:
             old_dir_meta = old_dirs_map[name]
             diffs = []
+            size_changed_significantly = False  # Tracks if size changed by more than 1 byte
+            hash_changed = old_dir_meta['hash'] != new_dir_meta['hash']
+
             if old_dir_meta['size'] != new_dir_meta['size']:
+                size_diff_val = abs(
+                    old_dir_meta['size'] - new_dir_meta['size'])
                 diffs.append(
                     f"size ({old_dir_meta['size']} -> {new_dir_meta['size']})")
-            if old_dir_meta['hash'] != new_dir_meta['hash']:
+                if size_diff_val > 1:
+                    size_changed_significantly = True
+
+            if hash_changed:
                 diffs.append(
                     f"hash ({old_dir_meta['hash'][:7]}... -> {new_dir_meta['hash'][:7]}...)")
-            # Skip printing for minor size changes (likely just timestamp updates)
-            if len(diffs) == 1 and 'size' in diffs[0] and abs(old_dir_meta['size'] - new_dir_meta['size']) <= 1:
-                continue
-            # Only print detailed directory modification if there's a hash change or significant size change
-            if old_dir_meta['hash'] != new_dir_meta['hash'] or abs(old_dir_meta['size'] - new_dir_meta['size']) > 1:
-                print(f"  ~ Modified directory: {name} ({', '.join(diffs)})")
-                changes_made = True
+
+                # Determine if we should print a modification message.
+                # Print if hash changed OR if size changed significantly (by more than 1 byte).
+                # Do not print if only size changed by 1 byte or less and hash remained the same.
+                if hash_changed or size_changed_significantly:
+                    message = f"  ~ Modified directory: {name} ({', '.join(diffs)})"
+                    # Add specific note if only size changed significantly (hash is the same)
+                    if not hash_changed and size_changed_significantly:
+                        message += " (likely due to content changes within files in this directory)"
+                    print(message)
+                    changes_made = True
 
     for name in old_dirs_map:
         if name not in new_dirs_map:
@@ -280,11 +292,15 @@ def _compare_and_print_index_changes(old_data: Optional[Dict], new_data: Dict, i
             changes_made = True
 
     # Skip printing message if only timestamp changed and no other changes
-    if not changes_made:
+    if not changes_made and not test_mode:  # Ensure header is printed in test_mode even if no changes
+        return
+    if test_mode and not changes_made_for_header and not changes_made:
+        # If in test mode and no changes were found, explicitly state that for this index file.
+        print(f"[TEST MODE] No changes detected for index: {index_file_path}")
         return
 
 
-def create_index(directory: str, recursive: bool = False) -> None:
+def create_index(directory: str, recursive: bool = False, test_mode: bool = False) -> None:
     """Create fresh .pdf2md_index.json files in each directory.
 
     Args:
@@ -411,13 +427,20 @@ def create_index(directory: str, recursive: bool = False) -> None:
         # We can simulate this by calling _compare_and_print_index_changes with old_data=None.
         # This check `__name__ == '__main__'` is a placeholder for a more robust way to detect direct call context if needed.
         # For now, let's assume direct calls to create_index should be verbose.
-        _compare_and_print_index_changes(None, index_data, index_path)
+        if not test_mode:
+            with open(index_path, 'w') as f:
+                json.dump(index_data, f, indent=4)
+        else:
+            print(
+                f"[TEST MODE] Would create index (not writing): {index_path}")
+        _compare_and_print_index_changes(
+            None, index_data, index_path, test_mode=test_mode)
 
         if not recursive:
             break
 
 
-def update_index(directory: str, max_age: int = 5, recursive: bool = False) -> None:
+def update_index(directory: str, max_age: int = 5, recursive: bool = False, test_mode: bool = False) -> None:
     """Update existing index files if they're older than max_age seconds.
 
     Args:
@@ -440,29 +463,28 @@ def update_index(directory: str, max_age: int = 5, recursive: bool = False) -> N
 
         if os.path.exists(index_path):
             index_age = time.time() - os.path.getmtime(index_path)
-            if index_age <= max_age:
+            if index_age <= max_age and not test_mode:  # In test_mode, always proceed to check for changes
                 print(
                     f"Index is up-to-date: {index_path} (age: {index_age:.2f}s)")
                 needs_update = False
             else:
-                # Remove the 'Index is stale' print statement
-                # print(
-                #     f"Index is stale (age: {index_age:.2f}s > {max_age}s), attempting update: {index_path}")
                 try:
                     with open(index_path, 'r') as f:
                         old_index_data = json.load(f)
                 except json.JSONDecodeError:
                     print(
                         f"  Warning: Could not read old index file {index_path}. Will create a new one.")
-                    old_index_data = None  # Treat as if no old index existed
+                    old_index_data = None
                 except Exception as e:
                     print(
                         f"  Warning: Error reading old index file {index_path}: {e}. Will create a new one.")
                     old_index_data = None
         else:
-            print(f"Index file not found, will create: {index_path}")
+            # This message will be effectively shown by _compare_and_print_index_changes when old_data is None
+            # print(f"Index file not found, will create: {index_path}")
+            old_index_data = None  # Ensure old_index_data is None if file not found
 
-        if not needs_update:
+        if not needs_update and not test_mode:
             if not recursive:
                 break
             continue
@@ -471,17 +493,20 @@ def update_index(directory: str, max_age: int = 5, recursive: bool = False) -> N
         new_index_data = _generate_index_data_for_path(
             root, filtered_sub_dirs, files_in_root)
 
-        # Compare and print changes before writing
+        # Compare and print changes
         _compare_and_print_index_changes(
-            old_index_data, new_index_data, index_path)
+            old_index_data, new_index_data, index_path, test_mode=test_mode)
 
-        # Write the new index file
-        try:
-            with open(index_path, 'w') as f:
-                json.dump(new_index_data, f, indent=4)
-            # No need to print success here as _compare_and_print_index_changes handles it
-        except IOError as e:
-            print(f"  Error writing index file {index_path}: {e}")
+        # Write the new index file only if not in test_mode
+        if not test_mode:
+            try:
+                with open(index_path, 'w') as f:
+                    json.dump(new_index_data, f, indent=4)
+            except IOError as e:
+                print(f"  Error writing index file {index_path}: {e}")
+        # else:
+            # If in test_mode, the _compare_and_print_index_changes function already indicates actions.
+            # print(f"[TEST MODE] Would update/create index (not writing): {index_path}")
 
         if not recursive:
             break

@@ -322,8 +322,8 @@ def main():
                         help="Update pdf2md to the latest version from GitHub")
     parser.add_argument("--clear-parser",
                         help="Clear markdown files for a specific parser (e.g. 'marker')")
-    parser.add_argument("--index", choices=['create', 'update', 'clear'],
-                        help="Index operations: create new index, update existing, or clear all indexes")
+    parser.add_argument("--index", choices=['create', 'update', 'clear', 'test'],
+                        help="Index operations: create new index, update existing, clear all indexes, or test index update (dry run)")
     parser.add_argument("--index-age", type=int, default=30,
                         help="Maximum age (in seconds) for index files before they're considered stale (default: 5)")
     args = parser.parse_args()
@@ -343,8 +343,16 @@ def main():
     elif args.index == 'update':
         print(
             f"Updating indexes in {args.input_directory} (max age: {args.index_age}s)")
-        update_index(args.input_directory, args.index_age, args.recursive)
+        update_index(args.input_directory, args.index_age,
+                     args.recursive, test_mode=False)
         print("Index update complete!")
+        return
+    elif args.index == 'test':
+        print(
+            f"Testing index update in {args.input_directory} (max age: {args.index_age}s) - NO CHANGES WILL BE SAVED")
+        update_index(args.input_directory, args.index_age,
+                     args.recursive, test_mode=True)
+        print("Index test complete!")
         return
     elif args.index == 'clear':
         print(f"Clearing indexes in {args.input_directory}")
