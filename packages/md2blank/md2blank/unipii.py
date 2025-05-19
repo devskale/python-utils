@@ -263,11 +263,11 @@ if __name__ == "__main__":
     print(f"unipii.py standalone: Input: {input_filepath}, Output: {output_filepath}", file=sys.stderr) # Log paths
 
     # Check credentials needed for standalone execution
-    if not credgoo_encryption_token or not credgoo_api_token:
-        # Ensure errors go to stderr
-        print("Error: CREDGOO_ENCRYPTION_KEY or CREDGOO_BEARER_TOKEN not found in environment variables or .env file.", file=sys.stderr)
-        print("Please ensure these variables are set for standalone execution.", file=sys.stderr)
-        sys.exit(1)
+#    if not credgoo_encryption_token or not credgoo_api_token:
+#        # Ensure errors go to stderr
+#        print("Error: CREDGOO_ENCRYPTION_KEY or CREDGOO_BEARER_TOKEN not found in environment variables or .env file.", file=sys.stderr)
+#        print("Please ensure these variables are set for standalone execution.", file=sys.stderr)
+#        sys.exit(1)
     print("unipii.py standalone: CREDGOO tokens found.", file=sys.stderr) # Log credential check success
 
     # Read the input file

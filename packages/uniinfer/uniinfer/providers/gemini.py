@@ -7,6 +7,7 @@ from ..core import ChatProvider, ChatCompletionRequest, ChatCompletionResponse, 
 from ..errors import map_provider_error
 
 # Try to import the google.generativeai package
+# Note: Install with 'pip install google-generativeai' if not available
 try:
     import google.generativeai as genai
     from google.generativeai import types
@@ -133,8 +134,34 @@ class GeminiProvider(ChatProvider):
                 generation_config=config
             )
 
+            # Check for content filtering
+            if response.prompt_feedback and response.prompt_feedback.block_reason:
+                raise UniInferError(
+                    f"Gemini content generation blocked. Reason: {response.prompt_feedback.block_reason}. "
+                    f"Safety ratings: {response.prompt_feedback.safety_ratings}"
+                )
+
             # Extract response text
-            content = response.text if hasattr(response, "text") else ""
+            # Ensure parts exist and are not empty before accessing text
+            content = ""
+            if response.parts:
+                try:
+                    content = response.text # Preferred way, handles multi-part correctly if applicable
+                except ValueError: # Handles cases where .text might raise ValueError (e.g. no parts with text)
+                    # Fallback to iterating parts if .text fails or parts exist but .text is empty.
+                    # Concatenate text from all text-bearing parts in the response.
+                    all_parts_text_list = []
+                    for part in response.parts:
+                        # Check if the part has a 'text' attribute and if it's not None or empty
+                        part_text_content = getattr(part, 'text', None)
+                        if part_text_content: # This ensures part_text_content is not None and not an empty string
+                            all_parts_text_list.append(part_text_content)
+                    if all_parts_text_list:
+                        content = "".join(all_parts_text_list)
+            
+            if not content and not (response.prompt_feedback and response.prompt_feedback.block_reason):
+                # If content is still empty and not blocked, it might be an empty generation
+                print("Warning: Gemini response has no text content and no explicit block reason.")
 
             # Create a ChatMessage from the response
             message = ChatMessage(
@@ -241,11 +268,37 @@ class GeminiProvider(ChatProvider):
 
             # Process the streaming response
             for chunk in stream:
-                if hasattr(chunk, "text"):
+                # Check for content filtering in each chunk
+                if chunk.prompt_feedback and chunk.prompt_feedback.block_reason:
+                    # Yield a response indicating blockage, or raise an error
+                    # For now, let's raise an error to make it explicit
+                    raise UniInferError(
+                        f"Gemini content generation blocked mid-stream. Reason: {chunk.prompt_feedback.block_reason}. "
+                        f"Safety ratings: {chunk.prompt_feedback.safety_ratings}"
+                    )
+
+                # Ensure parts exist and are not empty before accessing text
+                chunk_text = ""
+                if chunk.parts:
+                    try:
+                        chunk_text = chunk.text # Preferred way
+                    except ValueError: # Handles cases where .text might raise ValueError
+                        # Fallback to iterating parts if .text fails.
+                        # Concatenate text from all text-bearing parts in the chunk.
+                        all_parts_text_list = []
+                        for part in chunk.parts:
+                            # Check if the part has a 'text' attribute and if it's not None or empty
+                            part_text_content = getattr(part, 'text', None)
+                            if part_text_content: # This ensures part_text_content is not None and not an empty string
+                                all_parts_text_list.append(part_text_content)
+                        if all_parts_text_list:
+                            chunk_text = "".join(all_parts_text_list)
+                
+                if chunk_text:
                     # Create a message for this chunk
                     message = ChatMessage(
                         role="assistant",
-                        content=chunk.text
+                        content=chunk_text
                     )
 
                     # Create a response for this chunk
@@ -256,6 +309,12 @@ class GeminiProvider(ChatProvider):
                         usage={},
                         raw_response=chunk
                     )
+                elif not (chunk.prompt_feedback and chunk.prompt_feedback.block_reason):
+                    # If no text and not blocked, it might be an empty chunk or end of stream signal
+                    # Depending on Gemini's stream behavior, this might be normal or an issue
+                    # For now, we'll just skip empty, non-blocked chunks
+                    # print(f"DEBUG: Gemini stream chunk has no text and no block reason: {chunk}")
+                    pass
 
         except Exception as e:
             # Map the error to a standardized format

@@ -25,10 +25,10 @@ if not found_dotenv:
 credgoo_encryption_token = os.getenv('CREDGOO_ENCRYPTION_KEY')
 credgoo_api_token = os.getenv('CREDGOO_BEARER_TOKEN')
 
-if not credgoo_encryption_token or not credgoo_api_token:
-    print("Error: CREDGOO_ENCRYPTION_KEY or CREDGOO_BEARER_TOKEN not found in environment variables or .env file.")
-    print("Please ensure these variables are set.")
-    sys.exit(1)  # Exit if credentials are missing
+#if not credgoo_encryption_token or not credgoo_api_token:
+#    print("Error: CREDGOO_ENCRYPTION_KEY or CREDGOO_BEARER_TOKEN not found in environment variables or .env file.")
+#    print("Please ensure these variables are set.")
+#    sys.exit(1)  # Exit if credentials are missing
 
 # Define the target entities - expanded list
 target_entities = "Personenname, Telefonnummer, E-Mail, Adressinformation, Firmenname"

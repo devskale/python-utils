@@ -10,6 +10,8 @@ setup(
     packages=find_packages(where='.', include=['uniinfer*']),
     install_requires=[
         "requests>=2.25.0",
+        "python-dotenv>=1.0.0",
+        "openai"
     ],
     classifiers=[
         "Development Status :: 3 - Alpha",
