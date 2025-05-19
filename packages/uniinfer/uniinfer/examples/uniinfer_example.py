@@ -52,10 +52,10 @@ def main():
     credgoo_api_token = args.bearer_token or os.getenv('CREDGOO_BEARER_TOKEN')
     bearer_token = f"{credgoo_api_token}@{credgoo_encryption_token}" if credgoo_api_token and credgoo_encryption_token else None
 
-    if not credgoo_api_token or not credgoo_encryption_token:
-        print("Error: CREDGOO_ENCRYPTION_KEY or CREDGOO_BEARER_TOKEN not found.")
-        print("Please provide them either via command-line arguments (--encryption-key, --bearer-token) or environment variables.")
-        return
+#    if not credgoo_api_token or not credgoo_encryption_token:
+#        print("Error: CREDGOO_ENCRYPTION_KEY or CREDGOO_BEARER_TOKEN not found.")
+#        print("Please provide them either via command-line arguments (--encryption-key, --bearer-token) or environment variables.")
+#        return
     provider = args.provider
     retrieved_api_key = get_api_key(
         service=provider,
