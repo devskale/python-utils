@@ -14,6 +14,7 @@ from .upstage import UpstageProvider
 from .ngc import NGCProvider
 from .cloudflare import CloudflareProvider
 from .chutes import ChutesProvider
+from .pollinations import PollinationsProvider
 
 # Import providers with optional dependencies
 try:
@@ -67,7 +68,8 @@ __all__ = [
     'UpstageProvider',
     'NGCProvider',
     'CloudflareProvider',
-    'ChutesProvider'
+    'ChutesProvider',
+    'PollinationsProvider'
 ]
 
 # Add optional providers to __all__ if available

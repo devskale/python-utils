@@ -119,6 +119,11 @@ PROVIDER_CONFIGS = {
         'default_model': 'deepseek-ai/DeepSeek-V3-0324',
         'needs_api_key': True,
     },
+    'pollinations': {
+        'name': 'Pollinations AI',
+        'default_model': 'grok',
+        'needs_api_key': False,
+    },
     'cloudflare': {
         'name': 'Cloudflare Workers AI',
         'default_model': '@cf/meta/llama-4-scout-17b-16e-instruct',
