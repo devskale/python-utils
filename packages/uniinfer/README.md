@@ -285,6 +285,8 @@ print(f"Response from {provider_used}: {response.message.content}")
 | **Upstage**       | Solar models              | ✅        | API Key (credgoo) |
 | **NGC**           | NVIDIA GPU Cloud          | ✅        | API Key (credgoo) |
 | **Cloudflare**    | Workers AI models         | ✅        | API Key (credgoo) |
+| **Chutes**        | Deepseek, Qwen AI models  | ✅        | API Key (credgoo) |
+| **Pollinations**  | APIFree AI models         | ✅        | None              |
 
 Below are examples for some of our newer providers (all using automatic API key management with credgoo):
 
