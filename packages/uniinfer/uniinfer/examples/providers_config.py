@@ -114,6 +114,11 @@ PROVIDER_CONFIGS = {
         'default_model': 'nvidia/llama-3.3-nemotron-super-49b-v1',
         'needs_api_key': True,
     },
+    'chutes': {
+        'name': 'Chutes AI',
+        'default_model': 'Qwen/Qwen3-235B-A22B',
+        'needs_api_key': True,
+    },
     'cloudflare': {
         'name': 'Cloudflare Workers AI',
         'default_model': '@cf/meta/llama-4-scout-17b-16e-instruct',

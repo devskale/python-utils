@@ -51,6 +51,13 @@ try:
 except ImportError:
     HAS_GENAI = False
 
+try:
+    from uniinfer import ChutesProvider
+    HAS_CHUTES = True
+except ImportError:
+    HAS_CHUTES = False
+
+
 
 PROVIDER_CONFIGS = {
     'mistral': {
@@ -113,6 +120,11 @@ PROVIDER_CONFIGS = {
     'ngc': {
         'name': 'NVIDIA GPU Cloud (NGC)',
         'default_model': 'nvidia/llama-3.3-nemotron-super-49b-v1',
+        'needs_api_key': True,
+    },
+    'chutes': {
+        'name': 'Chutes AI',
+        'default_model': 'Qwen/Qwen3-235B-A22B',
         'needs_api_key': True,
     },
     'cloudflare': {

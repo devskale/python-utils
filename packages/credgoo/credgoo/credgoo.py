@@ -271,24 +271,6 @@ def get_api_key(service, bearer_token=None, encryption_key=None, api_url=None, c
     final_key = encryption_key if new_key_provided else stored_key
     final_url = api_url if new_url_provided else stored_url
 
-    # Store credentials only if new ones were provided and corresponding flags are set
-    should_store = (new_token_provided and args.save in ('all', 'token')) or \
-                   (new_key_provided and args.save in ('all', 'key')) or \
-                   (new_url_provided and args.save in ('all', 'url'))
-
-    if should_store:
-        # Pass only the newly provided values (or None) to store_credentials
-        # along with the flags to control which ones get saved.
-        store_credentials(
-            bearer_token if new_token_provided else None,
-            encryption_key if new_key_provided else None,
-            api_url if new_url_provided else None,
-            cred_file,
-            save_token,
-            save_key,
-            save_url
-        )
-
     # Use the final determined credentials for the API call
     if not final_token or not final_key:
         print("Error: Bearer token and encryption key are required (either provided or stored).")
@@ -337,6 +319,22 @@ def main():
     # Determine cache directory
     cache_dir = Path(args.cache_dir) if args.cache_dir else None
 
+    # Store credentials if requested
+    cred_file = (cache_dir or Path.home() / '.config' / 'api_keys') / 'credgoo.txt'
+    save_token = args.save in ('all', 'token')
+    save_key = args.save in ('all', 'key')
+    save_url = args.save in ('all', 'url')
+    if args.save != 'none':
+        store_credentials(
+            args.token if save_token else None,
+            args.key if save_key else None,
+            args.url if save_url else None,
+            cred_file,
+            save_token,
+            save_key,
+            save_url
+        )
+
     # Get API key using the more flexible function
     api_key = get_api_key(
         args.service,
@@ -356,5 +354,7 @@ def main():
 
 
 # This allows the script to be both imported as a module and run as a command-line tool
+if __name__ == "__main__":
+    sys.exit(main())
 if __name__ == "__main__":
     sys.exit(main())

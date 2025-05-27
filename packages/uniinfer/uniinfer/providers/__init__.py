@@ -13,6 +13,7 @@ from .sambanova import SambanovaProvider
 from .upstage import UpstageProvider
 from .ngc import NGCProvider
 from .cloudflare import CloudflareProvider
+from .chutes import ChutesProvider
 
 # Import providers with optional dependencies
 try:
@@ -65,7 +66,8 @@ __all__ = [
     'SambanovaProvider',
     'UpstageProvider',
     'NGCProvider',
-    'CloudflareProvider'
+    'CloudflareProvider',
+    'ChutesProvider'
 ]
 
 # Add optional providers to __all__ if available
