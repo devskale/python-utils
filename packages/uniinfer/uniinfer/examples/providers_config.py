@@ -116,7 +116,7 @@ PROVIDER_CONFIGS = {
     },
     'chutes': {
         'name': 'Chutes AI',
-        'default_model': 'Qwen/Qwen3-235B-A22B',
+        'default_model': 'deepseek-ai/DeepSeek-V3-0324',
         'needs_api_key': True,
     },
     'cloudflare': {

@@ -108,7 +108,7 @@ class ChutesProvider(ChatProvider):
         # Prepare the request payload
         payload = {
             # Default model if none specified
-            "model": request.model or "Qwen/Qwen3-235B-A22B",
+            "model": request.model or "deepseek-ai/DeepSeek-V3-0324",
             "messages": [{"role": msg.role, "content": msg.content} for msg in request.messages],
             "temperature": request.temperature,
         }
@@ -180,7 +180,7 @@ class ChutesProvider(ChatProvider):
 
         # Prepare the request payload
         payload = {
-            "model": request.model or "Qwen/Qwen3-235B-A22B",
+            "model": request.model or "deepseek-ai/DeepSeek-V3-0324",
             "messages": [{"role": msg.role, "content": msg.content} for msg in request.messages],
             "temperature": request.temperature,
             "stream": True
