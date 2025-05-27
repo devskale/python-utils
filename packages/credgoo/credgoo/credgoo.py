@@ -6,6 +6,7 @@ import sys
 import json
 import time
 from pathlib import Path
+from importlib.metadata import version # Changed from pkg_resources
 
 
 def decrypt_key(encrypted_key, encryption_key):
@@ -325,6 +326,9 @@ def main():
     parser.add_argument('--save', choices=['all', 'token', 'key', 'url', 'none'],
                         default='all',
                         help="Specify which credentials to persist: 'all' (default), 'token', 'key', 'url', or 'none' to disable saving")
+    parser.add_argument('--version', action='version', 
+                       version='%(prog)s ' + version('credgoo'), # Changed from get_distribution('credgoo').version
+                       help="Show program's version number and exit")
 
     args = parser.parse_args()
 
