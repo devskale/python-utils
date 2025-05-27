@@ -1,4 +1,5 @@
 # Import uniinfer components
+from importlib.metadata import version  # Changed from pkg_resources
 from uniinfer.examples.providers_config import PROVIDER_CONFIGS
 from uniinfer import (
     ChatMessage,
@@ -44,6 +45,10 @@ def main():
                         help='Specify the CREDGOO encryption key')
     parser.add_argument('--bearer-token', type=str,
                         help='Specify the CREDGOO bearer token')
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s ' + version('uniinfer'),
+                        help="Show program's version number and exit")
+
     args = parser.parse_args()
 
     # Retrieve credentials: prioritize CLI args, then environment variables
