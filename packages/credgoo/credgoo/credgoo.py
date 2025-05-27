@@ -8,11 +8,6 @@ import time
 from pathlib import Path
 
 
-save_key = False
-save_token = False
-save_url = True
-
-
 def decrypt_key(encrypted_key, encryption_key):
     """Decrypt the API key using the encryption key."""
     try:
@@ -276,9 +271,9 @@ def get_api_key(service, bearer_token=None, encryption_key=None, api_url=None, c
     final_url = api_url if new_url_provided else stored_url
 
     # Store credentials only if new ones were provided and corresponding flags are set
-    should_store = (new_token_provided and save_token) or \
-                   (new_key_provided and save_key) or \
-                   (new_url_provided and save_url)
+    should_store = (new_token_provided and args.save in ('all', 'token')) or \
+                   (new_key_provided and args.save in ('all', 'key')) or \
+                   (new_url_provided and args.save in ('all', 'url'))
 
     if should_store:
         # Pass only the newly provided values (or None) to store_credentials
@@ -327,6 +322,9 @@ def main():
         "--cache-dir", help="Directory to store cached API keys (default: ~/.config/api_keys/)")
     parser.add_argument("--no-cache", action="store_true",
                         help="Bypass cache and force retrieval from source")
+    parser.add_argument('--save', choices=['all', 'token', 'key', 'url', 'none'],
+                        default='all',
+                        help="Specify which credentials to persist: 'all' (default), 'token', 'key', 'url', or 'none' to disable saving")
 
     args = parser.parse_args()
 
