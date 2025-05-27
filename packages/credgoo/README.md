@@ -37,6 +37,7 @@ Optional arguments:
 - `--url`: Custom Google Apps Script URL (defaults to built-in URL)
 - `--cache-dir`: Custom cache directory (defaults to ~/.config/api_keys)
 - `--no-cache`: Bypass cache and force retrieval from Google Sheets
+- `--save {all,token,key,url,none}`: Specify which credentials to persist (default: `all`). Use `token`, `key`, or `url` to save specific parts, or `none` to disable saving.
 
 ### Python API
 
