@@ -24,7 +24,11 @@ setup(
     ],
     python_requires=">=3.7",
     extras_require={
-        'gemini': ['google-generativeai>=0.4.0']
+        'gemini': ['google-generativeai>=0.4.0'],
+        'api': [
+            'fastapi>=0.100.0',
+            'uvicorn[standard]>=0.23.0',
+        ],
     },
     package_data={
         'uniinfer': ['examples/*.py', 'examples/webdemo/*'],
