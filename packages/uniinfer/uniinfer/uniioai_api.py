@@ -425,15 +425,13 @@ async def root():
 
 
 # --- Run the API (for local development) ---
-
-if __name__ == "__main__":
+def main():
     import uvicorn
     print("Starting UniIOAI API server...")
-    # Ensure the path adjustment happens before this point if running directly
-    # The sys.path modification at the top should handle this.
-    # Set workers to 1 for low-memory environments
-    uvicorn.run(app, host="0.0.0.0", port=8123, workers=1)
+    uvicorn.run("uniinfer.uniioai_api:app", host="0.0.0.0", port=8123, workers=1, reload=False)
 
+if __name__ == "__main__":
+    main()
     # Example curl commands:
     # List models:
     # curl http://localhost:8123/v1/models

@@ -32,7 +32,9 @@ setup(
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'uniinfer=uniinfer.examples.uniinfer_example:main'
+            'uniinfer=uniinfer.examples.uniinfer_example:main',
+            'uniioai-api=uniinfer.uniioai_api:main',  # <-- Add this line
+            
         ],
     },
 )
