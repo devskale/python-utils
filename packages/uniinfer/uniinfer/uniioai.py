@@ -15,8 +15,8 @@ dotenv_path = os.path.join(os.getcwd(), '.env')  # Explicitly check current dir
 found_dotenv = load_dotenv(dotenv_path=dotenv_path,
                            verbose=True, override=True)
 
-# print(f"DEBUG: Attempted to load .env from: {dotenv_path}")  # Debug print
-# print(f"DEBUG: .env file found and loaded: {found_dotenv}")  # Debug print
+print(f"DEBUG: Attempted to load .env from: {dotenv_path}")  # Debug print
+print(f"DEBUG: .env file found and loaded: {found_dotenv}")  # Debug print
 
 
 # --- Helper Function for API Key Retrieval ---
@@ -227,7 +227,8 @@ def get_completion(messages, provider_model_string, temperature=0.7, max_tokens=
 # Example Usage
 if __name__ == "__main__":
     test_credgootoken = f"{os.getenv('CREDGOO_BEARER_TOKEN')}@{os.getenv('CREDGOO_ENCRYPTION_KEY')}"
-    test_provider_model = os.getenv("TEST_PROVIDER_MODEL", "ollama@gemma3:4b")
+#    test_provider_model = os.getenv("TEST_PROVIDER_MODEL", "ollama@gemma3:4b")
+    test_provider_model = os.getenv("TEST_PROVIDER_MODEL", "mistral@mistral-tiny-latest")
     test_base_url = "http://amp1.mooo.com:11444" if "ollama" in test_provider_model else None
 
     # List of cities
