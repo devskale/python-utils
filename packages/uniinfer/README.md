@@ -527,12 +527,16 @@ Before contributing, please read our [Contribution Guidelines](CONTRIBUTING.md).
 
 4. **Running the Server**
 
-   ```bash
-   uvicorn uniinfer:app --reload
-   ```
+uniioai accepts open ai streaming requests and handles it via uniinfer. uniioai_api serves as a proxy server that serves a openai style endpoint. it accepts as bearer a credgoo bearer. credgoo manages auth-keys in the background for more than 20 different llm providers.
 
-   - The server will be available at `http://localhost:8000`
-   - Provides OpenAI-compatible `/v1/chat/completions` endpoint
+```bash
+uvicorn packages.uniinfer.uniinfer.uniioai_api:app --host 0.0.0.0 --port 8123 --workers 1 --reload
+```
+
+- The server will be available at `http://localhost:8123`
+- Provides OpenAI-compatible `/v1/chat/completions` endpoint
+
+OpenAI-compatible chat completions endpoint. Uses the 'model' field in the format 'provider@modelname'. Requires Bearer token authentication (used for key retrieval). Optionally accepts a 'base_url'. If provider is 'ollama' and no base_url is provided, it defaults to 'https://amp1.mooo.com:11444'.
 
 5. **Production Deployment** (Optional)
 
