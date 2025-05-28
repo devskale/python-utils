@@ -25,20 +25,28 @@ class AnthropicProvider(ChatProvider):
         self.api_version = "2023-06-01"  # Current Anthropic API version
 
     @classmethod
-    def list_models(cls) -> list:
+    def list_models(cls, api_key: Optional[str] = None) -> list:
         """
-        List available models from Anthropic.
+        List available models from Anthropic using the API.
 
         Returns:
             list: A list of available model names.
         """
-        return [
-            "claude-instant-1",
-            "claude-2",
-            "claude-3-opus",
-            "claude-3-sonnet",
-            "claude-3-haiku"
-        ]
+        if not api_key:
+            raise ValueError("API key is required to list models")
+
+        url = "https://api.anthropic.com/v1/models"
+        headers = {
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01"
+        }
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            raise Exception(f"Anthropic API error: {response.status_code} - {response.text}")
+
+        data = response.json()
+        # The API returns a list of model objects under the "data" key
+        return [model["id"] for model in data.get("data", [])]
 
     def complete(
         self,
