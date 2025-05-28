@@ -26,18 +26,27 @@ class OpenAIProvider(ChatProvider):
         self.organization = organization
 
     @classmethod
-    def list_models(cls) -> list:
+    def list_models(cls, api_key: Optional[str] = None) -> list:
         """
-        List available models from OpenAI.
+        List available models from OpenAI using the API.
 
         Returns:
-            list: A list of available model names.
+            list: A list of available model IDs.
         """
-        return [
-            "gpt-4",
-            "gpt-4-turbo",
-            "gpt-3.5-turbo"
-        ]
+        if not api_key:
+            raise ValueError("API key is required to list models")
+
+        url = "https://api.openai.com/v1/models"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+        }
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            raise Exception(f"OpenAI API error: {response.status_code} - {response.text}")
+
+        data = response.json()
+        return [model["id"] for model in data.get("data", [])]
+
 
     def complete(
         self,
