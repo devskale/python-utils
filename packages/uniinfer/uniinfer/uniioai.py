@@ -1,5 +1,5 @@
 """
-A simple wrapper for LLM APIs using uniinfer, supporting streaming and non-streaming.
+A OpenAI compliance wrapper for LLM APIs using uniinfer, supporting streaming and non-streaming.
 """
 import os
 from typing import Optional  # Import Optional
