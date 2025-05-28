@@ -74,13 +74,9 @@ class ChutesProvider(ChatProvider):
             raise Exception(error_msg)
 
         models = response.json().get('data', [])
-        free_models = [
-            model['id']
-            for model in models
-            if model.get('pricing', {}).get('prompt') == '0'
-            and model.get('pricing', {}).get('completion') == '0'
-        ]
-        return free_models
+        
+        # Only return the model IDs
+        return [model['id'] for model in models]
 
     def complete(
         self,
