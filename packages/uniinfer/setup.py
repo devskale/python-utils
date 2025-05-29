@@ -37,7 +37,7 @@ setup(
     entry_points={
         'console_scripts': [
             'uniinfer=uniinfer.examples.uniinfer_example:main',
-            'uniioai-api=uniinfer.uniioai_api:main',  # <-- Add this line
+            'uniioai-proxy=uniinfer.uniioai_proxy:main',  # <-- Add this line
             
         ],
     },

@@ -89,9 +89,9 @@ pip install credgoo  # For seamless API key management
 
 For a practical example of using UniInfer to wrap a specific provider like OpenAI, see the `uniioai.py` script located in the parent `python-utils` directory. It demonstrates how to set up a streaming request easily.
 
-### Example API Server (`uniioai_api.py`)
+### Example API Server (`uniioai_proxy.py`)
 
-An example FastAPI server (`uniioai_api.py`) is also available in the parent `python-utils` directory. It provides an OpenAI-compatible `/v1/chat/completions` endpoint that uses `uniioai.py` internally. You can run it using `python uniioai_api.py` (requires `fastapi` and `uvicorn`).
+An example FastAPI server (`uniioai_proxy.py`) is also available in the parent `python-utils` directory. It provides an OpenAI-compatible `/v1/chat/completions` endpoint that uses `uniioai.py` internally. You can run it using `python uniioai_proxy.py` (requires `fastapi` and `uvicorn`).
 
 ## Advanced Usage
 
@@ -527,10 +527,10 @@ Before contributing, please read our [Contribution Guidelines](CONTRIBUTING.md).
 
 4. **Running the Server**
 
-uniioai accepts open ai streaming requests and handles it via uniinfer. uniioai_api serves as a proxy server that serves a openai style endpoint. it accepts as bearer a credgoo bearer. credgoo manages auth-keys in the background for more than 20 different llm providers.
+uniioai accepts open ai streaming requests and handles it via uniinfer. uniioai_proxy serves as a proxy server that serves a openai style endpoint. it accepts as bearer a credgoo bearer. credgoo manages auth-keys in the background for more than 20 different llm providers.
 
 ```bash
-uvicorn packages.uniinfer.uniinfer.uniioai_api:app --host 0.0.0.0 --port 8123 --workers 1 --reload
+uvicorn packages.uniinfer.uniinfer.uniioai_proxy:app --host 0.0.0.0 --port 8123 --workers 1 --reload
 ```
 
 - The server will be available at `http://localhost:8123`
