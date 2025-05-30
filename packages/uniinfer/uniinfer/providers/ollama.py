@@ -63,7 +63,11 @@ class OllamaProvider(ChatProvider):
             raw_url = kwargs.get("base_url") or getattr(
                 cls, "base_url", "localhost:11434")
             base_url = _normalize_base_url(raw_url)
-            endpoint = f"{base_url}/api/tags"
+            if "molodetz.nl" in base_url:
+                # Special case for molodetz.nl, which uses a different endpoint
+                endpoint = f"{base_url}/models"
+            else:
+                endpoint = f"{base_url}/api/tags"
             print(f"Using Ollama endpoint: {endpoint}")  # Verbose logging
 
             response = requests.get(endpoint)
@@ -71,6 +75,9 @@ class OllamaProvider(ChatProvider):
 
             data = response.json()
             models = [model["name"] for model in data.get("models", [])]
+            if not models:
+                # Fallback to tags if models are not available
+                models = [model["id"] for model in data.get("data", [])]
             print(f"Found {len(models)} available models")
             return models
 

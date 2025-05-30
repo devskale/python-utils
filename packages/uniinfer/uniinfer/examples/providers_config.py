@@ -69,11 +69,12 @@ PROVIDER_CONFIGS = {
         'needs_api_key': True,
     },
     'ollama': {
-        'name': 'Ollama (amp1)',
+        'name': 'Ollama',
         'default_model': 'gemma3:4b',
         'needs_api_key': False,
         'extra_params': {
-            'base_url': 'http://amp1.mooo.com:11444'
+            # 'base_url': 'http://amp1.mooo.com:11444'
+            'base_url': 'https://ollama.molodetz.nl'
         }
     },
     'arli': {
