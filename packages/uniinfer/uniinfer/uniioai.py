@@ -2,13 +2,14 @@
 A OpenAI compliance wrapper for LLM APIs using uniinfer, supporting streaming and non-streaming.
 """
 import os
-from typing import Optional  # Import Optional
+from typing import Optional, List  # Import Optional, List
 import random  # Import random
 
 from uniinfer import ProviderFactory, ChatMessage, ChatCompletionRequest, ChatCompletionResponse
 from uniinfer.errors import UniInferError, AuthenticationError
 from dotenv import load_dotenv
 from credgoo import get_api_key
+from uniinfer.examples.providers_config import PROVIDER_CONFIGS  # added
 # Load environment variables from .env file
 dotenv_path = os.path.join(os.getcwd(), '.env')  # Explicitly check current dir
 # Add verbose=True and override=True
@@ -224,11 +225,36 @@ def get_completion(messages, provider_model_string, temperature=0.7, max_tokens=
             f"An unexpected error occurred in get_completion: {e}")
 
 
+# --- New Helper to List Providers ---
+def list_providers() -> List[str]:
+    """
+    Return the names of all available providers.
+    """
+    return ProviderFactory.list_providers()
+
+
+# --- New Helper to List Models for a Provider ---
+def list_models_for_provider(provider_name: str, api_bearer_token: str) -> List[str]:
+    """
+    Return available model names for the given provider, using the bearer token.
+    """
+    # retrieve actual api key
+    api_key = get_provider_api_key(api_bearer_token, provider_name)
+    # determine extra params if needed
+    extra = {}
+    if provider_name in ['cloudflare', 'ollama']:
+        extra = PROVIDER_CONFIGS.get(provider_name, {}).get('extra_params', {})
+    # get the provider class and list models
+    provider_cls = ProviderFactory.get_provider_class(provider_name)
+    return provider_cls.list_models(api_key=api_key, **extra)
+
+
 # Example Usage
 if __name__ == "__main__":
     test_credgootoken = f"{os.getenv('CREDGOO_BEARER_TOKEN')}@{os.getenv('CREDGOO_ENCRYPTION_KEY')}"
 #    test_provider_model = os.getenv("TEST_PROVIDER_MODEL", "ollama@gemma3:4b")
-    test_provider_model = os.getenv("TEST_PROVIDER_MODEL", "mistral@mistral-tiny-latest")
+    test_provider_model = os.getenv(
+        "TEST_PROVIDER_MODEL", "mistral@mistral-tiny-latest")
     test_base_url = "http://amp1.mooo.com:11444" if "ollama" in test_provider_model else None
 
     # List of cities

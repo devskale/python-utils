@@ -1,2 +1,5 @@
-const apiBaseUrl = "http://localhost:8123/v1";
-const apiKey = "test23@test34";
+// Provide a global config object that can be updated from the UI
+window.uniinferConfig = {
+  apiBaseUrl: "http://localhost:8123/v1",
+  apiKey: "test2x@testxx",
+};

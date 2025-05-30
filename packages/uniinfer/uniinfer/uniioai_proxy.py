@@ -25,7 +25,7 @@ if uniinfer_package_path not in sys.path:
 # Now import from uniioai (assuming it's inside the uniinfer package structure)
 try:
     # Import get_provider_api_key as well
-    from uniinfer.uniioai import stream_completion, get_completion, get_provider_api_key
+    from uniinfer.uniioai import stream_completion, get_completion, get_provider_api_key, list_providers, list_models_for_provider
     from uniinfer.errors import UniInferError, AuthenticationError, ProviderError, RateLimitError
 except ImportError as e:
     print(f"Error importing from uniinfer.uniioai: {e}")
@@ -320,6 +320,18 @@ async def list_models():
     return ModelList(data=model_data)
 
 
+# --- New Providers Endpoint ---
+@app.get("/v1/providers", response_model=List[str])
+async def get_providers(token: str = Depends(security)):
+    """
+    OpenAI‐style endpoint to list available providers.
+    """
+    try:
+        return list_providers()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/v1/chat/completions")
 # Add the security dependency
 async def chat_completions(request_input: ChatCompletionRequestInput, token: str = Depends(security)):
@@ -419,6 +431,21 @@ async def chat_completions(request_input: ChatCompletionRequestInput, token: str
             status_code=500, detail=f"Internal Server Error: {type(e).__name__}")
 
 
+@app.get("/v1/models/{provider_name}", response_model=List[str])
+async def dynamic_list_models(provider_name: str, token: str = Depends(security)):
+    """
+    List available models for a specific provider, using Bearer token.
+    """
+    try:
+        return list_models_for_provider(provider_name, token.credentials)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except AuthenticationError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/")
 async def root():
     return {"message": "UniIOAI API is running. Visit /webdemo for the interactive demo, or use POST /v1/chat/completions or GET /v1/models"}
@@ -428,7 +455,9 @@ async def root():
 def main():
     import uvicorn
     print("Starting UniIOAI API server...")
-    uvicorn.run("uniinfer.uniioai_proxy:app", host="0.0.0.0", port=8123, workers=1, reload=False)
+    uvicorn.run("uniinfer.uniioai_proxy:app", host="0.0.0.0",
+                port=8123, workers=1, reload=False)
+
 
 if __name__ == "__main__":
     main()

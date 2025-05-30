@@ -256,6 +256,57 @@
   <body>
     <h1>UniInfer Web Demo</h1>
 
+    <!-- Settings/config button and modal -->
+    <button
+      id="settings-button"
+      style="position: absolute; top: 20px; right: 30px; z-index: 10">
+      ⚙️
+    </button>
+    <div
+      id="settings-modal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.3);
+        z-index: 100;
+        align-items: center;
+        justify-content: center;
+      ">
+      <div
+        style="
+          background: #fff;
+          padding: 24px 32px;
+          border-radius: 12px;
+          min-width: 320px;
+          box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+          position: relative;
+        ">
+        <h2 style="margin-top: 0">Settings</h2>
+        <label>
+          API Base URL:<br />
+          <input
+            type="text"
+            id="settings-api-base-url"
+            style="width: 100%; margin-bottom: 12px" />
+        </label>
+        <label>
+          API Key:<br />
+          <input
+            type="text"
+            id="settings-api-key"
+            style="width: 100%; margin-bottom: 16px" />
+        </label>
+        <div style="text-align: right">
+          <button id="settings-save">Save</button>
+          <button id="settings-cancel" style="margin-left: 8px">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Wrap model select for better styling -->
     <div id="model-select-container">
       <label for="model-select">Select Model:</label>
@@ -277,7 +328,9 @@
       <button id="send-button">Send</button>
       <button id="stop-button">Stop</button>
       <button id="predefined-button">?</button>
-      <!-- Changed text -->
+      <button id="providers-button">Providers</button>
+      <button id="show-models-button">Models</button>
+      <!-- new Models button -->
     </div>
 
     <div id="predefined-messages" style="display: none">
@@ -298,6 +351,44 @@
     </div>
     <script src="config.js"></script>
     <script>
+      // Initialize internal store for providers and models
+      window.uniinferStore = {
+        providers: [],
+        models: [],
+      };
+
+      // --- Settings/config modal logic ---
+      const settingsButton = document.getElementById("settings-button");
+      const settingsModal = document.getElementById("settings-modal");
+      const settingsApiBaseUrl = document.getElementById(
+        "settings-api-base-url"
+      );
+      const settingsApiKey = document.getElementById("settings-api-key");
+      const settingsSave = document.getElementById("settings-save");
+      const settingsCancel = document.getElementById("settings-cancel");
+
+      function openSettings() {
+        // Fill inputs with current config
+        settingsApiBaseUrl.value = window.uniinferConfig.apiBaseUrl;
+        settingsApiKey.value = window.uniinferConfig.apiKey;
+        settingsModal.style.display = "flex";
+      }
+      function closeSettings() {
+        settingsModal.style.display = "none";
+      }
+      settingsButton.addEventListener("click", openSettings);
+      settingsCancel.addEventListener("click", closeSettings);
+      settingsModal.addEventListener("click", (e) => {
+        if (e.target === settingsModal) closeSettings();
+      });
+      settingsSave.addEventListener("click", () => {
+        window.uniinferConfig.apiBaseUrl = settingsApiBaseUrl.value.trim();
+        window.uniinferConfig.apiKey = settingsApiKey.value.trim();
+        closeSettings();
+        // Optionally reload models after config change
+        loadModels();
+        addMessage("Settings updated.", "system");
+      });
 
       // DOM elements
       const modelSelect = document.getElementById("model-select");
@@ -313,20 +404,26 @@
       // Load available models
       async function loadModels() {
         try {
-          const response = await fetch(`${apiBaseUrl}/models`, {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-              "Content-Type": "application/json",
-            },
-            mode: "cors",
-          });
+          const response = await fetch(
+            `${window.uniinferConfig.apiBaseUrl}/models`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${window.uniinferConfig.apiKey}`,
+                "Content-Type": "application/json",
+              },
+              mode: "cors",
+            }
+          );
 
           if (!response.ok) {
             throw new Error("Failed to load models");
           }
 
           const data = await response.json();
+
+          // Store models in internal structure
+          window.uniinferStore.models = data.data.map((m) => m.id);
 
           // Clear loading message
           modelSelect.innerHTML = "";
@@ -388,25 +485,28 @@
         const signal = currentAbortController.signal;
 
         try {
-          const response = await fetch(`${apiBaseUrl}/chat/completions`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${apiKey}`,
-            },
-            mode: "cors",
-            body: JSON.stringify({
-              model: selectedModel,
-              messages: [
-                {
-                  role: "user",
-                  content: message,
-                },
-              ],
-              stream: true,
-            }),
-            signal: signal, // Pass the signal to fetch
-          });
+          const response = await fetch(
+            `${window.uniinferConfig.apiBaseUrl}/chat/completions`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${window.uniinferConfig.apiKey}`,
+              },
+              mode: "cors",
+              body: JSON.stringify({
+                model: selectedModel,
+                messages: [
+                  {
+                    role: "user",
+                    content: message,
+                  },
+                ],
+                stream: true,
+              }),
+              signal: signal, // Pass the signal to fetch
+            }
+          );
 
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -537,6 +637,47 @@
           currentAbortController = null; // Clear the controller
         }
       }
+
+      // Add event listener for the new Providers button
+      const providersButton = document.getElementById("providers-button");
+      providersButton.addEventListener("click", async () => {
+        try {
+          const response = await fetch(
+            `${window.uniinferConfig.apiBaseUrl}/providers`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${window.uniinferConfig.apiKey}`,
+                "Content-Type": "application/json",
+              },
+              mode: "cors",
+            }
+          );
+          if (!response.ok) throw new Error("Failed to load providers");
+          const providers = await response.json();
+
+          // Store providers in internal structure
+          window.uniinferStore.providers = providers;
+
+          addMessage(`Available providers: ${providers.join(", ")}`, "system");
+        } catch (e) {
+          console.error("Error loading providers:", e);
+          addMessage("Error loading providers.", "error");
+        }
+      });
+
+      // --- New: Show Models Button ---
+      const showModelsButton = document.getElementById("show-models-button");
+      showModelsButton.addEventListener("click", async () => {
+        // ensure models are loaded
+        if (window.uniinferStore.models.length === 0) {
+          await loadModels();
+        }
+        addMessage(
+          `Available models: ${window.uniinferStore.models.join(", ")}`,
+          "system"
+        );
+      });
 
       // Event listeners
       sendButton.addEventListener("click", () => {
