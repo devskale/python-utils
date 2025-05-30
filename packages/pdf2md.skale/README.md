@@ -180,3 +180,12 @@ from pdf2md.converter import PDFtoMarkdown
 converter = PDFtoMarkdown(['ocr'])
 converter.convert('example.pdf', 'output_dir', 'example.md', 'ocr', overwrite=True)
 ```
+
+# Status
+
+[x] Basic functionality
+[x] Recursive processing
+[x] Dry run mode
+[ ] OlmoOCR
+[ ] Process Images
+[ ] API Queuing System

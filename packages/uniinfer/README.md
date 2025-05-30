@@ -286,7 +286,7 @@ print(f"Response from {provider_used}: {response.message.content}")
 | **NGC**           | NVIDIA GPU Cloud          | ✅        | API Key (credgoo) |
 | **Cloudflare**    | Workers AI models         | ✅        | API Key (credgoo) |
 | **Chutes**        | Deepseek, Qwen AI models  | ✅        | API Key (credgoo) |
-| **Pollinations**  | APIFree AI models         | ✅        | None              |
+| **Pollinations**  | APIFree AI models         | ✅        | API Key (credgoo) |
 
 Below are examples for some of our newer providers (all using automatic API key management with credgoo):
 
@@ -562,6 +562,22 @@ OpenAI-compatible chat completions endpoint. Uses the 'model' field in the forma
          }
      }
      ```
+
+## Implementation Status
+
+Providers:
+[x] 20 providers
+[x] Anthropic
+[x] Mistral
+[ ] uberlama
+
+Features:
+[ ] rate limiting (each provider has different limits)
+[ ] provider selection (e.g., cheapest, fastest, etc.)
+[ ] API model listing
+[ ] Image Generation
+[ ] Usage Monitoring
+[ ] Model Listing
 
 ## License
 
