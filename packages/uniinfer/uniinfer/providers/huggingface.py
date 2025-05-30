@@ -63,6 +63,9 @@ class HuggingFaceProvider(ChatProvider):
             raise ValueError(
                 "Model must be specified for HuggingFace Inference")
 
+        # Normalize model id (strip pipeline tag if included)
+        model_id = request.model.split()[0]
+
         try:
             # Format messages for the text_generation API
             # We'll extract the last user message for simplicity
@@ -78,7 +81,7 @@ class HuggingFaceProvider(ChatProvider):
             # Make the completion request using text_generation
             completion = self.client.text_generation(
                 prompt=last_message,
-                model=request.model,
+                model=model_id,
                 max_new_tokens=request.max_tokens or 1024,
                 temperature=request.temperature or 0.7,
                 **provider_specific_kwargs
@@ -99,14 +102,9 @@ class HuggingFaceProvider(ChatProvider):
 
             # Create raw response data
             raw_response = {
-                "model": request.model,
+                "model": model_id,
                 "choices": [
-                    {
-                        "message": {
-                            "role": "assistant",
-                            "content": completion
-                        }
-                    }
+                    {"message": {"role": "assistant", "content": completion}}
                 ],
                 "usage": usage
             }
@@ -114,10 +112,15 @@ class HuggingFaceProvider(ChatProvider):
             return ChatCompletionResponse(
                 message=message,
                 provider='huggingface',
-                model=request.model,
+                model=model_id,
                 usage=usage,
                 raw_response=raw_response
             )
+        except StopIteration as e:
+            raise RuntimeError(
+                f"No available inference provider for model {request.model}. "
+                "Please check your setup and ensure the model or provider is supported."
+            ) from e
         except Exception as e:
             if "too large to be loaded automatically" in str(e):
                 model_size = str(e).split("(")[1].split(
@@ -195,12 +198,15 @@ class HuggingFaceProvider(ChatProvider):
                 filter="text-generation",
                 limit=100
             )
-            # Create a list of model dictionaries with relevant information
+            # Create a list of model names
             model_list = []
             for model in models:
-                if model.id and model.pipeline_tag:
-                    model_info = f'{model.id} {model.pipeline_tag}'
-                    model_list.append(model_info)
+                if model.id:
+                    # drop the "text-generation" tag from the name
+                    if model.pipeline_tag and model.pipeline_tag != "text-generation":
+                        model_list.append(f"{model.id} {model.pipeline_tag}")
+                    else:
+                        model_list.append(model.id)
             # Extract model IDs
             return model_list
         except Exception as e:
@@ -241,6 +247,9 @@ class HuggingFaceProvider(ChatProvider):
             raise ValueError(
                 "Model must be specified for HuggingFace Inference")
 
+        # Normalize model id (strip pipeline tag if included)
+        model_id = request.model.split()[0]
+
         try:
             # Format messages for the text_generation API
             # We'll extract the last user message for simplicity
@@ -256,7 +265,7 @@ class HuggingFaceProvider(ChatProvider):
             # Make the streaming request using text_generation with stream=True
             stream = self.client.text_generation(
                 prompt=last_message,
-                model=request.model,
+                model=model_id,
                 max_new_tokens=request.max_tokens or 500,
                 temperature=request.temperature or 0.7,
                 stream=True,
@@ -275,23 +284,21 @@ class HuggingFaceProvider(ChatProvider):
 
                 # Create raw response structure
                 raw_response = {
-                    "model": request.model,
-                    "choices": [
-                        {
-                            "delta": {
-                                "content": chunk
-                            }
-                        }
-                    ]
+                    "model": model_id,
+                    "choices": [{"delta": {"content": chunk}}]
                 }
-
                 yield ChatCompletionResponse(
                     message=message,
                     provider='huggingface',
-                    model=request.model,
+                    model=model_id,
                     usage=usage,
                     raw_response=raw_response
                 )
+        except StopIteration as e:
+            raise RuntimeError(
+                f"No available inference provider for model {request.model}. "
+                "Please check your setup and ensure the model or provider is supported."
+            ) from e
         except Exception as e:
             if "too large to be loaded automatically" in str(e):
                 model_size = str(e).split("(")[1].split(
