@@ -342,9 +342,7 @@
       <button id="send-button">Send</button>
       <button id="stop-button">Stop</button>
       <button id="predefined-button">?</button>
-      <button id="providers-button">🌐 Providers</button>
-      <button id="show-models-button">📦 Models</button>
-      <!-- new Models button -->
+      <!-- Removed providers and models buttons -->
     </div>
 
     <div id="predefined-messages" style="display: none">
@@ -399,8 +397,8 @@
         window.uniinferConfig.apiBaseUrl = settingsApiBaseUrl.value.trim();
         window.uniinferConfig.apiKey = settingsApiKey.value.trim();
         closeSettings();
-        // Optionally reload models after config change
-        loadModels();
+        // Reload provider list after config change
+        loadProviders();
         addMessage("Settings updated.", "system");
       });
 
@@ -410,11 +408,9 @@
       const chatContainer = document.getElementById("chat-container");
       const messageInput = document.getElementById("message-input");
       const sendButton = document.getElementById("send-button");
-      const stopButton = document.getElementById("stop-button"); // Get stop button
+      const stopButton = document.getElementById("stop-button");
       const predefinedButton = document.getElementById("predefined-button");
       const predefinedMessages = document.getElementById("predefined-messages");
-      const providersButton = document.getElementById("providers-button");
-      const showModelsButton = document.getElementById("show-models-button");
 
       let currentAbortController = null; // To hold the AbortController for the current request
 
@@ -698,22 +694,6 @@
       providerSelect.addEventListener("change", async () => {
         modelSelect.innerHTML = "<option>Loading models...</option>";
         modelSelect.disabled = true;
-        await loadModels(providerSelect.value);
-        addMessage(`Loaded models for ${providerSelect.value}`, "system");
-      });
-
-      // Providers button now reloads dropdown
-      providersButton.addEventListener("click", async () => {
-        await loadProviders();
-        addMessage("Providers loaded.", "system");
-      });
-
-      // Show models for selected provider
-      showModelsButton.addEventListener("click", async () => {
-        if (!providerSelect.value) {
-          addMessage("Please select a provider first", "error");
-          return;
-        }
         await loadModels(providerSelect.value);
         addMessage(`Loaded models for ${providerSelect.value}`, "system");
       });
