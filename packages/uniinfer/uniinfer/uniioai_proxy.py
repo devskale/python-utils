@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 # Import run_in_threadpool
 from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 from fastapi.security import HTTPBearer  # Import HTTPBearer
+from uniinfer.examples.providers_config import PROVIDER_CONFIGS  # Add this import
 
 # Ensure the uniinfer package directory is in the Python path
 # Adjust the path as necessary based on your project structure
@@ -284,6 +285,17 @@ async def stream_response_generator(messages: List[Dict], provider_model: str, t
         )
         yield f"data: {final_chunk_data.model_dump_json()}\n\n"
 
+    except NameError as e:
+        # Specific catch for missing 'payload' or similar undefined names
+        print(f"NameError during streaming: {e}")
+        error_chunk = {
+            "error": {
+                "message": f"Stream internal error: {e}",
+                "type": "NameError",
+                "code": None
+            }
+        }
+        yield f"data: {json.dumps(error_chunk)}\n\n"
     except (UniInferError, ValueError) as e:
         print(f"Error during streaming: {e}")
         # Optionally yield an error chunk (though not standard OpenAI)
@@ -363,10 +375,11 @@ async def chat_completions(request_input: ChatCompletionRequestInput, token: str
 
         # Set default base_url for ollama if not provided
         if provider_name == "ollama" and base_url is None:
-            base_url = "https://amp1.mooo.com:11444"
+            base_url = PROVIDER_CONFIGS.get("ollama", {}).get(
+                "extra_params", {}).get("base_url")
+        print(f"DEBUG: Using base_url: {base_url}")
 
         try:
-            # Call the helper function from uniioai.py
             provider_api_key = get_provider_api_key(
                 api_bearer_token, provider_name)
         except (ValueError, AuthenticationError) as e:

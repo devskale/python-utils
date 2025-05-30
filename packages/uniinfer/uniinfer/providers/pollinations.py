@@ -217,13 +217,6 @@ class PollinationsProvider(ChatProvider):
         # Build URL
         url = f"{self.base_url}/{encoded_prompt}"
 
-        # Add max_tokens if provided
-        if request.max_tokens is not None:
-            payload["max_tokens"] = request.max_tokens
-
-        # Add any provider-specific parameters
-        params.update(provider_specific_kwargs)
-
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}"

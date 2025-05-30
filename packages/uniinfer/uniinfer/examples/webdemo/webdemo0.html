@@ -70,16 +70,6 @@
         cursor: pointer;
       }
 
-      /* style provider dropdown like model dropdown */
-      #provider-select {
-        flex-grow: 1;
-        padding: 8px 12px;
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-        background-color: var(--input-bg);
-        cursor: pointer;
-      }
-
       #chat-container {
         border: 1px solid var(--border-color);
         padding: 15px;
@@ -319,13 +309,9 @@
 
     <!-- Wrap model select for better styling -->
     <div id="model-select-container">
-      <label for="provider-select">Select Provider:</label>
-      <select id="provider-select" disabled>
-        <option value="" disabled selected>Select provider</option>
-      </select>
       <label for="model-select">Select Model:</label>
-      <select id="model-select" disabled>
-        <option value="">Select provider first</option>
+      <select id="model-select">
+        <option value="">Loading models...</option>
       </select>
     </div>
 
@@ -342,8 +328,8 @@
       <button id="send-button">Send</button>
       <button id="stop-button">Stop</button>
       <button id="predefined-button">?</button>
-      <button id="providers-button">🌐 Providers</button>
-      <button id="show-models-button">📦 Models</button>
+      <button id="providers-button">Providers</button>
+      <button id="show-models-button">Models</button>
       <!-- new Models button -->
     </div>
 
@@ -405,7 +391,6 @@
       });
 
       // DOM elements
-      const providerSelect = document.getElementById("provider-select");
       const modelSelect = document.getElementById("model-select");
       const chatContainer = document.getElementById("chat-container");
       const messageInput = document.getElementById("message-input");
@@ -413,54 +398,14 @@
       const stopButton = document.getElementById("stop-button"); // Get stop button
       const predefinedButton = document.getElementById("predefined-button");
       const predefinedMessages = document.getElementById("predefined-messages");
-      const providersButton = document.getElementById("providers-button");
-      const showModelsButton = document.getElementById("show-models-button");
 
       let currentAbortController = null; // To hold the AbortController for the current request
 
-      // Load providers into dropdown
-      async function loadProviders() {
+      // Load available models
+      async function loadModels() {
         try {
           const response = await fetch(
-            `${window.uniinferConfig.apiBaseUrl}/v1/providers`,
-            {
-              method: "GET",
-              headers: {
-                Authorization: `Bearer ${window.uniinferConfig.apiKey}`,
-                "Content-Type": "application/json",
-              },
-              mode: "cors",
-            }
-          );
-          if (!response.ok) throw new Error("Failed to load providers");
-          const payload = await response.json();
-          const providers = Array.isArray(payload.data) ? payload.data : [];
-          window.uniinferStore.providers = providers;
-          providerSelect.innerHTML =
-            '<option value="" disabled selected>Select provider</option>';
-          providers.forEach((p) => {
-            const option = document.createElement("option");
-            option.value = p;
-            option.textContent = p;
-            providerSelect.appendChild(option);
-          });
-          providerSelect.disabled = false;
-          // write the list of providers into the chat
-          addMessage(
-            `Available providers: ${window.uniinferStore.providers.join(", ")}`,
-            "system"
-          );
-        } catch (e) {
-          console.error("Error loading providers:", e);
-          addMessage("Error loading providers.", "error");
-        }
-      }
-
-      // Load models for a given provider
-      async function loadModels(provider) {
-        try {
-          const response = await fetch(
-            `${window.uniinferConfig.apiBaseUrl}/v1/models/${provider}`,
+            `${window.uniinferConfig.apiBaseUrl}/v1/models`,
             {
               method: "GET",
               headers: {
@@ -474,29 +419,27 @@
           if (!response.ok) {
             throw new Error("Failed to load models");
           }
+
           const data = await response.json();
+
+          // Store models in internal structure
           window.uniinferStore.models = data.data.map((m) => m.id);
+
+          // Clear loading message
           modelSelect.innerHTML = "";
-          modelSelect.disabled = false;
-          if (data.data.length === 0) {
-            modelSelect.innerHTML = `<option value="">No models found</option>`;
-            modelSelect.disabled = true;
-            return;
-          }
+
+          // Add models to select
           data.data.forEach((model) => {
             const option = document.createElement("option");
             option.value = model.id;
             option.textContent = model.id;
             modelSelect.appendChild(option);
           });
-          modelSelect.value = data.data[0].id;
-          // write the list of models for this provider (e.g. “stepfun”) into the chat
-          addMessage(
-            `Available models for ${provider}: ${window.uniinferStore.models.join(
-              ", "
-            )}`,
-            "system"
-          );
+
+          // Set default model
+          if (data.data.length > 0) {
+            modelSelect.value = "groq@llama3-8b-8192";
+          }
         } catch (error) {
           console.error("Error loading models:", error);
           addMessage(
@@ -521,17 +464,12 @@
 
       // Send message to API
       async function sendMessage(message) {
-        const selectedProvider = providerSelect.value;
-        if (!selectedProvider) {
-          addMessage("Please select a provider first", "error");
-          return;
-        }
-        const modelId = modelSelect.value;
-        if (!modelId) {
+        const selectedModel = modelSelect.value;
+
+        if (!selectedModel) {
           addMessage("Please select a model first", "error");
           return;
         }
-        const selectedModel = `${selectedProvider}@${modelId}`;
 
         addMessage(message, "user");
         messageInput.disabled = true; // Disable input during streaming
@@ -558,12 +496,18 @@
               mode: "cors",
               body: JSON.stringify({
                 model: selectedModel,
-                messages: [{ role: "user", content: message }],
+                messages: [
+                  {
+                    role: "user",
+                    content: message,
+                  },
+                ],
                 stream: true,
               }),
               signal: signal, // Pass the signal to fetch
             }
           );
+
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
@@ -694,28 +638,45 @@
         }
       }
 
-      // when user picks a provider, load its models immediately
-      providerSelect.addEventListener("change", async () => {
-        modelSelect.innerHTML = "<option>Loading models...</option>";
-        modelSelect.disabled = true;
-        await loadModels(providerSelect.value);
-        addMessage(`Loaded models for ${providerSelect.value}`, "system");
-      });
-
-      // Providers button now reloads dropdown
+      // Add event listener for the new Providers button
+      const providersButton = document.getElementById("providers-button");
       providersButton.addEventListener("click", async () => {
-        await loadProviders();
-        addMessage("Providers loaded.", "system");
+        try {
+          const response = await fetch(
+            `${window.uniinferConfig.apiBaseUrl}/providers`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${window.uniinferConfig.apiKey}`,
+                "Content-Type": "application/json",
+              },
+              mode: "cors",
+            }
+          );
+          if (!response.ok) throw new Error("Failed to load providers");
+          const providers = await response.json();
+
+          // Store providers in internal structure
+          window.uniinferStore.providers = providers;
+
+          addMessage(`Available providers: ${providers.join(", ")}`, "system");
+        } catch (e) {
+          console.error("Error loading providers:", e);
+          addMessage("Error loading providers.", "error");
+        }
       });
 
-      // Show models for selected provider
+      // --- New: Show Models Button ---
+      const showModelsButton = document.getElementById("show-models-button");
       showModelsButton.addEventListener("click", async () => {
-        if (!providerSelect.value) {
-          addMessage("Please select a provider first", "error");
-          return;
+        // ensure models are loaded
+        if (window.uniinferStore.models.length === 0) {
+          await loadModels();
         }
-        await loadModels(providerSelect.value);
-        addMessage(`Loaded models for ${providerSelect.value}`, "system");
+        addMessage(
+          `Available models: ${window.uniinferStore.models.join(", ")}`,
+          "system"
+        );
       });
 
       // Event listeners
@@ -761,10 +722,10 @@
         });
       });
 
-      // Initialize dropdowns and welcome text
-      loadProviders();
+      // Initialize
+      loadModels();
       addMessage(
-        "Welcome to UniInfer Web Demo! Select a provider and model, then start chatting.",
+        "Welcome to UniInfer Web Demo! Select a model and start chatting.",
         "system"
       );
     </script>
