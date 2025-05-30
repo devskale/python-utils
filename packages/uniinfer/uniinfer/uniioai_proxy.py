@@ -117,12 +117,18 @@ class Model(BaseModel):
     id: str
     object: str = "model"
     created: int = Field(default_factory=lambda: int(time.time()))
-    owned_by: str = "uniinfer"  # Or determine dynamically if needed
+    owned_by: str = "skaledev"  # Or determine dynamically if needed
 
 
 class ModelList(BaseModel):
     object: str = "list"
     data: List[Model]
+
+
+# --- Add ProviderList model for OpenAI‐style list response ---
+class ProviderList(BaseModel):
+    object: str = "list"
+    data: List[str]
 
 
 # --- Predefined Models ---
@@ -320,14 +326,15 @@ async def list_models():
     return ModelList(data=model_data)
 
 
-# --- New Providers Endpoint ---
-@app.get("/v1/providers", response_model=List[str])
+# --- Update /v1/providers to return ProviderList ---
+@app.get("/v1/providers", response_model=ProviderList)
 async def get_providers(token: str = Depends(security)):
     """
     OpenAI‐style endpoint to list available providers.
     """
     try:
-        return list_providers()
+        providers = list_providers()
+        return ProviderList(data=providers)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -431,13 +438,16 @@ async def chat_completions(request_input: ChatCompletionRequestInput, token: str
             status_code=500, detail=f"Internal Server Error: {type(e).__name__}")
 
 
-@app.get("/v1/models/{provider_name}", response_model=List[str])
+# --- Change dynamic list models to return ModelList ---
+@app.get("/v1/models/{provider_name}", response_model=ModelList)
 async def dynamic_list_models(provider_name: str, token: str = Depends(security)):
     """
-    List available models for a specific provider, using Bearer token.
+    List available models for a specific provider, formatted OpenAI‐style.
     """
     try:
-        return list_models_for_provider(provider_name, token.credentials)
+        raw_models = list_models_for_provider(provider_name, token.credentials)
+        model_objs = [Model(id=m) for m in raw_models]
+        return ModelList(data=model_objs)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except AuthenticationError as e:
