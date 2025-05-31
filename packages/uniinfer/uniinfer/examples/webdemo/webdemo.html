@@ -441,6 +441,11 @@
             providerSelect.appendChild(option);
           });
           providerSelect.disabled = false;
+          // Auto-select “ollama” if available
+          if (providers.includes("ollama")) {
+            providerSelect.value = "ollama";
+            await loadModels("ollama");
+          }
           // write the list of providers into the chat
           addMessage(
             `Available providers: ${window.uniinferStore.providers.join(", ")}`,

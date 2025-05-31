@@ -1,0 +1,21 @@
+{
+    "provider": "ollama",
+    "models": [
+        "gemma2:9b",
+        "phi3:latest",
+        "mxbai-embed-large:latest",
+        "gemma3:1b",
+        "granite3.2:latest",
+        "deepseek-r1:1.5b",
+        "smollm2:latest",
+        "CognitiveComputations/dolphin-gemma2:latest",
+        "smollm2:135m",
+        "gemma2:2b",
+        "llama3.2:latest",
+        "qwen2.5:1.5b",
+        "qwen2.5:0.5b",
+        "qwen2.5:3b",
+        "qwen2.5:latest",
+        "phi4:latest"
+    ]
+}

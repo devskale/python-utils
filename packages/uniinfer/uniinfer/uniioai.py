@@ -10,6 +10,7 @@ from uniinfer.errors import UniInferError, AuthenticationError
 from dotenv import load_dotenv
 from credgoo import get_api_key
 from uniinfer.examples.providers_config import PROVIDER_CONFIGS  # added
+from uniinfer.json_utils import update_models  # Import the helper function
 # Load environment variables from .env file
 dotenv_path = os.path.join(os.getcwd(), '.env')  # Explicitly check current dir
 # Add verbose=True and override=True
@@ -246,7 +247,9 @@ def list_models_for_provider(provider_name: str, api_bearer_token: str) -> List[
         extra = PROVIDER_CONFIGS.get(provider_name, {}).get('extra_params', {})
     # get the provider class and list models
     provider_cls = ProviderFactory.get_provider_class(provider_name)
-    return provider_cls.list_models(api_key=api_key, **extra)
+    modellist = provider_cls.list_models(api_key=api_key, **extra)
+    update_models(modellist, provider_name)
+    return modellist
 
 
 # Example Usage

@@ -477,9 +477,16 @@ async def root():
 # --- Run the API (for local development) ---
 def main():
     import uvicorn
-    print("Starting UniIOAI API server...")
-    uvicorn.run("uniinfer.uniioai_proxy:app", host="0.0.0.0",
-                port=8123, workers=1, reload=False)
+    import sys
+    reload_flag = '--reload' in sys.argv
+    print(f"Starting UniIOAI API server (reload={reload_flag})...")
+    uvicorn.run(
+        "uniinfer.uniioai_proxy:app",
+        host="0.0.0.0",
+        port=8123,
+        workers=1,
+        reload=reload_flag
+    )
 
 
 if __name__ == "__main__":
