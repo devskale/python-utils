@@ -47,3 +47,32 @@ def update_models(models, provider_name, json_file='models.json'):
     with open(json_path, 'w') as f:
         json.dump(existing_models, f, indent=2)
     print(f"Models saved to {json_path}")
+
+
+def update_model_accessed(model_name, provider_name, json_file='models.json'):
+    # load or initialize JSON
+    existing_models, json_path = touch_json(json_file)
+
+    # ensure top-level structure
+    providers = existing_models.get("providers", {})
+    provider_data = providers.get(provider_name, {})
+    modellist = provider_data.get("modellist", [])
+
+    found = False
+    for model_entry in modellist:
+        if model_entry.get("name") == model_name:
+            model_entry["accessed"] = datetime.datetime.now().isoformat()
+            model_entry["accessed_count"] = model_entry.get(
+                "accessed_count", 0) + 1
+            found = True
+            break
+
+    if not found:
+        print(
+            f"Warning: Model '{model_name}' not found for provider '{provider_name}'.")
+
+    # Persist back
+    with open(json_path, 'w') as f:
+        json.dump(existing_models, f, indent=2)
+    print(
+        f"Model '{model_name}' accessed time and count updated in {json_path}")

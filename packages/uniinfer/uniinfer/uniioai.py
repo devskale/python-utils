@@ -10,7 +10,8 @@ from uniinfer.errors import UniInferError, AuthenticationError
 from dotenv import load_dotenv
 from credgoo import get_api_key
 from uniinfer.examples.providers_config import PROVIDER_CONFIGS  # added
-from uniinfer.json_utils import update_models  # Import the helper function
+# Import the helper functions
+from uniinfer.json_utils import update_models, update_model_accessed
 # Load environment variables from .env file
 dotenv_path = os.path.join(os.getcwd(), '.env')  # Explicitly check current dir
 # Add verbose=True and override=True
@@ -142,6 +143,8 @@ def stream_completion(messages, provider_model_string, temperature=0.7, max_toke
         for chunk in provider.stream_complete(request):
             if chunk.message and chunk.message.content:
                 yield chunk.message.content
+        # Update model accessed time after successful streaming completion
+        update_model_accessed(model_name, provider_name)
 
     except (UniInferError, ValueError) as e:
         print(f"An error occurred: {e}")
@@ -211,6 +214,8 @@ def get_completion(messages, provider_model_string, temperature=0.7, max_tokens=
         print("--- Response received ---")
 
         if response.message and response.message.content:
+            # Update model accessed time after successful non-streaming completion
+            update_model_accessed(model_name, provider_name)
             return response.message.content
         else:
             print("Warning: Received empty content in response.")
