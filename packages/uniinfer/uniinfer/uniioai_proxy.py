@@ -136,91 +136,20 @@ class ProviderList(BaseModel):
 # TODO: Consider making this list configurable or dynamically generated
 PREDEFINED_MODELS = [
     "mistral@mistral-tiny-latest",
-    "mistral@mistral-small-latest",
-    "mistral@mistral-medium-latest",
-    "mistral@mistral-large-latest",
-    "mistral@codestral-latest",
-
-    "ollama@moondream:v2",
-    "ollama@phi4-mini:latest",
-    "ollama@gemma3:4b",
-    "ollama@nomic-embed-text:latest",
-    "ollama@deepseek-r1:1.5b",
-
-    "openrouter@nvidia/llama-3.3-nemotron-super-49b-v1:free",
-    "openrouter@deepseek/deepseek-chat-v3-0324:free",
+    "ollama@qwen2.5:3b",
     "openrouter@google/gemma-3-12b-it:free",
-    "openrouter@meta-llama/llama-3.3-70b-instruct:free",
-    "openrouter@mistralai/mistral-small-3.1-24b-instruct:free",
-
-    "arli@Mistral-Nemo-12B-ArliAI-RPMax-v1.3",
     "arli@Mistral-Nemo-12B-Instruct-2407",
-    "arli@Mistral-Nemo-12B-Nemomix-v4.0",
-    "arli@Mistral-Nemo-12B-Pantheon-RP-1.6.1",
-    "arli@Mistral-Nemo-12B-UnslopNemo-v4.1",
-
     "internlm@internlm3-latest",
-    "internlm@internlm3-8b-instruct",
-    "internlm@internvl3-latest",
-    "internlm@internvl3-78b",
-    "internlm@internvl-latest",
-
-    "stepfun@step-1-256k",
-    "stepfun@step-1v-32k",
     "stepfun@step-1-flash",
-    "stepfun@step-1x-medium",
-    "stepfun@step-1o-vision-32k",
-
-    "upstage@solar-pro-250414",
     "upstage@solar-mini-250401",
-    "upstage@openai/gpt-4o",
-    "upstage@mistral/mixtral-8x7b-instruct-v0.1",
-    "upstage@naver/hcx-003",
-
-    "ngc@meta/llama-3.3-70b-instruct",
-    "ngc@mistralai/mixtral-8x22b-instruct-v0.1",
+    "bigmodel@glm-4-flash",
     "ngc@google/gemma-3-27b-it",
-    "ngc@nvidia/llama-3.1-nemotron-ultra-253b-v1",
-    "ngc@deepseek-ai/deepseek-r1",
-
-    "cloudflare@cf/meta-llama/llama-2-7b-chat-hf-lora",
-    "cloudflare@cf/mistral/mistral-7b-instruct-v0.2-lora",
-    "cloudflare@cf/google/gemma-7b-it-lora",
-    "cloudflare@cf/openai/whisper-tiny-en",
-    "cloudflare@cf/llava-hf/llava-1.5-7b-hf",
-
-    "huggingface@meta-llama/Llama-3.3-70B-Instruct",
-    "huggingface@mistralai/Mixtral-8x7B-Instruct-v0.1",
-    "huggingface@google/gemma-2-27b-it",
-    "huggingface@deepseek-ai/DeepSeek-V3",
-    "huggingface@Qwen/Qwen2.5-72B-Instruct",
-
     "cohere@command-r",
-    "cohere@command-a-03-2025",
-    "cohere@command-r-plus",
-    "cohere@embed-v4.0",
-    "cohere@rerank-v3.5",
-
-    "moonshot@moonshot-v1-128k",
-    "moonshot@moonshot-v1-32k",
-    "moonshot@moonshot-v1-128k-vision-preview",
-    "moonshot@moonshot-v1-8k",
     "moonshot@kimi-latest",
-
-    "groq@llama3-70b-8192",
     "groq@llama3-8b-8192",
-    "groq@meta-llama/llama-4-maverick-17b-128e-instruct",
-    "groq@whisper-large-v3",
-    "groq@deepseek-r1-distill-llama-70b",
-
-    "gemini@models/gemini-1.5-pro-latest",
-    "gemini@models/gemini-1.5-flash-latest",
-    "gemini@models/gemini-2.5-pro-exp-03-25",
-    "gemini@models/gemini-2.0-flash-exp",
     "gemini@models/gemma-3-27b-it",
-
-    "ai21@jamba-1.6-mini",
-    "ai21@jamba-1.6-large",
+    "chutes@Qwen/Qwen3-235B-A22B",
+    "pollinations@grok"
 ]
 
 
