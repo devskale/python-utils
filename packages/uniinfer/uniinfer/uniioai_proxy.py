@@ -477,15 +477,26 @@ async def root():
 # --- Run the API (for local development) ---
 def main():
     import uvicorn
+    import argparse
     import sys
-    reload_flag = '--reload' in sys.argv
-    print(f"Starting UniIOAI API server (reload={reload_flag})...")
+
+    parser = argparse.ArgumentParser(description="Run the UniIOAI API server.")
+    parser.add_argument('--reload', action='store_true',
+                        help='Enable auto-reloading')
+    parser.add_argument('--port', type=int, default=8123,
+                        help='Port to run the server on')
+
+    args = parser.parse_args()
+
+    print(
+        f"Starting UniIOAI API server (reload={args.reload} at port {args.port})..."
+    )
     uvicorn.run(
         "uniinfer.uniioai_proxy:app",
         host="0.0.0.0",
-        port=8123,
+        port=args.port,
         workers=1,
-        reload=reload_flag
+        reload=args.reload
     )
 
 
