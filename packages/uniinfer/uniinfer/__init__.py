@@ -11,11 +11,11 @@ from .providers import (
     MistralProvider, AnthropicProvider, OpenAIProvider,
     OllamaProvider, OpenRouterProvider, ArliAIProvider,
     InternLMProvider, StepFunProvider, SambanovaProvider,
-    UpstageProvider, NGCProvider, CloudflareProvider, ChutesProvider, 
-    PollinationsProvider
+    UpstageProvider, NGCProvider, CloudflareProvider, ChutesProvider,
+    PollinationsProvider, BigmodelProvider
 )
 from .errors import (
-    UniInferError, ProviderError, AuthenticationError, 
+    UniInferError, ProviderError, AuthenticationError,
     RateLimitError, TimeoutError, InvalidRequestError
 )
 from .strategies import FallbackStrategy, CostBasedStrategy
@@ -72,6 +72,7 @@ ProviderFactory.register_provider("ngc", NGCProvider)
 ProviderFactory.register_provider("cloudflare", CloudflareProvider)
 ProviderFactory.register_provider("chutes", ChutesProvider)
 ProviderFactory.register_provider("pollinations", PollinationsProvider)
+ProviderFactory.register_provider("bigmodel", BigmodelProvider)
 
 # Register optional providers if available
 if HAS_HUGGINGFACE:
@@ -112,6 +113,7 @@ __all__ = [
     'GeminiProvider',
     'ChutesProvider',
     'PollinationsProvider',
+    'BigmodelProvider',
     'OllamaProvider',
     'OpenRouterProvider',
     'ArliAIProvider',

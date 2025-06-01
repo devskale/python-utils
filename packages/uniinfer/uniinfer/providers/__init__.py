@@ -15,6 +15,7 @@ from .ngc import NGCProvider
 from .cloudflare import CloudflareProvider
 from .chutes import ChutesProvider
 from .pollinations import PollinationsProvider
+from .bigmodel import BigmodelProvider
 
 # Import providers with optional dependencies
 try:
@@ -56,8 +57,8 @@ except ImportError:
 
 # Import all provider classes here so they can be easily imported from uniinfer.providers
 __all__ = [
-    'MistralProvider', 
-    'AnthropicProvider', 
+    'MistralProvider',
+    'AnthropicProvider',
     'OpenAIProvider',
     'OllamaProvider',
     'OpenRouterProvider',
@@ -69,7 +70,8 @@ __all__ = [
     'NGCProvider',
     'CloudflareProvider',
     'ChutesProvider',
-    'PollinationsProvider'
+    'PollinationsProvider',
+    'BigmodelProvider',
 ]
 
 # Add optional providers to __all__ if available
