@@ -186,9 +186,9 @@
           });
           providerSelect.disabled = false;
           // Auto-select “ollama” if available
-          if (providers.includes("ollama")) {
-            providerSelect.value = "ollama";
-            await loadModels("ollama");
+          if (providers.includes("bigmodel")) {
+            providerSelect.value = "bigmodel";
+            await loadModels("bigmodel");
           }
           // write the list of providers into the chat
           addMessage(
@@ -382,7 +382,9 @@
                   } else {
                     // Append subsequent chunks and re-parse the entire content
                     assistantMessageDiv.dataset.rawContent += contentChunk;
-                    assistantMessageDiv.innerHTML = marked.parse(assistantMessageDiv.dataset.rawContent);
+                    assistantMessageDiv.innerHTML = marked.parse(
+                      assistantMessageDiv.dataset.rawContent
+                    );
                   }
                   // Scroll to bottom smoothly during streaming
                   chatContainer.scrollTo({
