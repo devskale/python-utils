@@ -1,13 +1,14 @@
 import argparse
-from markdown import markdown
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet
-from bs4 import BeautifulSoup
-import re
-import os
+from reportlab.lib.pagesizes import letter
 from reportlab.lib.colors import Color
+from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT, TA_JUSTIFY
+import os
+import re
+from bs4 import BeautifulSoup
+from markdown import markdown
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
@@ -28,7 +29,7 @@ def convert_md_to_pdf(input_file, output_file, css_file=None):
         md_content = f.read()
 
     # Convert markdown to HTML, preserving newlines as <br> tags
-    html_content = markdown(md_content, extensions=['nl2br'])
+    html_content = markdown(md_content, extensions=['nl2br', 'tables'])
 
 
     # Parse HTML with BeautifulSoup for better handling
@@ -62,7 +63,7 @@ def convert_md_to_pdf(input_file, output_file, css_file=None):
     }
 
     # Process each HTML element
-    for element in soup.find_all(['h1', 'h2', 'h3', 'h4', 'p', 'ul', 'ol', 'blockquote']):
+    for element in soup.find_all(['h1', 'h2', 'h3', 'h4', 'p', 'ul', 'ol', 'blockquote', 'table']):
         if element.name in ['h1', 'h2', 'h3', 'h4', 'p']:
             # Handle headers and paragraphs, passing HTML directly
             # ReportLab's Paragraph can interpret basic HTML tags like <b>, <i>, <br>
@@ -77,6 +78,31 @@ def convert_md_to_pdf(input_file, output_file, css_file=None):
         elif element.name == 'blockquote':
             # Handle blockquotes, passing HTML directly
             story.append(Paragraph(f'<i>{str(element.decode_contents())}</i>', styles['Italic']))
+        elif element.name == 'table':
+            table_data = []
+            # Extract table headers
+            headers = [th.get_text().strip() for th in element.find_all('th')]
+            if headers:
+                table_data.append(headers)
+            # Extract table rows
+            for row in element.find_all('tr'):
+                cols = [col.get_text().strip() for col in row.find_all(['td', 'th'])]
+                if cols:
+                    table_data.append(cols)
+
+            if table_data:
+                table = Table(table_data)
+                # Add some basic table styling
+                table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                    ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                    ('GRID', (0, 0), (-1, -1), 1, colors.black)
+                ]))
+                story.append(table)
 
         # Add a spacer after each block element for better visual separation
         story.append(Spacer(1, 12))

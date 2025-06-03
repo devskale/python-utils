@@ -11,3 +11,12 @@ p {
     font-size: 12pt;
     line-height: 1.5;
 }
+table {
+    /* Basic table styling */
+}
+th {
+    background-color: lightgrey;
+}
+td {
+    background-color: transparent;
+}
