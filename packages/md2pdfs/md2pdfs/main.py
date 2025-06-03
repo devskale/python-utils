@@ -12,6 +12,7 @@ from bs4 import BeautifulSoup
 from markdown import markdown
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+import yaml  # Add this import to parse YAML
 
 # Register a default font to avoid errors with non-standard characters
 pdfmetrics.registerFont(TTFont('Arial', 'Arial.ttf'))
@@ -29,6 +30,16 @@ def convert_md_to_pdf(input_file, output_file, css_file=None):
     with open(input_file, 'r', encoding='utf-8') as f:
         md_content = f.read()
 
+    # Extract YAML front matter if present
+    metadata = {}
+    if md_content.startswith('---'):
+        yaml_end = md_content.find('---', 3)
+        if yaml_end != -1:
+            yaml_content = md_content[3:yaml_end].strip()
+            metadata = yaml.safe_load(yaml_content)
+            # Remove YAML from markdown content
+            md_content = md_content[yaml_end + 3:].strip()
+
     # Convert markdown to HTML, preserving newlines as <br> tags
     html_content = markdown(md_content, extensions=['nl2br', 'tables'])
 
@@ -45,6 +56,13 @@ def convert_md_to_pdf(input_file, output_file, css_file=None):
     doc = SimpleDocTemplate(output_file, pagesize=letter)
     styles = getSampleStyleSheet()
     story = []
+
+    # Add metadata to the PDF
+    if metadata:
+        doc.title = metadata.get('title', '')
+        doc.author = metadata.get('author', '')
+        doc.subject = metadata.get('description', '')
+        doc.keywords = metadata.get('keywords', '')
 
     # Load CSS styles if provided
     css_styles = {}
