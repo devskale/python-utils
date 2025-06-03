@@ -34,6 +34,12 @@ def convert_md_to_pdf(input_file, output_file, css_file=None):
     # Parse HTML with BeautifulSoup for better handling
     soup = BeautifulSoup(html_content, 'html.parser')
 
+    # Replace each image with an IMAGE placeholder paragraph
+    for img in soup.find_all('img'):
+        placeholder = soup.new_tag('p')
+        placeholder.string = 'IMAGE'
+        img.replace_with(placeholder)
+
     # Create PDF document
     doc = SimpleDocTemplate(output_file, pagesize=letter)
     styles = getSampleStyleSheet()
