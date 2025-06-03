@@ -31,7 +31,6 @@ def convert_md_to_pdf(input_file, output_file, css_file=None):
     # Convert markdown to HTML, preserving newlines as <br> tags
     html_content = markdown(md_content, extensions=['nl2br', 'tables'])
 
-
     # Parse HTML with BeautifulSoup for better handling
     soup = BeautifulSoup(html_content, 'html.parser')
 
@@ -67,7 +66,8 @@ def convert_md_to_pdf(input_file, output_file, css_file=None):
         if element.name in ['h1', 'h2', 'h3', 'h4', 'p']:
             # Handle headers and paragraphs, passing HTML directly
             # ReportLab's Paragraph can interpret basic HTML tags like <b>, <i>, <br>
-            story.append(Paragraph(str(element), tag_styles.get(element.name, styles['Normal'])))
+            story.append(Paragraph(str(element), tag_styles.get(
+                element.name, styles['Normal'])))
         elif element.name in ['ul', 'ol']:
             # Handle lists, passing HTML directly
             for li in element.find_all('li'):
@@ -77,7 +77,8 @@ def convert_md_to_pdf(input_file, output_file, css_file=None):
                 story.append(Paragraph(str(li), tag_styles['li']))
         elif element.name == 'blockquote':
             # Handle blockquotes, passing HTML directly
-            story.append(Paragraph(f'<i>{str(element.decode_contents())}</i>', styles['Italic']))
+            story.append(
+                Paragraph(f'<i>{str(element.decode_contents())}</i>', styles['Italic']))
         elif element.name == 'table':
             table_data = []
             # Extract table headers
@@ -86,7 +87,8 @@ def convert_md_to_pdf(input_file, output_file, css_file=None):
                 table_data.append(headers)
             # Extract table rows
             for row in element.find_all('tr'):
-                cols = [col.get_text().strip() for col in row.find_all(['td', 'th'])]
+                cols = [col.get_text().strip()
+                        for col in row.find_all(['td', 'th'])]
                 if cols:
                     table_data.append(cols)
 
@@ -111,6 +113,7 @@ def convert_md_to_pdf(input_file, output_file, css_file=None):
     doc.build(story)
     print(f"Successfully converted {input_file} to {output_file}")
 
+
 def parse_css(css_content):
     styles = {}
     # Basic regex to parse CSS rules (e.g., "selector { property: value; }")
@@ -124,6 +127,7 @@ def parse_css(css_content):
                 prop, value = declaration.split(':', 1)
                 styles[selector][prop.strip()] = value.strip()
     return styles
+
 
 def apply_css_to_styles(reportlab_styles, css_styles):
     # Ensure default heading styles are available for mapping
@@ -140,14 +144,19 @@ def apply_css_to_styles(reportlab_styles, css_styles):
                 elif prop == 'color':
                     # Basic color parsing (hex only for now)
                     if re.match(r'^#([0-9a-fA-F]{3}){1,2}$', value):
-                        print(f"Applying color {value} to {selector}") # Debugging line
+                        # Debugging line
+                        print(f"Applying color {value} to {selector}")
                         try:
                             style.textColor = colors.HexColor(value)
                         except Exception as e:
-                            print(f"Error applying color {value} to {selector}: {e}") # Debugging line
+                            # Debugging line
+                            print(
+                                f"Error applying color {value} to {selector}: {e}")
                     elif value.lower() in colors.getAllNamedColors():
-                        print(f"Applying named color {value} to {selector}") # Debugging line
-                        style.textColor = colors.getAllNamedColors()[value.lower()]
+                        # Debugging line
+                        print(f"Applying named color {value} to {selector}")
+                        style.textColor = colors.getAllNamedColors()[
+                            value.lower()]
                 elif prop == 'text-align':
                     if value == 'left':
                         style.alignment = TA_LEFT
@@ -162,7 +171,7 @@ def apply_css_to_styles(reportlab_styles, css_styles):
                     # For now, we'll just set the font name if it's 'Arial' or similar.
                     if 'Arial' in value:
                         style.fontName = 'Arial'
-                        style.leading = style.fontSize * 1.2 # Adjust leading based on font size
+                        style.leading = style.fontSize * 1.2  # Adjust leading based on font size
                 elif prop == 'line-height':
                     style.leading = style.fontSize * float(value)
                 elif prop == 'margin':
@@ -170,30 +179,55 @@ def apply_css_to_styles(reportlab_styles, css_styles):
                     # This is a simplification and might not fully apply CSS margins.
                     pass
 
+
 def main():
     """
     Main function to parse arguments and initiate markdown to PDF conversion.
     """
     parser = argparse.ArgumentParser(description='Convert Markdown to PDF.')
     parser.add_argument('--input', '-i', type=str,
-                        required=True, help='Input Markdown file.')
+                        help='Input Markdown file (required if no indir).')
     parser.add_argument('--output', '-o', type=str,
                         help='Output PDF file. If not provided, uses input filename with .pdf extension.')
     parser.add_argument('--css', '-c', type=str,
                         help='Optional CSS file for styling.')
+    parser.add_argument('--indir', '-di', type=str,
+                        help='Input directory containing markdown files.')
+    parser.add_argument('--outdir', '-do', type=str,
+                        help='Output directory for generated PDFs.')
+    parser.add_argument('--filter', '-f', type=str,
+                        help='Filter tag for markdown filenames.')
 
     args = parser.parse_args()
 
-    # Set default output filename if not provided
-    if not args.output:
-        base_name = os.path.splitext(args.input)[0]
-        args.output = f"{base_name}.pdf"
+    # enforce that either a single input or a directory is specified
+    if not args.indir and not args.input:
+        parser.error('Either --input/-i or --indir/-di must be provided.')
 
     # Use default.css if no CSS file is provided
     css_file_path = args.css
     if not css_file_path:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         css_file_path = os.path.join(script_dir, 'default.css')
+
+    # Batch conversion if input directory is provided
+    if args.indir:
+        in_dir = args.indir
+        out_dir = args.outdir if args.outdir else in_dir
+        if not os.path.exists(out_dir):
+            os.makedirs(out_dir)
+        for filename in os.listdir(in_dir):
+            if filename.endswith('.md') and (not args.filter or args.filter in filename):
+                input_path = os.path.join(in_dir, filename)
+                base = os.path.splitext(filename)[0]
+                output_path = os.path.join(out_dir, base + '.pdf')
+                convert_md_to_pdf(input_path, output_path, css_file_path)
+        return
+
+    # single-file conversion: set default output if missing
+    if not args.output:
+        base_name = os.path.splitext(args.input)[0]
+        args.output = f"{base_name}.pdf"
 
     convert_md_to_pdf(args.input, args.output, css_file_path)
 
