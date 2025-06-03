@@ -81,27 +81,30 @@ def convert_md_to_pdf(input_file, output_file, css_file=None):
                 Paragraph(f'<i>{str(element.decode_contents())}</i>', styles['Italic']))
         elif element.name == 'table':
             table_data = []
-            # Extract table headers
-            headers = [th.get_text().strip() for th in element.find_all('th')]
-            if headers:
-                table_data.append(headers)
-            # Extract table rows
+            # Extract header row once
+            first_row = element.find('tr')
+            if first_row:
+                headers = [th.get_text().strip()
+                           for th in first_row.find_all('th')]
+                if headers:
+                    table_data.append(headers)
+            # Extract data rows: only <td> rows to avoid re-adding header
             for row in element.find_all('tr'):
-                cols = [col.get_text().strip()
-                        for col in row.find_all(['td', 'th'])]
-                if cols:
+                data_cells = row.find_all('td')
+                if data_cells:
+                    cols = [td.get_text().strip() for td in data_cells]
                     table_data.append(cols)
 
             if table_data:
                 table = Table(table_data)
                 # Add some basic table styling
                 table.setStyle(TableStyle([
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
                     ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                     ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
                     ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                    ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                    ('BACKGROUND', (0, 1), (-1, -1), colors.transparent),
                     ('GRID', (0, 0), (-1, -1), 1, colors.black)
                 ]))
                 story.append(table)
