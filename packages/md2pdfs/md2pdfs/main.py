@@ -5,6 +5,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.colors import Color
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT, TA_JUSTIFY
+from reportlab.lib.units import inch  # Add this import for width calculations
 import os
 import re
 from bs4 import BeautifulSoup
@@ -90,7 +91,7 @@ def convert_md_to_pdf(input_file, output_file, css_file=None):
             # Extract header row once
             first_row = element.find('tr')
             if first_row:
-                headers = [th.get_text().strip()
+                headers = [Paragraph(th.get_text().strip(), styles['Normal'])
                            for th in first_row.find_all('th')]
                 if headers:
                     table_data.append(headers)
@@ -98,11 +99,17 @@ def convert_md_to_pdf(input_file, output_file, css_file=None):
             for row in element.find_all('tr'):
                 data_cells = row.find_all('td')
                 if data_cells:
-                    cols = [td.get_text().strip() for td in data_cells]
+                    cols = [Paragraph(td.get_text().strip(),
+                                      styles['Normal']) for td in data_cells]
                     table_data.append(cols)
 
             if table_data:
-                table = Table(table_data)
+                # Calculate column widths to fit the page
+                max_width = 6.5 * inch  # Allowable width for the table
+                num_columns = len(table_data[0])
+                col_width = max_width / num_columns
+
+                table = Table(table_data, colWidths=[col_width] * num_columns)
                 # Add some basic table styling
                 table.setStyle(TableStyle([
                     ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
@@ -111,7 +118,9 @@ def convert_md_to_pdf(input_file, output_file, css_file=None):
                     ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
                     ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
                     ('BACKGROUND', (0, 1), (-1, -1), colors.transparent),
-                    ('GRID', (0, 0), (-1, -1), 1, colors.black)
+                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                    # Align text to the top of cells
+                    ('VALIGN', (0, 0), (-1, -1), 'TOP')
                 ]))
                 story.append(table)
 
