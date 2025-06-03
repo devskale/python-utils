@@ -1,0 +1,13 @@
+/* Basic CSS for PDF styling */
+body {
+    font-family: Arial, sans-serif;
+    margin: 1in;
+}
+h1 {
+    color: #1a2b3c;
+    font-size: 24pt;
+}
+p {
+    font-size: 12pt;
+    line-height: 1.5;
+}

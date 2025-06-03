@@ -23,6 +23,7 @@ htmlcov/
 .pytest_cache/
 .*
 test/
+tests/
 
 # Node
 node_modules/
