@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='md2pdf',
+    name='md2pdfs',
     version='0.1.0',
     packages=find_packages(),
     include_package_data=True,
@@ -11,7 +11,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'md2pdf=md2pdf.main:main',
+            'md2pdfs=md2pdfs.main:main',
         ],
     },
 )
