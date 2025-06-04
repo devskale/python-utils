@@ -23,14 +23,9 @@ if sys.platform.startswith('win'):
     pdfmetrics.registerFont(TTFont('Arial-Italic', 'Arialbi.ttf'))
     pdfmetrics.registerFont(TTFont('Arial-BoldItalic', 'Arialbi.ttf'))
 elif sys.platform.startswith('darwin'):
-    # macOS fonts
-    #    pdfmetrics.registerFont(TTFont('Helvetica', 'Helvetica.ttf'))
-    #    pdfmetrics.registerFont(TTFont('Helvetica-Bold', 'Helvetica-Bold.ttf'))
-    #    pdfmetrics.registerFont(
-    #        TTFont('Helvetica-Oblique', 'Helvetica-Oblique.ttf'))
-    #    pdfmetrics.registerFont(
-    #        TTFont('Helvetica-BoldOblique', 'Helvetica-BoldOblique.ttf'))
-    print("No default font set for your OS.")
+    # macOS: Use built-in fonts (Helvetica, Times, Courier) – no registration needed.
+    # These fonts are always available in ReportLab on macOS.
+    print("Using built-in Helvetica, Times, or Courier fonts for macOS.")
 else:
     # Linux fonts (often uses Liberation or DejaVu as common alternatives)
     pdfmetrics.registerFont(
