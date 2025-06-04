@@ -13,12 +13,34 @@ from markdown import markdown
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 import yaml  # Add this import to parse YAML
+import sys  # Import sys module to check OS
 
 # Register a default font to avoid errors with non-standard characters
-pdfmetrics.registerFont(TTFont('Arial', 'Arial.ttf'))
-pdfmetrics.registerFont(TTFont('Arial-Bold', 'Arialbd.ttf'))
-pdfmetrics.registerFont(TTFont('Arial-Italic', 'Arialbi.ttf'))
-pdfmetrics.registerFont(TTFont('Arial-BoldItalic', 'Arialbi.ttf'))
+if sys.platform.startswith('win'):
+    # Windows fonts
+    pdfmetrics.registerFont(TTFont('Arial', 'Arial.ttf'))
+    pdfmetrics.registerFont(TTFont('Arial-Bold', 'Arialbd.ttf'))
+    pdfmetrics.registerFont(TTFont('Arial-Italic', 'Arialbi.ttf'))
+    pdfmetrics.registerFont(TTFont('Arial-BoldItalic', 'Arialbi.ttf'))
+elif sys.platform.startswith('darwin'):
+    # macOS fonts
+    #    pdfmetrics.registerFont(TTFont('Helvetica', 'Helvetica.ttf'))
+    #    pdfmetrics.registerFont(TTFont('Helvetica-Bold', 'Helvetica-Bold.ttf'))
+    #    pdfmetrics.registerFont(
+    #        TTFont('Helvetica-Oblique', 'Helvetica-Oblique.ttf'))
+    #    pdfmetrics.registerFont(
+    #        TTFont('Helvetica-BoldOblique', 'Helvetica-BoldOblique.ttf'))
+    print("No default font set for your OS.")
+else:
+    # Linux fonts (often uses Liberation or DejaVu as common alternatives)
+    pdfmetrics.registerFont(
+        TTFont('LiberationSans', 'LiberationSans-Regular.ttf'))
+    pdfmetrics.registerFont(
+        TTFont('LiberationSans-Bold', 'LiberationSans-Bold.ttf'))
+    pdfmetrics.registerFont(
+        TTFont('LiberationSans-Italic', 'LiberationSans-Italic.ttf'))
+    pdfmetrics.registerFont(
+        TTFont('LiberationSans-BoldItalic', 'LiberationSans-BoldItalic.ttf'))
 
 
 def convert_md_to_pdf(input_file, output_file, css_file=None):
