@@ -24,6 +24,7 @@ pip install git+https://github.com/devskale/python-utils.git#subdirectory=packag
 pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/uniinfer
 pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/pdf2md.skale
 pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/md2blank
+pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/md2pdfs
 ```
 
 ## Development Setup
