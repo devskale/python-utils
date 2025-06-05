@@ -38,7 +38,7 @@ def count_files_by_type(directory: str, recursive: bool = False) -> dict:
         """Process files in a single directory."""
         for item in os.listdir(current_dir):
             # Skip hidden files/directories, ./md subdirs, and files starting with '_'
-            if item.startswith('.') or item.startswith('_') or item == 'md':
+            if item.startswith('.') or item.startswith('_'):
                 continue
 
             item_path = os.path.join(current_dir, item)
@@ -93,7 +93,7 @@ def print_directory_stats(input_dir: str, recursive: bool = False) -> None:
         for root, dirs, files in os.walk(input_dir):
             # Skip hidden directories, ./md subdirs, and directories starting with '_'
             dirs[:] = [d for d in dirs if not d.startswith(
-                '.') and not d.startswith('_') and d != 'md']
+                '.') and not d.startswith('_')]
 
             for dir_name in dirs:
                 dir_path = os.path.join(root, dir_name)
@@ -269,7 +269,7 @@ def clear_parser_files(directory: str, parser_name: Optional[str] = None, recurs
         # Process regular files in current directory (for backward compatibility)
         for item in os.listdir(current_dir):
             # Skip hidden files/directories and files starting with '_'
-            if item.startswith('.') or item.startswith('_') or item == 'md':
+            if item.startswith('.') or item.startswith('_'):
                 continue
 
             item_path = os.path.join(current_dir, item)
@@ -430,7 +430,7 @@ def main():
         total_dirs = 0
         total_files_to_process = 0
         for root, dirs, files in os.walk(input_directory):
-            dirs[:] = [d for d in dirs if not d.startswith('.') and d != 'md']
+            dirs[:] = [d for d in dirs if not d.startswith('.')]
             total_dirs += len(dirs)
 
             # Count files that would be processed
@@ -452,7 +452,7 @@ def main():
         for root, dirs, files in os.walk(input_directory):
             # Skip hidden directories, ./md subdirs, and directories starting with '_'
             dirs[:] = [d for d in dirs if not d.startswith(
-                '.') and not d.startswith('_') and d != 'md']
+                '.') and not d.startswith('_')]
 
             # Process current directory
             print(
