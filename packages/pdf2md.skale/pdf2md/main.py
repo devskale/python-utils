@@ -30,6 +30,7 @@ def count_files_by_type(directory: str, recursive: bool = False) -> dict:
         'PDF': 0,
         'Office': 0,
         'Img': 0,
+        'Markdown': 0,
         'Other': 0
     }
 
@@ -55,6 +56,8 @@ def count_files_by_type(directory: str, recursive: bool = False) -> dict:
                 file_counts['Office'] += 1
             elif any(lower_item.endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif']):
                 file_counts['Img'] += 1
+            elif lower_item.endswith('.md'):
+                file_counts['Markdown'] += 1
             else:
                 file_counts['Other'] += 1
 
@@ -72,13 +75,18 @@ def print_directory_stats(input_dir: str, recursive: bool = False) -> None:
         'PDF': 0,
         'Office': 0,
         'Img': 0,
+        'Markdown': 0,
         'Other': 0,
         'Directories': 0
     }
 
-    # Process root directory (show zero counts)
-    root_counts = {'PDF': 0, 'Office': 0, 'Img': 0, 'Other': 0}
-    print(f"[{os.path.basename(input_dir)}] Total {sum(root_counts.values())}")
+    # Process root directory
+    root_counts = count_files_by_type(input_dir, recursive=False)
+    print(f"[{os.path.basename(input_dir)}] Total:{sum(root_counts.values())} PDF:{root_counts['PDF']} Office:{root_counts['Office']} Img:{root_counts['Img']} Markdown:{root_counts['Markdown']}")
+
+    # Add root counts to total_counts
+    for key in root_counts:
+        total_counts[key] += root_counts[key]
 
     if recursive:
         # Process subdirectories
@@ -98,7 +106,7 @@ def print_directory_stats(input_dir: str, recursive: bool = False) -> None:
                 display_path = '/'.join(path_parts)
 
                 print(
-                    f"[{display_path}] Total:{sum(counts.values())} PDF:{counts['PDF']} Office:{counts['Office']} Img:{counts['Img']}")
+                    f"[{display_path}] Total:{sum(counts.values())} PDF:{counts['PDF']} Office:{counts['Office']} Img:{counts['Img']} Markdown:{counts['Markdown']}")
 
                 # Update totals
                 for key in counts:
@@ -112,6 +120,7 @@ def print_directory_stats(input_dir: str, recursive: bool = False) -> None:
     print(f"PDF: {total_counts['PDF']}")
     print(f"Office: {total_counts['Office']}")
     print(f"Images: {total_counts['Img']}")
+    print(f"Markdown: {total_counts['Markdown']}")
     print(f"Other: {total_counts['Other']}")
     print(
         f"Total Files: {sum(total_counts.values()) - total_counts['Directories']}")
