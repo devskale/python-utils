@@ -56,6 +56,12 @@ def _generate_index_data_for_path(current_root: str, sub_dir_names: List[str], f
                     if os.path.exists(expected_marker_file_path) and 'marker' not in parsers:
                         parsers.append('marker')
 
+                # 1b. Check for md/<basename>.md (plain md file, treat as parser "md")
+                plain_md_file_path = os.path.join(
+                    md_dir_path, file_base_name + ".md")
+                if os.path.isfile(plain_md_file_path) and 'md' not in parsers:
+                    parsers.append('md')
+
                 # 2. Check for other parsers (md/file_base_name.parser.md)
                 for item_in_md_dir in os.listdir(md_dir_path):
                     if item_in_md_dir.startswith('.') or item_in_md_dir.startswith('_'):
@@ -347,6 +353,12 @@ def create_index(directory: str, recursive: bool = False, test_mode: bool = Fals
                             marker_sub_dir, file_base_name + ".marker.md")
                         if os.path.exists(expected_marker_file_path) and 'marker' not in parsers:
                             parsers.append('marker')
+
+                    # 1b. Check for md/<basename>.md (plain md file, treat as parser "md")
+                    plain_md_file_path = os.path.join(
+                        md_dir_path, file_base_name + ".md")
+                    if os.path.isfile(plain_md_file_path) and 'md' not in parsers:
+                        parsers.append('md')
 
                     # 2. Check for other parsers (md/file_base_name.parser.md)
                     for item_in_md_dir in os.listdir(md_dir_path):
