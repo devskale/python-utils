@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, HTTPException, Response, Request
 from pydantic import BaseModel
 import queue
 import threading
@@ -14,10 +14,11 @@ app = FastAPI(title="Robotni API", description="A simple worker management syste
 job_queue = queue.Queue()
 
 # Path to status storage file
-STATUS_FILE = "packages/robotni/jobs.json"
+STATUS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "jobs.json")
 
 # Load jobs from file (if exists)
 def load_jobs() -> Dict[str, Dict[str, Any]]:
+    os.makedirs(os.path.dirname(STATUS_FILE), exist_ok=True)
     if os.path.exists(STATUS_FILE):
         try:
             with open(STATUS_FILE, 'r') as f:
@@ -28,6 +29,7 @@ def load_jobs() -> Dict[str, Dict[str, Any]]:
 
 # Save jobs to file
 def save_jobs(jobs: Dict[str, Dict[str, Any]]):
+    os.makedirs(os.path.dirname(STATUS_FILE), exist_ok=True)
     with open(STATUS_FILE, 'w') as f:
         json.dump(jobs, f, indent=2)
 
@@ -103,7 +105,7 @@ async def submit_job(job: JobSubmission):
 
 # Endpoint to get job status/details
 @app.get("/api/worker/jobs/{job_id}")
-async def get_job_status(job_id: str, response: Response):
+async def get_job_status(job_id: str, response: Response, request: Request):
     jobs = load_jobs()
     if job_id not in jobs:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -113,7 +115,7 @@ async def get_job_status(job_id: str, response: Response):
     etag = f"{job['status']}-{job.get('result', '')}-{job.get('error', '')}"
     response.headers['ETag'] = etag
     
-    if "If-None-Match" in response.request.headers and response.request.headers["If-None-Match"] == etag:
+    if "If-None-Match" in request.headers and request.headers["If-None-Match"] == etag:
         response.status_code = 304  # Not Modified
         return None
     
