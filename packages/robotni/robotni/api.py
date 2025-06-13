@@ -36,6 +36,7 @@ def save_jobs(jobs: Dict[str, Dict[str, Any]]):
 # Worker thread function to process jobs from the queue
 def worker_thread():
     jobs = load_jobs()
+    print("[Worker] Worker thread started, waiting for jobs...")
     while True:
         try:
             # Get a job from the queue (blocking)
@@ -43,31 +44,46 @@ def worker_thread():
             job_id = job["id"]
             job_type = job["type"]
             params = job.get("params", {})
+            print(f"[Worker] Processing job {job_id} of type {job_type}")
             
-            # Update status to in progress
-            jobs[job_id]["status"] = "in progress"
-            save_jobs(jobs)
+            # Define a status update function for use during processing
+            def update_status(jid, status):
+                # Reload jobs to ensure we have the latest state before updating
+                current_jobs = load_jobs()
+                if jid in current_jobs:
+                    current_jobs[jid]["status"] = status
+                    save_jobs(current_jobs)
+                    print(f"[Worker] Updated status for job {jid} to {status}")
+                else:
+                    print(f"[Worker] Job {jid} not found in current jobs, cannot update status to {status}")
             
             # Process based on job type
             if job_type == "fakejob":
-                result, error = process_fakejob(params)
+                result, error = process_fakejob(params, job_id, update_status)
                 if error:
                     jobs[job_id]["status"] = "failed"
                     jobs[job_id]["error"] = error
+                    print(f"[Worker] Job {job_id} failed: {error}")
                 else:
                     jobs[job_id]["status"] = "done"
                     jobs[job_id]["result"] = result
+                    print(f"[Worker] Job {job_id} completed successfully")
             else:
                 jobs[job_id]["status"] = "failed"
                 jobs[job_id]["error"] = f"Unknown job type: {job_type}"
+                print(f"[Worker] Job {job_id} failed: Unknown job type {job_type}")
             
             save_jobs(jobs)
             job_queue.task_done()
+            print(f"[Worker] Job {job_id} processing complete, queue size: {job_queue.qsize()}")
         except Exception as e:
             if job_id in jobs:
                 jobs[job_id]["status"] = "failed"
                 jobs[job_id]["error"] = str(e)
                 save_jobs(jobs)
+                print(f"[Worker] Error processing job {job_id}: {str(e)}")
+            else:
+                print(f"[Worker] Unexpected error: {str(e)}")
 
 # Start the worker thread on startup
 @app.on_event("startup")

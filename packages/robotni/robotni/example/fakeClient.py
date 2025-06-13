@@ -6,10 +6,10 @@ import queue
 import requests
 
 class FakeClient:
-    def __init__(self, api_base_url="http://localhost:8000", interval=5, poll_interval=1):
+    def __init__(self, api_base_url="http://localhost:8000", interval=5, poll_interval=0.5):
         self.api_base_url = api_base_url
         self.interval = interval  # Interval to send new job requests
-        self.poll_interval = poll_interval  # Interval to poll job status
+        self.poll_interval = poll_interval  # Interval to poll job status, reduced for faster updates
         self.jobs = {}  # Stores job_id: {'status': 'pending', 'result': None}
         self.running = False
         self.job_sender_thread = None
