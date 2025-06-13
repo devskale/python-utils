@@ -17,4 +17,4 @@ def test_submit_job():
     assert data["status"] == "submitted"
     job_id = data["job_id"]
     print(
-        f"PASSED: Job submission returned job_id={job_id} and status=submitted")
+        f"PASSED: job_id={job_id} status=submitted")
