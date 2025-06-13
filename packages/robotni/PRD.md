@@ -6,6 +6,16 @@
 
 ---
 
+### **Tech Stack**
+
+- **Python 3.8+**
+- **FastAPI** (REST API framework)
+- **Huey** (task queue, using SqliteHuey for file-based storage)
+- **Subprocess** (job isolation and execution in separate virtual environments)
+- **Uvicorn** (ASGI server for FastAPI)
+
+---
+
 ### **Core Requirements**
 
 #### 1. **Task Execution**
@@ -16,14 +26,26 @@
 
 #### 2. **Web App Integration**
 
-- **Endpoints**:
-  - `POST /tasks`: Enqueue a task (returns `task_id`).
-  - `GET /tasks/{task_id}`: Poll status (`queued`/`running`/`success`/`failed`).
-- **Response**:
+- **API Routes for Worker Management**:
+
+  - `POST /api/worker/jobs`: Create and start a new job (returns `jobId`).
+  - `GET /api/worker/jobs`: List all jobs (supports filtering by type, status, project).
+  - `GET /api/worker/jobs/[jobId]`: Get specific job details and status.
+  - `DELETE /api/worker/jobs/[jobId]`: Cancel/stop a specific job.
+
+- **Worker System Routes**:
+
+  - `GET /api/worker/status`: Get overall worker system status.
+  - `GET /api/worker/types`: List all available worker types and capabilities.
+
+- **Example Response for Job Status**:
   ```json
   {
+    "jobId": "abc123",
     "status": "running",
     "output": null, // Or combined stdout/stderr if completed
+    "type": "python-script",
+    "project": "demo",
     "timestamp": "2024-02-20T12:00:00" // ISO 8601 format
   }
   ```
@@ -62,6 +84,23 @@
 ---
 
 **Approval**: Ready for implementation. Stakeholders: Dev team.
+
+---
+
+### **Implementation Path**
+
+- [ ] Set up project structure and dependencies
+- [ ] Implement FastAPI app skeleton
+- [ ] Define job/task data models
+- [ ] Integrate Huey with SqliteHuey backend
+- [ ] Implement job submission endpoint (`POST /api/worker/jobs`)
+- [ ] Implement job status and listing endpoints (`GET /api/worker/jobs`, `GET /api/worker/jobs/[jobId]`)
+- [ ] Implement job cancellation endpoint (`DELETE /api/worker/jobs/[jobId]`)
+- [ ] Implement worker system status/types endpoints
+- [ ] Add subprocess-based job execution in isolated `.venv`
+- [ ] Add periodic cleanup task
+- [ ] Add tests and example jobs
+- [ ] Documentation and usage examples
 
 ---
 
