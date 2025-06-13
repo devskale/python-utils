@@ -13,6 +13,7 @@ This repository contains a collection of Python utility packages designed to be 
 - **uniinfer**: a unified python interface for 15+ popular inferencing providers
 - **pdf2md-skale**: A versatile PDF to Markdown converter with multiple extraction methods (pdfplumber, PyPDF2, PyMuPDF, OCR) and features like recursive processing, dry run mode, and metadata inclusion
 - **md2blank**: A markdown to blank converter that removes all PII content while preserving structure
+- **robotni**: A minimal, file-based task scheduler to run Python jobs from a web app, with async task queuing and status polling.
 
 ## Installation
 
@@ -25,6 +26,7 @@ pip install git+https://github.com/devskale/python-utils.git#subdirectory=packag
 pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/pdf2md.skale
 pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/md2blank
 pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/md2pdfs
+pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/robotni
 ```
 
 ## Development Setup
