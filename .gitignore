@@ -32,3 +32,4 @@ credgoo-node/
 syncdata/
 syncdata
 packages/robotni/robotni_tasks.db
+packages/robotni/robotni.db
