@@ -1,132 +1,68 @@
-# **Robotni**
+### **Robotni Lightweight Python Task Scheduler (Huey + FastAPI)**
 
-_A Scalable Python Worker Management System_  
-Robotni is a worker management solution designed to automate and track the execution of Python commands. It receives worker action requests from a remote web application, queues these requests, performs the specified work by running available Python commands, and tracks the status of each task.
+**Package Name**: `robotni`
 
-## **Overview**
-
-Robotni is a backend service that:
-
-1. **Queues** Python-based jobs (e.g., document parsing, AI analysis).
-2. **Executes** them in isolated workers.
-3. **Tracks** status/results via a polling API.
-
-Built for reliability, scalability, and simple integration.
+**Objective**: A minimal, file-based task scheduler to run Python jobs from a web app, with async task queuing and status polling.
 
 ---
 
-## **Getting Started**
+### **Core Requirements**
 
-### **Installation**
+#### 1. **Task Execution**
 
-Robotni is currently a minimal implementation that can be run locally. Follow these steps to set it up:
+- **Trigger**: FastAPI endpoint accepts job requests (script path + `.venv` directory for Python virtual environment).
+- **Queue**: `SqliteHuey` for task storage (file-based).
+- **Isolation**: Each task runs in its own `.venv` via subprocess.
 
-1. Ensure you have Python 3.6+ installed.
-2. Install the required dependencies:
-   ```bash
-   cd packages/robotni
-   pip install fastapi uvicorn
-   ```
-3. Run the application:
+#### 2. **Web App Integration**
 
-   ```bash
-   python run.py
-   ```
+- **Endpoints**:
+  - `POST /tasks`: Enqueue a task (returns `task_id`).
+  - `GET /tasks/{task_id}`: Poll status (`queued`/`running`/`success`/`failed`).
+- **Response**:
+  ```json
+  {
+    "status": "running",
+    "output": null, // Or combined stdout/stderr if completed
+    "timestamp": "2024-02-20T12:00:00" // ISO 8601 format
+  }
+  ```
 
-   The server will start on `http://localhost:8000`. You can access the API documentation at `http://localhost:8000/docs`.
+#### 3. **Worker Setup**
 
-   > **Note:** The default `run.py` starts Uvicorn in development mode with `reload=True`. For production, remove the `reload` flag.
+- **Concurrency**: 4 workers max (`huey_consumer.py -w 4`).
+- **Idle**: Workers exit after 5 min inactivity (custom logic).
+- **Timeouts**: Kill tasks exceeding 1 hr (`@huey.task(expires=3600)`).
 
-### **Current Implementation**
+#### 4. **Periodic Tasks**
 
-This version of Robotni is a super-simple setup focused on the `fakejob` worker type for testing purposes. It includes:
-
-- **API Server**: Built with FastAPI, providing endpoints for job management.
-- **Job Queue**: An in-memory queue for pending jobs.
-- **Worker**: A single-threaded worker processing the `fakejob` type, which simulates work by importing and calling an external Python script (`robotni/workers/fakeJob.py`).
-- **Status Storage**: Job status and results are stored in memory (and optionally in `jobs.json`).
-
----
-
-## **Worker Script Integration**
-
-Robotni executes jobs by importing and calling functions from external Python scripts located in the `robotni/workers/` directory. For example, the `fakejob` worker type is implemented in [`robotni/workers/fakeJob.py`](robotni/workers/fakeJob.py) as a `run_fakejob()` function.
-
-To add a new worker type:
-
-1. Create a new script in `robotni/workers/` (e.g., `myWorker.py`).
-2. Implement a function (e.g., `run_myworker(params)`).
-3. Update the server logic to import and call your function when the corresponding job type is submitted.
-
-This approach allows you to extend Robotni with custom Python job logic easily.
+- Example: Daily cleanup via `@huey.periodic_task(crontab(minute=0, hour=0))`.
 
 ---
 
-## **API Schema**
+### **Non-Functional Requirements**
 
-### **Authentication**
-
-- Currently, no authentication is implemented in this minimal version. Future updates may include Bearer Token support.
-
-### **Endpoints**
-
-#### **Job Management**
-
-| Method | Endpoint                   | Description                                                 |
-| ------ | -------------------------- | ----------------------------------------------------------- |
-| `POST` | `/api/worker/jobs`         | Submit a job. Returns `job_id`. (Body: `type`, `params`)    |
-| `GET`  | `/api/worker/jobs/{jobId}` | Get job details (status, results). Supports `ETag` caching. |
-| `GET`  | `/api/worker/status`       | System health (queue depth, active workers).                |
-| `GET`  | `/api/worker/types`        | List available worker types and their input schemas.        |
+- **Storage**: SQLite (no Redis).
+- **Scale**: Single-machine (no distributed workers).
+- **Latency**: Polling interval ≥5 sec (no real-time updates).
 
 ---
 
-## **Worker Types**
+### **Out of Scope**
 
-| Type      | Description                       | Example `params`                                |
-| --------- | --------------------------------- | ----------------------------------------------- |
-| `fakejob` | Test worker (random 1-10s delay). | `{ "delay_seconds": 5 }` (optional, default: 5) |
+- Authentication, priority queues, or dynamic scaling.
 
 ---
 
-## **Workflow Example**
+### **Metrics**
 
-1. **Submit a Job**
-
-   ```bash
-   curl -X POST http://localhost:8000/api/worker/jobs -H "Content-Type: application/json" -d '{"type": "fakejob", "params": {"delay_seconds": 10}}'
-   ```
-
-   → Returns `{ "job_id": "uuid-string", "status": "queued" }`
-
-2. **Poll for Status**
-   ```bash
-   curl http://localhost:8000/api/worker/jobs/{job_id}
-   ```
-   → Returns job status, e.g., `{ "id": "uuid-string", "status": "done", "result": {"waited": 7}, "error": null }`
+- 95% of tasks complete within timeout.
+- API response time <500 ms.
 
 ---
 
-## **Key Features**
-
-✅ **Minimal Setup**
-
-- Simple architecture with FastAPI, in-memory queue, and JSON storage for easy deployment.
-
-✅ **Efficient Polling**
-
-- `ETag` headers reduce unnecessary data transfer during status checks.
+**Approval**: Ready for implementation. Stakeholders: Dev team.
 
 ---
 
-## **Potential Extensions**
-
-- **Authentication**: Add Bearer Token support for secure API access.
-- **More Worker Types**: Implement additional workers like `parsing`, `anonymization`, and `analysis`.
-- **Scalability**: Upgrade to a robust queue (e.g., Redis) and database (e.g., PostgreSQL) for larger workloads.
-- **Rate Limiting**: Per-client API quotas.
-- **Priority Queues**: Urgent vs. batch jobs.
-- **Scheduled Jobs**: Deferred execution.
-- **Arq & Redis Integration**: Use [Arq](https://arq-docs.helpmanual.io/) (a Python job queue) with Redis for distributed scheduling, background processing, and scalable job management.
-
----
+Let me know if you'd like to adjust concurrency/timeout defaults or add retry logic!
