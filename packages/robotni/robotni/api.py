@@ -1,3 +1,6 @@
+# DEPRECATED: All API logic has been consolidated into run.py.
+# This file is kept for reference only.
+
 from fastapi import FastAPI, HTTPException, Response, Request
 from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException, Response, Request
@@ -7,7 +10,8 @@ from arq import create_pool
 from arq.connections import RedisSettings
 import subprocess
 
-app = FastAPI(title="Robotni API", description="A simple worker management system")
+app = FastAPI(title="Robotni API",
+              description="A simple worker management system")
 
 # Redis settings for arq
 REDIS_SETTINGS = RedisSettings(host='localhost', port=6379)
@@ -20,6 +24,8 @@ worker_start_time = None
 job_enqueue_times = {}  # Dictionary to store enqueue times for jobs
 
 # Startup event to create Redis pool
+
+
 @app.on_event("startup")
 async def startup_event():
     global redis_pool, worker_process, worker_active, worker_start_time
@@ -30,6 +36,8 @@ async def startup_event():
     print("[API] Redis pool created.")
 
 # Shutdown event to close Redis pool and stop worker if running
+
+
 @app.on_event("shutdown")
 async def shutdown_event():
     global worker_process, worker_active, worker_start_time
@@ -43,17 +51,22 @@ async def shutdown_event():
         print("[API] Worker process terminated on shutdown.")
 
 # Pydantic model for job submission
+
+
 class JobSubmission(BaseModel):
     type: str
     params: Dict[str, Any] = {}
 
 # Endpoint to submit a job and start worker if not running
+
+
 @app.post("/api/worker/jobs")
 async def submit_job(job: JobSubmission):
     global worker_process, worker_active, job_enqueue_times
     if job.type != "fakejob":
-        raise HTTPException(status_code=400, detail=f"Unknown job type: {job.type}")
-    
+        raise HTTPException(
+            status_code=400, detail=f"Unknown job type: {job.type}")
+
     job_id = str(uuid.uuid4())
     try:
         # Start worker if not already running
@@ -77,31 +90,39 @@ async def submit_job(job: JobSubmission):
                 background_tasks.add_task(monitor_worker_idle_timeout)
             except Exception as e:
                 print(f"[API] Failed to start worker process: {str(e)}")
-                raise HTTPException(status_code=500, detail=f"Failed to start worker: {str(e)}")
-        
+                raise HTTPException(
+                    status_code=500, detail=f"Failed to start worker: {str(e)}")
+
         # Enqueue the job using arq
         job_instance = await redis_pool.enqueue_job(
             'process_fakejob',
             job_id,
             job.params,
-            _job_id=job_id # Use job_id as arq's internal job ID
+            _job_id=job_id  # Use job_id as arq's internal job ID
         )
         import time
         job_enqueue_times[job_id] = time.time()
-        print(f"[API] Enqueued job with ID: {job_id}, Instance: {job_instance}")
+        print(
+            f"[API] Enqueued job with ID: {job_id}, Instance: {job_instance}")
         return {"job_id": job_id, "status": "queued"}
     except Exception as e:
-        print(f"[API] Failed to enqueue job with ID: {job_id}, Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to enqueue job: {str(e)}")
+        print(
+            f"[API] Failed to enqueue job with ID: {job_id}, Error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to enqueue job: {str(e)}")
 
 # Endpoint to get job status/details
+
+
 @app.get("/api/worker/jobs/{job_id}")
 async def get_job_status(job_id: str, response: Response, request: Request):
     if not redis_pool:
-        raise HTTPException(status_code=503, detail="Redis pool not initialized.")
-    
+        raise HTTPException(
+            status_code=503, detail="Redis pool not initialized.")
+
     try:
-        job_result = await redis_pool._get_job_result(job_id) # timeout=0 means don't wait
+        # timeout=0 means don't wait
+        job_result = await redis_pool._get_job_result(job_id)
     except AttributeError:
         job_result = None  # Fallback if decode error occurs
     # Since direct job status retrieval methods are not available, infer status from result availability
@@ -113,10 +134,12 @@ async def get_job_status(job_id: str, response: Response, request: Request):
         # Check if worker is active, which might indicate jobs are running
         if worker_active:
             display_status = 'running (assumed)'
-        print(f"[API] Job {job_id} assumed {display_status} as no result is available yet")
+        print(
+            f"[API] Job {job_id} assumed {display_status} as no result is available yet")
 
     import time
-    elapsed_time = int(time.time() - job_enqueue_times.get(job_id, time.time())) if job_id in job_enqueue_times else 0
+    elapsed_time = int(time.time() - job_enqueue_times.get(job_id,
+                       time.time())) if job_id in job_enqueue_times else 0
     job_data = {
         "id": job_id,
         "status": display_status,
@@ -134,14 +157,16 @@ async def get_job_status(job_id: str, response: Response, request: Request):
     # Simple ETag based on job status and result/error
     etag = f"{job_data['status']}-{job_data.get('result', '')}-{job_data.get('error', '')}"
     response.headers['ETag'] = etag
-    
+
     if "If-None-Match" in request.headers and request.headers["If-None-Match"] == etag:
         response.status_code = 304  # Not Modified
         return None
-    
+
     return job_data
 
 # Endpoint for system status
+
+
 @app.get("/api/worker/status")
 async def get_system_status():
     global worker_active, worker_start_time
@@ -159,6 +184,8 @@ async def get_system_status():
     }
 
 # Background task to monitor worker idle timeout
+
+
 async def monitor_worker_idle_timeout():
     global worker_process, worker_active, worker_start_time
     import asyncio
@@ -181,6 +208,8 @@ async def monitor_worker_idle_timeout():
         # This is a placeholder for actual job activity monitoring
 
 # Endpoint to list available worker types (static for now)
+
+
 @app.get("/api/worker/types")
 async def get_worker_types():
     return {

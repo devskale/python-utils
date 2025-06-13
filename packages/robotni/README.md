@@ -43,8 +43,22 @@ This version of Robotni is a super-simple setup focused on the `fakejob` worker 
 
 - **API Server**: Built with FastAPI, providing endpoints for job management.
 - **Job Queue**: An in-memory queue for pending jobs.
-- **Worker**: A single-threaded worker processing the `fakejob` type, which simulates work by waiting a random time between 1 second and a specified parameter.
-- **Status Storage**: Job status and results are stored in `jobs.json`.
+- **Worker**: A single-threaded worker processing the `fakejob` type, which simulates work by importing and calling an external Python script (`robotni/workers/fakeJob.py`).
+- **Status Storage**: Job status and results are stored in memory (and optionally in `jobs.json`).
+
+---
+
+## **Worker Script Integration**
+
+Robotni executes jobs by importing and calling functions from external Python scripts located in the `robotni/workers/` directory. For example, the `fakejob` worker type is implemented in [`robotni/workers/fakeJob.py`](robotni/workers/fakeJob.py) as a `run_fakejob()` function.
+
+To add a new worker type:
+
+1. Create a new script in `robotni/workers/` (e.g., `myWorker.py`).
+2. Implement a function (e.g., `run_myworker(params)`).
+3. Update the server logic to import and call your function when the corresponding job type is submitted.
+
+This approach allows you to extend Robotni with custom Python job logic easily.
 
 ---
 

@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional
 from pydantic import BaseModel
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response, Request
 import random
 import uuid
 import time
@@ -9,7 +9,8 @@ import uvicorn
 from robotni.workers.fakeJob import run_fakejob
 
 
-app = FastAPI()
+app = FastAPI(title="Robotni API",
+              description="A simple worker management system")
 
 # In-memory job queue and storage
 job_queue = []
@@ -19,6 +20,22 @@ jobs: Dict[str, Dict[str, Any]] = {}
 class JobRequest(BaseModel):
     type: str
     params: Optional[Dict[str, Any]] = {}
+
+
+@app.get("/api/worker/types")
+def get_worker_types():
+    return {
+        "fakejob": {
+            "description": "Test worker with random delay between 1s and specified seconds",
+            "params": {
+                "delay_seconds": {
+                    "type": "integer",
+                    "default": 5,
+                    "description": "Maximum delay in seconds (random between 1 and this value)"
+                }
+            }
+        }
+    }
 
 
 @app.post("/api/worker/jobs")
@@ -39,11 +56,32 @@ def submit_job(job: JobRequest):
 
 
 @app.get("/api/worker/jobs/{job_id}")
-def get_job(job_id: str):
+def get_job(job_id: str, response: Response, request: Request):
     job = jobs.get(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+    # ETag support
+    etag = f"{job['status']}-{job.get('result', '')}-{job.get('error', '')}"
+    response.headers['ETag'] = etag
+    if "if-none-match" in request.headers and request.headers["if-none-match"] == etag:
+        response.status_code = 304
+        return None
     return job
+
+
+@app.get("/api/worker/status")
+def get_system_status():
+    # Count jobs that are waiting in the queue (status == "queued")
+    waiting = sum(1 for job in jobs.values() if job["status"] == "queued")
+    # Count jobs that are currently running
+    running = sum(1 for job in jobs.values() if job["status"] == "running")
+    # System is "running" if any jobs are queued or running, else "idle"
+    system_status = "running" if (waiting > 0 or running > 0) else "idle"
+    return {
+        "queue_depth": waiting,
+        "active_workers": running,
+        "status": system_status
+    }
 
 
 def fakejob_worker():
