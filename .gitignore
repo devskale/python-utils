@@ -23,7 +23,8 @@ htmlcov/
 .pytest_cache/
 .*
 test/
-tests/
+/tests/
+!/robtni/robotni/tests/
 
 # Node
 node_modules/
