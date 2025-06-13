@@ -1,0 +1,145 @@
+from fastapi import FastAPI, HTTPException, Response
+from pydantic import BaseModel
+import queue
+import threading
+import json
+import os
+import uuid
+from typing import Dict, Any
+from workers import process_fakejob
+
+app = FastAPI(title="Robotni API", description="A simple worker management system")
+
+# In-memory queue for jobs
+job_queue = queue.Queue()
+
+# Path to status storage file
+STATUS_FILE = "packages/robotni/jobs.json"
+
+# Load jobs from file (if exists)
+def load_jobs() -> Dict[str, Dict[str, Any]]:
+    if os.path.exists(STATUS_FILE):
+        try:
+            with open(STATUS_FILE, 'r') as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            return {}
+    return {}
+
+# Save jobs to file
+def save_jobs(jobs: Dict[str, Dict[str, Any]]):
+    with open(STATUS_FILE, 'w') as f:
+        json.dump(jobs, f, indent=2)
+
+# Worker thread function to process jobs from the queue
+def worker_thread():
+    jobs = load_jobs()
+    while True:
+        try:
+            # Get a job from the queue (blocking)
+            job = job_queue.get()
+            job_id = job["id"]
+            job_type = job["type"]
+            params = job.get("params", {})
+            
+            # Update status to in progress
+            jobs[job_id]["status"] = "in progress"
+            save_jobs(jobs)
+            
+            # Process based on job type
+            if job_type == "fakejob":
+                result, error = process_fakejob(params)
+                if error:
+                    jobs[job_id]["status"] = "failed"
+                    jobs[job_id]["error"] = error
+                else:
+                    jobs[job_id]["status"] = "done"
+                    jobs[job_id]["result"] = result
+            else:
+                jobs[job_id]["status"] = "failed"
+                jobs[job_id]["error"] = f"Unknown job type: {job_type}"
+            
+            save_jobs(jobs)
+            job_queue.task_done()
+        except Exception as e:
+            if job_id in jobs:
+                jobs[job_id]["status"] = "failed"
+                jobs[job_id]["error"] = str(e)
+                save_jobs(jobs)
+
+# Start the worker thread on startup
+@app.on_event("startup")
+async def startup_event():
+    worker = threading.Thread(target=worker_thread, daemon=True)
+    worker.start()
+
+# Pydantic model for job submission
+class JobSubmission(BaseModel):
+    type: str
+    params: Dict[str, Any] = {}
+
+# Endpoint to submit a job
+@app.post("/api/worker/jobs")
+async def submit_job(job: JobSubmission):
+    job_id = str(uuid.uuid4())
+    job_data = {
+        "id": job_id,
+        "type": job.type,
+        "params": job.params,
+        "status": "queued",
+        "result": None,
+        "error": None
+    }
+    
+    # Save to storage
+    jobs = load_jobs()
+    jobs[job_id] = job_data
+    save_jobs(jobs)
+    
+    # Add to queue
+    job_queue.put(job_data)
+    
+    return {"job_id": job_id, "status": "queued"}
+
+# Endpoint to get job status/details
+@app.get("/api/worker/jobs/{job_id}")
+async def get_job_status(job_id: str, response: Response):
+    jobs = load_jobs()
+    if job_id not in jobs:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    job = jobs[job_id]
+    # Simple ETag based on job status and result/error
+    etag = f"{job['status']}-{job.get('result', '')}-{job.get('error', '')}"
+    response.headers['ETag'] = etag
+    
+    if "If-None-Match" in response.request.headers and response.request.headers["If-None-Match"] == etag:
+        response.status_code = 304  # Not Modified
+        return None
+    
+    return job
+
+# Endpoint for system status
+@app.get("/api/worker/status")
+async def get_system_status():
+    return {
+        "queue_depth": job_queue.qsize(),
+        "active_workers": 1,  # Simplified to 1 for now
+        "status": "running"
+    }
+
+# Endpoint to list available worker types (static for now)
+@app.get("/api/worker/types")
+async def get_worker_types():
+    return {
+        "fakejob": {
+            "description": "Test worker with random delay between 1s and specified seconds",
+            "params": {
+                "delay_seconds": {
+                    "type": "integer",
+                    "default": 5,
+                    "description": "Maximum delay in seconds (random between 1 and this value)"
+                }
+            }
+        }
+    }
