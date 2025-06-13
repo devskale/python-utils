@@ -104,8 +104,8 @@ Project Structure
 - [X] Implement FastAPI app skeleton
 - [X] Define job/task data models
 - [x] Integrate Huey with SqliteHuey backend
-- [ ] Implement job submission endpoint (`POST /api/worker/jobs`)
-- [ ] Implement job status and listing endpoints (`GET /api/worker/jobs`, `GET /api/worker/jobs/[jobId]`)
+- [X] Implement job submission endpoint (`POST /api/worker/jobs`)
+- [X] Implement job status and listing endpoints (`GET /api/worker/jobs`, `GET /api/worker/jobs/[jobId]`)
 - [ ] Implement job cancellation endpoint (`DELETE /api/worker/jobs/[jobId]`)
 - [ ] Implement worker system status/types endpoints
 - [ ] Add subprocess-based job execution in isolated `.venv`
