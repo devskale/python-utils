@@ -87,12 +87,23 @@
 
 ---
 
+Project Structure
+./packages/robotni/
+├── .pytest_cache/ # Pytest cache files (can be ignored)
+├── robotni/ # Main package source
+│ ├── tests/ # Unit and integration tests
+│ ├── workers/ # Worker/task definitions
+│ └── **pycache**/ # Python bytecode cache
+└── robotni.egg-info/ # Packaging metadata
+
+```
+
 ### **Implementation Path**
 
-- [ ] Set up project structure and dependencies
-- [ ] Implement FastAPI app skeleton
-- [ ] Define job/task data models
-- [ ] Integrate Huey with SqliteHuey backend
+- [x] Set up project structure and dependencies
+- [X] Implement FastAPI app skeleton
+- [X] Define job/task data models
+- [x] Integrate Huey with SqliteHuey backend
 - [ ] Implement job submission endpoint (`POST /api/worker/jobs`)
 - [ ] Implement job status and listing endpoints (`GET /api/worker/jobs`, `GET /api/worker/jobs/[jobId]`)
 - [ ] Implement job cancellation endpoint (`DELETE /api/worker/jobs/[jobId]`)
@@ -105,3 +116,4 @@
 ---
 
 Let me know if you'd like to adjust concurrency/timeout defaults or add retry logic!
+```
