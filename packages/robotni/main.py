@@ -2,7 +2,8 @@ import os
 import shutil # Add this import
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from pydantic import BaseModel
-from huey_app import huey, add, run_fake_job # Import run_fake_job
+from huey_app import huey # Import only huey instance
+from tasks import add, run_fake_job # Import tasks from new tasks.py
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from huey.api import Result

@@ -1,13 +1,7 @@
-from huey import FileHuey
-from workers.taskFakejob import taskFakejob as original_taskFakejob # Import original
+from huey import SqliteHuey
 
-# Use file-based Huey (tasks and results stored in ./huey-data/)
-huey = FileHuey('my-app', path='./huey-data')
+huey = SqliteHuey(filename='robotni.db')
 
-@huey.task()
-def add(x, y):
-    return x + y
-
-@huey.task()
-def run_fake_job():
-    return original_taskFakejob() # Call the original function
+# Import tasks to ensure they are registered with this Huey instance
+# when the huey consumer (worker) loads this module.
+import tasks
