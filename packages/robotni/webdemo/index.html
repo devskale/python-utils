@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fakejob Demo</title>
+</head>
+<body>
+    <h1>Trigger /fakejob/ API</h1>
+    <button id="triggerBtn">Start Fakejob</button>
+    <div id="result"></div>
+    <script>
+        document.getElementById('triggerBtn').onclick = async function() {
+            document.getElementById('result').textContent = 'Sending request...';
+            try {
+                const response = await fetch('http://127.0.0.1:8000/fakejob/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (!response.ok) throw new Error('Request failed');
+                const data = await response.json();
+                document.getElementById('result').textContent = 'Task ID: ' + data.task_id;
+            } catch (e) {
+                document.getElementById('result').textContent = 'Error: ' + e.message;
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,8 +1,18 @@
 from fastapi import FastAPI, BackgroundTasks
 from pydantic import BaseModel
 from huey_app import huey, add, run_fake_job # Import run_fake_job
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:5500"],  # or ["*"] for all origins (not recommended for production)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class AddRequest(BaseModel):
     x: int
@@ -24,3 +34,5 @@ def get_result(task_id: str):
     if result is None:
         return {"status": "pending"}
     return {"status": "done", "result": result}
+
+app.mount("/webdemo", StaticFiles(directory="webdemo"), name="webdemo")

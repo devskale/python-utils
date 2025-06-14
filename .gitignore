@@ -33,3 +33,4 @@ syncdata/
 syncdata
 packages/robotni/robotni_tasks.db
 packages/robotni/robotni.db
+huey-data/
