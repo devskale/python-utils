@@ -7,7 +7,10 @@
 <body>
     <h1>Trigger /fakejob/ API</h1>
     <button id="triggerBtn">Start Fakejob</button>
+    <button id="queueBtn">View Queue</button>
+    <button id="flushBtn">Flush Queue</button>
     <div id="result"></div>
+    <div id="queue"></div>
     <script>
         document.getElementById('triggerBtn').onclick = async function() {
             document.getElementById('result').textContent = 'Sending request...';
@@ -23,6 +26,63 @@
                 document.getElementById('result').textContent = 'Error: ' + e.message;
             }
         };
+
+        async function deleteTask(taskId) {
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/queue/${taskId}`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) throw new Error('Delete failed');
+                // Refresh queue after deletion
+                await loadQueue();
+            } catch (e) {
+                alert('Error deleting task: ' + e.message);
+            }
+        }
+
+        function renderTasks(title, tasks) {
+            if (!tasks.length) return `<strong>${title}:</strong> <em>None</em>`;
+            return `<strong>${title}:</strong><ul>` + tasks.map(task =>
+                `<li>
+                    <b>ID:</b> ${task.id}<br>
+                    <b>Name:</b> ${task.name}<br>
+                    <b>Args:</b> ${JSON.stringify(task.args)}<br>
+                    <b>Kwargs:</b> ${JSON.stringify(task.kwargs)}<br>
+                    <b>Retries:</b> ${task.retries}<br>
+                    <b>ETA:</b> ${task.eta}<br>
+                    <button onclick="deleteTask('${task.id}')">Revoke</button>
+                </li>`
+            ).join('') + '</ul>';
+        }
+
+        async function loadQueue() {
+            document.getElementById('queue').textContent = 'Loading queue...';
+            try {
+                const response = await fetch('http://127.0.0.1:8000/queue/');
+                if (!response.ok) throw new Error('Request failed');
+                const data = await response.json();
+                document.getElementById('queue').innerHTML =
+                    renderTasks('Pending', data.pending) +
+                    renderTasks('Scheduled', data.scheduled) +
+                    `<p><strong>Revoked Tasks:</strong> ${data.revoked_count}</p>`;
+            } catch (e) {
+                document.getElementById('queue').textContent = 'Error: ' + e.message;
+            }
+        }
+
+        document.getElementById('queueBtn').onclick = loadQueue;
+
+        document.getElementById('flushBtn').onclick = async function() {
+            try {
+                await fetch('http://127.0.0.1:8000/queue/flush/', { method: 'POST' });
+                await loadQueue();
+            } catch (e) {
+                alert('Error flushing queue: ' + e.message);
+            }
+        };
+
+        // Expose deleteTask globally for inline onclick
+        window.deleteTask = deleteTask;
     </script>
 </body>
 </html>
