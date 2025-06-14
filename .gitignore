@@ -37,3 +37,4 @@ huey-data/
 *.log
 *.bin
 huey-master/
+robotni.db*

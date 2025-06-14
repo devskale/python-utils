@@ -86,20 +86,26 @@ def delete_task(task_id: str):
             # revoke this specific task instance using Result API
             Result(huey, task).revoke()
             return {"status": "revoked", "task_id": task_id}
-    raise HTTPException(status_code=404, detail="Task not found or already started/finished")
+    # If not found in pending or scheduled, clarify possible reasons
+    raise HTTPException(
+        status_code=404,
+        detail="Task not found, already started, finished, or cannot be revoked. Only pending or scheduled tasks can be revoked."
+    )
 
 @app.post("/queue/flush/")
 def flush_queue():
     # Remove all files in the FileHuey data directory
     storage_path = huey.storage.path
-    if os.path.isdir(storage_path):
-        for item_name in os.listdir(storage_path):
-            item_path = os.path.join(storage_path, item_name)
-            if os.path.isfile(item_path):
-                os.remove(item_path)
-            elif os.path.isdir(item_path):
-                shutil.rmtree(item_path) # Use shutil.rmtree for directories
-    return {"status": "flushed"}
+    try:
+        if os.path.isdir(storage_path):
+            for item_name in os.listdir(storage_path):
+                item_path = os.path.join(storage_path, item_name)
+                if os.path.isfile(item_path):
+                    os.remove(item_path)
+                elif os.path.isdir(item_path):
+                    shutil.rmtree(item_path) # Use shutil.rmtree for directories
+        return {"status": "flushed"}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
 
-app.mount("/webdemo", StaticFiles(directory="webdemo"), name="webdemo")
 app.mount("/webdemo", StaticFiles(directory="webdemo"), name="webdemo")
