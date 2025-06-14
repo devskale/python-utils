@@ -1,4 +1,4 @@
-from huey_app import huey
+from .huey_app import huey
 from workers.taskFakejob import taskFakejob as original_taskFakejob
 
 @huey.task()

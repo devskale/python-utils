@@ -2,8 +2,8 @@ import os
 import shutil # Add this import
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from pydantic import BaseModel
-from huey_app import huey # Import only huey instance
-from tasks import add, run_fake_job # Import tasks from new tasks.py
+from .huey_app import huey # Import only huey instance
+from .tasks import add, run_fake_job # Import tasks from new tasks.py
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from huey.api import Result
@@ -108,4 +108,9 @@ def flush_queue():
     except Exception as e:
         return {"status": "error", "detail": str(e)}
 
-app.mount("/webdemo", StaticFiles(directory="webdemo"), name="webdemo")
+import os
+app.mount(
+    "/webdemo",
+    StaticFiles(directory=os.path.join(os.path.dirname(__file__), "webdemo")),
+    name="webdemo"
+)
