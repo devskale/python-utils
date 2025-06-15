@@ -46,3 +46,26 @@ async def task_uname(ctx):
         error_msg = f"Exception occurred while running uname -a: {str(e)}"
         print(error_msg)
         return error_msg
+
+async def task_ping(ctx):
+    """
+    A task that runs the 'ping -c 4 google.com' CLI command to check network connectivity.
+    Returns the output of the command as a string.
+    """
+    print("Starting task_ping to check network connectivity")
+    try:
+        # Use run_in_executor to run the blocking subprocess call in a separate thread
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(None, lambda: subprocess.run(['ping', '-c', '4', 'google.com'], capture_output=True, text=True))
+        if result.returncode == 0:
+            output = result.stdout.strip()
+            print(f"Ping result: {output}")
+            return output
+        else:
+            error = result.stderr.strip()
+            print(f"Error during ping: {error}")
+            return f"Error: {error}"
+    except Exception as e:
+        error_msg = f"Exception occurred while running ping: {str(e)}"
+        print(error_msg)
+        return error_msg

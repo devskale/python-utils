@@ -36,6 +36,7 @@
         <button id="enqueueFakeTaskBtn" class="add-task-btn">+ Enqueue Fake Task</button>
         <button id="enqueueAnotherFakeTaskBtn" class="add-task-btn">+ Enqueue Another Fake Task</button>
         <button id="enqueueTaskUnameBtn" class="add-task-btn">+ Enqueue System Info Task</button>
+        <button id="enqueueTaskPingBtn" class="add-task-btn">+ Enqueue Ping Task</button>
         <button id="listQueueBtn" class="queue-btn">Show Queued Tasks</button>
         <button id="listCompletedBtn" class="queue-btn">Show Last 3 Completed</button>
 
@@ -67,6 +68,7 @@
             const enqueueFakeTaskBtn = document.getElementById('enqueueFakeTaskBtn');
             const enqueueAnotherFakeTaskBtn = document.getElementById('enqueueAnotherFakeTaskBtn');
             const enqueueTaskUnameBtn = document.getElementById('enqueueTaskUnameBtn');
+            const enqueueTaskPingBtn = document.getElementById('enqueueTaskPingBtn');
             const listQueueBtn = document.getElementById('listQueueBtn');
             const listCompletedBtn = document.getElementById('listCompletedBtn');
             const jobResponseDiv = document.getElementById('jobResponse');
@@ -103,6 +105,7 @@
             enqueueFakeTaskBtn.addEventListener('click', () => enqueueTask('fake_task'));
             enqueueAnotherFakeTaskBtn.addEventListener('click', () => enqueueTask('another_fake_task'));
             enqueueTaskUnameBtn.addEventListener('click', () => enqueueTask('task_uname'));
+            enqueueTaskPingBtn.addEventListener('click', () => enqueueTask('task_ping'));
 
             listQueueBtn.addEventListener('click', async () => {
                 try {
