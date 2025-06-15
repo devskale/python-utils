@@ -2,11 +2,11 @@
 
 **Package Name**: `robotni_arq`
 
-## 1. Overview
+## Overview
 
 robotni is a minimal task scheduler that allows you to queue, manage, and monitor background jobs through a simple API. It is designed for running and tracking asynchronous or long-running tasks in a lightweight and efficient way.
 
-## 2. Description
+## Description
 
 robotni provides an interface for submitting jobs that may take a long time to complete, such as data processing, file operations, or external command execution. It exposes endpoints to enqueue tasks, check their status, retrieve results, and manage the task queue. The system is suitable for both IO-bound and CPU-bound jobs, and can handle multiple jobs concurrently.
 
@@ -20,7 +20,7 @@ robotni provides an interface for submitting jobs that may take a long time to c
 
 robotni is designed to be simple to use, with a clear API for integrating background job processing into your applications. It is suitable for scenarios where you need to offload work from the main application flow and track progress or results asynchronously.
 
-## 3. Tech Stack
+## Tech Stack
 
 - Python
 - [arq](https://github.com/python-arq/arq) (task queue and job management)
@@ -28,50 +28,32 @@ robotni is designed to be simple to use, with a clear API for integrating backgr
 
 ---
 
-python Workers are located in the `./workers/` directory and are responsible for executing the background tasks.
+Python Workers are located in the `./workers/` directory and are responsible for executing the background tasks.
 
-## 4. Installation
+## Installation
 
-(Add installation instructions here, e.g., `pip install robotni_arq` or cloning the repository and setting up the environment.)
-
-## 5. Usage
-
-(Add usage examples here, e.g., how to enqueue a task and check its status.)
-
-# Robotni ARQ: Lightweight Python Task Scheduler
-
-`robotni_arq` is a simple, yet powerful task scheduler built with `arq` for managing asynchronous and long-running jobs in Python applications, exposed via a `FastAPI` web API.
-
-## Features
-
-- **Task Queuing**: Efficiently queue and process background tasks.
-- **Concurrency**: Supports concurrent execution for both I/O-bound and CPU-bound tasks.
-- **Job Monitoring**: Simple API for submitting, monitoring, and revoking jobs.
-- **Web Interface**: Basic web demo for visualization and testing (planned).
-
-## Getting Started
-
-### Prerequisites
-
-- Python 3.8+
-- Redis server running (e.g., via Docker or locally)
-
-### Installation
-
-1.  **Clone the repository** (if you haven't already) and navigate to the `robotni_arq` directory:
+1. **Clone the repository** (if you haven't already) and navigate to the `robotni_arq` directory:
 
     ```bash
     git clone https://github.com/yourusername/robotni.git
     cd robotni/packages/robotni/robotni_arq
     ```
 
-2.  **Install the package in editable mode**:
+2. **Install dependencies**:
+
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+3. **Install the package in editable mode**:
 
     ```bash
     pip install -e .
     ```
 
     This command will install all necessary dependencies specified in `pyproject.toml` and link your local project files, allowing for direct execution and development.
+
+## Usage
 
 ### Running the Application
 
@@ -118,7 +100,6 @@ robotni_arq/
 ├── __init__.py
 ├── api.py              # FastAPI application, Redis connection setup
 ├── tasks.py            # Defines ARQ tasks (e.g., long_running_task, cpu_bound_task)
-
 ├── requirements.txt    # Project dependencies
 ├── README.md           # This file
 ├── container/          # Container configuration files (redis.conf)
@@ -131,27 +112,26 @@ robotni_arq/
 
 Mac: Apples container usage
 
-.venvjohannwaldherr@jMacAir robotni % container run -d --name my-redis docker.io/library/redis:latest
-my-redis
-
+```bash
+container run -d --name my-redis docker.io/library/redis:latest
 container run -d --name my-redis \
  --memory 512M \
  --cpus 2 \
  docker.io/library/redis:latest
+container list --all
+```
 
-.venvjohannwaldherr@jMacAir robotni % container list --all  
-ID IMAGE OS ARCH STATE ADDR
-my-redis docker.io/library/redis:latest linux arm64 running 192.168.64.2
+Test it with:
 
-test it with
-.venvjohannwaldherr@jMacAir container % printf "PING\r\n" | nc 192.168.64.2 6379
-+PONG
+```bash
+printf "PING\r\n" | nc 192.168.64.2 6379
+```
 
 ## Adding Worker Functions
 
 To add new worker functions that can be processed by `robotni_arq`, follow these steps:
 
-1.  **Define your task in `tasks.py`**:
+1. **Define your task in `tasks.py`**:
 
     Create an asynchronous function in `robotni_arq/tasks.py` that performs the desired work. This function will be the task that `arq` workers execute.
 
@@ -167,11 +147,11 @@ To add new worker functions that can be processed by `robotni_arq`, follow these
         return {"status": "completed", "data_processed": data}
     ```
 
-2.  **Ensure the worker can discover your task**:
+2. **Ensure the worker can discover your task**:
 
     The `arq` worker automatically discovers functions defined in `tasks.py`. No additional configuration is typically needed here, as long as your task is defined in `tasks.py` and the worker is configured to load tasks from this module.
 
-3.  **Enqueue your task via the API**:
+3. **Enqueue your task via the API**:
 
     You can enqueue your new task by making a request to the FastAPI application's `/enqueue` endpoint, specifying the task name and any necessary arguments.
 
