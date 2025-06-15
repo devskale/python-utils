@@ -38,3 +38,6 @@ huey-data/
 *.bin
 huey-master/
 robotni.db*
+*.sql
+*.rdb
+
