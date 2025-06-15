@@ -58,6 +58,9 @@ async def enqueue_task_endpoint(request: Request, task_type: str = Form(...)): #
         message = f"Hello from WebUI-{random.randint(100,999)}"
         job_function_name = "another_fake_task"
         job = await redis_pool.enqueue_job(job_function_name, message)
+    elif task_type == "task_uname":
+        job_function_name = "task_uname"
+        job = await redis_pool.enqueue_job(job_function_name)
     # Add more task types here if needed
 
     if job:
