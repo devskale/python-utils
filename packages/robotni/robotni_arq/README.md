@@ -75,7 +75,7 @@ container list --all
 
 #### 2. Start the ARQ Worker
 
-Open a terminal in the parent directory (`/Users/johannwaldherr/code/python-utils/packages/robotni/`) and run the ARQ worker:
+Open a terminal in the project parent directory and run the ARQ worker:
 
 ```bash
 arq robotni_arq.workers.worker.WorkerSettings
@@ -85,7 +85,7 @@ This worker will pick up and execute tasks from the Redis queue.
 
 #### 3. Start the FastAPI Application
 
-Open another terminal in the parent directory (`/Users/johannwaldherr/code/python-utils/packages/robotni/`) and run the FastAPI application using Uvicorn:
+Open another terminal in the project parent directory and run the FastAPI application using Uvicorn:
 
 ```bash
 uvicorn robotni_arq.api:app --reload
@@ -99,11 +99,11 @@ This will start the API server, typically accessible at `http://127.0.0.1:8000`.
 robotni_arq/
 ├── __init__.py
 ├── api.py              # FastAPI application, Redis connection setup
-├── tasks.py            # Defines ARQ tasks (e.g., long_running_task, cpu_bound_task)
+├── tasks.py            # Defines ARQ tasks (e.g., fake_task, another_fake_task)
 ├── requirements.txt    # Project dependencies
 ├── README.md           # This file
 ├── container/          # Container configuration files (redis.conf)
-├── webdemo/            # (Future) Web interface for monitoring
+├── templates/          # HTML templates for the web interface
 └── workers/
     └── worker.py       # ARQ worker configuration
 ```
@@ -153,20 +153,17 @@ To add new worker functions that can be processed by `robotni_arq`, follow these
 
 3. **Enqueue your task via the API**:
 
-    You can enqueue your new task by making a request to the FastAPI application's `/enqueue` endpoint, specifying the task name and any necessary arguments.
+    You can enqueue your new task by making a request to the FastAPI application's `/enqueue_task` endpoint, specifying the task type.
 
     Example using `curl`:
 
     ```bash
-    curl -X POST "http://127.0.0.1:8000/enqueue" \
-         -H "Content-Type: application/json" \
-         -d '{
-               "function_name": "my_new_worker_task",
-               "args": {"message": "Hello from new task!"}
-             }'
+    curl -X POST "http://127.0.0.1:8000/enqueue_task" \
+         -H "Content-Type: application/x-www-form-urlencoded" \
+         -d "task_type=fake_task"
     ```
 
-    The `function_name` should match the name of your asynchronous function defined in `tasks.py`.
+    The `task_type` should correspond to a task type handled by the API, such as `fake_task`.
 
 By following these steps, you can easily extend `robotni_arq` to handle a variety of background processing needs.
 
