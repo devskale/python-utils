@@ -69,3 +69,30 @@ async def task_ping(ctx):
         error_msg = f"Exception occurred while running ping: {str(e)}"
         print(error_msg)
         return error_msg
+
+async def task_uberlama(ctx):
+    """
+    AI Model Query to uberlama
+    """
+    print("Starting to query uberlama AI Model")
+    try:
+        # Use run_in_executor to run the blocking subprocess call in a separate thread
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(None, lambda: subprocess.run([
+            '/Users/johannwaldherr/code/python-utils/packages/robotni/robotni_arq/.venv/bin/python', 
+            '/Users/johannwaldherr/code/python-utils/packages/robotni/robotni_arq/tasks/uberlama.py', 
+            '-t', 
+            'erzähle einen witz vom onkel fritz', 
+            ], capture_output=True, text=True))
+        if result.returncode == 0:
+            output = result.stdout.strip()
+            print(f"Uberlama result: {output}")
+            return output
+        else:
+            error = result.stderr.strip()
+            print(f"Error during uberlama: {error}")
+            return f"Error: {error}"
+    except Exception as e:
+        error_msg = f"Exception occurred while running uberlama: {str(e)}"
+        print(error_msg)
+        return error_msg

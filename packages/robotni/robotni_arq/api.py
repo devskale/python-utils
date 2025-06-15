@@ -64,6 +64,9 @@ async def enqueue_task_endpoint(request: Request, task_type: str = Form(...)): #
     elif task_type == "task_ping":
         job_function_name = "task_ping"
         job = await redis_pool.enqueue_job(job_function_name)
+    elif task_type == "task_uberlama":
+        job_function_name = "task_uberlama"
+        job = await redis_pool.enqueue_job(job_function_name)
     # Add more task types here if needed
 
     if job:
