@@ -147,6 +147,49 @@ test it with
 .venvjohannwaldherr@jMacAir container % printf "PING\r\n" | nc 192.168.64.2 6379
 +PONG
 
+## Adding Worker Functions
+
+To add new worker functions that can be processed by `robotni_arq`, follow these steps:
+
+1.  **Define your task in `tasks.py`**:
+
+    Create an asynchronous function in `robotni_arq/tasks.py` that performs the desired work. This function will be the task that `arq` workers execute.
+
+    ```python
+    # robotni_arq/tasks.py
+
+    import asyncio
+
+    async def my_new_worker_task(ctx, data: dict):
+        """An example of a new worker task."""
+        print(f"Received data: {data}")
+        await asyncio.sleep(2) # Simulate some work
+        return {"status": "completed", "data_processed": data}
+    ```
+
+2.  **Ensure the worker can discover your task**:
+
+    The `arq` worker automatically discovers functions defined in `tasks.py`. No additional configuration is typically needed here, as long as your task is defined in `tasks.py` and the worker is configured to load tasks from this module.
+
+3.  **Enqueue your task via the API**:
+
+    You can enqueue your new task by making a request to the FastAPI application's `/enqueue` endpoint, specifying the task name and any necessary arguments.
+
+    Example using `curl`:
+
+    ```bash
+    curl -X POST "http://127.0.0.1:8000/enqueue" \
+         -H "Content-Type: application/json" \
+         -d '{
+               "function_name": "my_new_worker_task",
+               "args": {"message": "Hello from new task!"}
+             }'
+    ```
+
+    The `function_name` should match the name of your asynchronous function defined in `tasks.py`.
+
+By following these steps, you can easily extend `robotni_arq` to handle a variety of background processing needs.
+
 ## Contributing
 
 Contributions are welcome! Please refer to the `README.md` in the root of the `robotni` project for general contribution guidelines.
