@@ -1,0 +1,35 @@
+[project]
+name = "robotni_arq"
+version = "0.1.0"
+authors = [
+  { name="Johann Waldherr", email="hanwoo@skale.dev" },
+]
+description = "A lightweight Python task scheduler for managing asynchronous/long-running jobs using arq and FastAPI."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+  "fastapi",
+  "uvicorn[standard]",
+  "arq",
+  "redis",
+  "jinja2",
+  "python-dotenv",
+  "python-multipart"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/yourusername/robotni_arq"
+"Bug Tracker" = "https://github.com/yourusername/robotni_arq/issues"
+
+[tool.setuptools.packages.find]
+where = ["./"]
+include = ["robotni_arq*"]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"

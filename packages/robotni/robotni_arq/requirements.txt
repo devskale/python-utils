@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+arq
+redis
+jinja2
+python-dotenv

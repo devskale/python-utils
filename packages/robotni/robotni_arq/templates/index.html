@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arq + FastAPI Demo</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        button {
+            background-color: #007bff; color: white; padding: 10px 15px; border: none;
+            border-radius: 4px; cursor: pointer; font-size: 16px; margin-right: 10px; margin-bottom: 10px;
+        }
+        button:hover { background-color: #0056b3; }
+        .add-task-btn {
+            background-color: #28a745; /* Green */
+        }
+        .add-task-btn:hover { background-color: #1e7e34; }
+        .queue-btn {
+            background-color: #ffc107; /* Yellow */
+            color: #212529;
+        }
+        .queue-btn:hover { background-color: #d39e00; }
+        .info, .job-response, .job-list { margin-top: 20px; padding:10px; background-color: #e9ecef; border-radius:4px; }
+        .job-list ul { list-style-type: none; padding: 0; }
+        .job-list li { background-color: #fff; margin-bottom: 8px; padding: 8px; border-radius: 4px; border: 1px solid #ddd; }
+        .job-list li strong { color: #007bff; }
+        pre { background-color: #333; color: #f8f8f2; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Arq + FastAPI Task Queue Demo</h1>
+
+        <button id="enqueueFakeTaskBtn" class="add-task-btn">+ Enqueue Fake Task</button>
+        <button id="enqueueAnotherFakeTaskBtn" class="add-task-btn">+ Enqueue Another Fake Task</button>
+        <button id="listQueueBtn" class="queue-btn">Show Queued Tasks</button>
+        <button id="listCompletedBtn" class="queue-btn">Show Last 3 Completed</button>
+
+        <div id="jobResponse" class="job-response" style="display:none;">
+            <h2>Last Enqueued Job:</h2>
+            <pre></pre>
+        </div>
+
+        <div id="jobList" class="job-list" style="display:none;">
+            <h2>Current Queue:</h2>
+            <ul></ul>
+        </div>
+
+        <div id="completedJobList" class="job-list" style="display:none;">
+            <h2>Last 3 Completed Jobs:</h2>
+            <ul></ul>
+        </div>
+
+        <div class="info">
+            <p>Click a "+ Enqueue" button to add a new background task. The Job ID will be shown above.</p>
+            <p>Click "Show Queued Tasks" to see tasks currently waiting to be processed.</p>
+            <p>Click "Show Last 3 Completed" to see the most recently finished jobs with their results and timing.</p>
+            <p>Check your terminal where the `arq` worker is running to see task processing logs.</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const enqueueFakeTaskBtn = document.getElementById('enqueueFakeTaskBtn');
+            const enqueueAnotherFakeTaskBtn = document.getElementById('enqueueAnotherFakeTaskBtn');
+            const listQueueBtn = document.getElementById('listQueueBtn');
+            const listCompletedBtn = document.getElementById('listCompletedBtn');
+            const jobResponseDiv = document.getElementById('jobResponse');
+            const jobResponsePre = jobResponseDiv.querySelector('pre');
+            const jobListDiv = document.getElementById('jobList');
+            const jobListUl = jobListDiv.querySelector('ul');
+            const completedJobListDiv = document.getElementById('completedJobList');
+            const completedJobListUl = completedJobListDiv.querySelector('ul');
+
+            async function enqueueTask(taskType) {
+                const formData = new FormData();
+                formData.append('task_type', taskType);
+
+                try {
+                    const response = await fetch('/enqueue_task', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+                    jobResponsePre.textContent = JSON.stringify(data, null, 2);
+                    jobResponseDiv.style.display = 'block';
+                    if (response.ok && data.job_id) {
+                        console.log(`Enqueued ${taskType}:`, data.job_id);
+                    } else {
+                        console.error('Failed to enqueue task:', data);
+                    }
+                } catch (error) {
+                    console.error('Error enqueuing task:', error);
+                    jobResponsePre.textContent = JSON.stringify({ error: error.message }, null, 2);
+                    jobResponseDiv.style.display = 'block';
+                }
+            }
+
+            enqueueFakeTaskBtn.addEventListener('click', () => enqueueTask('fake_task'));
+            enqueueAnotherFakeTaskBtn.addEventListener('click', () => enqueueTask('another_fake_task'));
+
+            listQueueBtn.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/list_jobs');
+                    const data = await response.json();
+                    jobListUl.innerHTML = ''; // Clear previous list
+                    if (data.jobs && data.jobs.length > 0) {
+                        data.jobs.forEach(job => {
+                            const li = document.createElement('li');
+                            li.innerHTML = `<strong>Job ID:</strong> ${job.job_id}<br>
+                                            <strong>Function:</strong> ${job.function}<br>
+                                            <strong>Status:</strong> ${job.status}<br>
+                                            <strong>Enqueued:</strong> ${job.enqueue_time || 'N/A'}`;
+                            // You can add more details from job.info if needed
+                            jobListUl.appendChild(li);
+                        });
+                    } else {
+                        const li = document.createElement('li');
+                        li.textContent = 'No jobs currently in the queue.';
+                        jobListUl.appendChild(li);
+                    }
+                    jobListDiv.style.display = 'block';
+                    completedJobListDiv.style.display = 'none'; // Hide completed jobs when showing queue
+                } catch (error) {
+                    console.error('Error fetching job list:', error);
+                    jobListUl.innerHTML = '<li>Error fetching job list.</li>';
+                    jobListDiv.style.display = 'block';
+                }
+            });
+
+            listCompletedBtn.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/completed_jobs');
+                    const data = await response.json();
+                    completedJobListUl.innerHTML = ''; // Clear previous list
+                    if (data.completed_jobs && data.completed_jobs.length > 0) {
+                        data.completed_jobs.forEach(job => {
+                            const li = document.createElement('li');
+                            const duration = job.start_time && job.finish_time ? 
+                                ((new Date(job.finish_time) - new Date(job.start_time)) / 1000).toFixed(1) + 's' : 'N/A';
+                            li.innerHTML = `<strong>Job ID:</strong> ${job.job_id}<br>
+                                            <strong>Function:</strong> ${job.function}<br>
+                                            <strong>Status:</strong> ${job.status}<br>
+                                            <strong>Duration:</strong> ${duration}<br>
+                                            <strong>Finished:</strong> ${job.finish_time ? new Date(job.finish_time).toLocaleString() : 'N/A'}<br>
+                                            <strong>Result:</strong> ${job.result || 'N/A'}`;
+                            completedJobListUl.appendChild(li);
+                        });
+                    } else {
+                        const li = document.createElement('li');
+                        li.textContent = 'No completed jobs found.';
+                        completedJobListUl.appendChild(li);
+                    }
+                    completedJobListDiv.style.display = 'block';
+                    jobListDiv.style.display = 'none'; // Hide queue when showing completed jobs
+                } catch (error) {
+                    console.error('Error fetching completed jobs:', error);
+                    completedJobListUl.innerHTML = '<li>Error fetching completed jobs.</li>';
+                    completedJobListDiv.style.display = 'block';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
