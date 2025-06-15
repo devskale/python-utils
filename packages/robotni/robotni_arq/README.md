@@ -96,7 +96,7 @@ This worker will pick up and execute tasks from the Redis queue.
 Open another terminal, navigate to the `robotni_arq` directory, and run the FastAPI application using Uvicorn:
 
 ```bash
-uvicorn robotni_arq.main:app --reload
+uvicorn robotni_arq.api:app --reload
 ```
 
 This will start the API server, typically accessible at `http://127.0.0.1:8000`.
@@ -116,7 +116,7 @@ This will add sample `long_running_task` and `cpu_bound_task` jobs to the Redis 
 ```
 robotni_arq/
 ├── __init__.py
-├── main.py             # FastAPI application, Redis connection setup
+├── api.py              # FastAPI application, Redis connection setup
 ├── tasks.py            # Defines ARQ tasks (e.g., long_running_task, cpu_bound_task)
 ├── client.py           # Example script to enqueue tasks
 ├── requirements.txt    # Project dependencies

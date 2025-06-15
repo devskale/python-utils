@@ -2,7 +2,8 @@ from arq import connections
 from dotenv import load_dotenv
 import os
 
-from . import tasks
+from arq import connections
+from robotni_arq.tasks import fake_task, another_fake_task
 
 load_dotenv()
 
@@ -16,7 +17,7 @@ async def shutdown(ctx):
     print("Worker shutting down...")
 
 class WorkerSettings:
-    functions = [tasks.fake_task, tasks.another_fake_task]
+    functions = [fake_task, another_fake_task]
     on_startup = startup
     on_shutdown = shutdown
     redis_settings = connections.RedisSettings(host=REDIS_HOST, port=REDIS_PORT)

@@ -10,7 +10,7 @@ import os
 import random
 from redis.exceptions import ResponseError # Added import
 
-from .worker import WorkerSettings # Import worker settings to access Redis settings
+from robotni_arq.workers.worker import WorkerSettings # Import worker settings to access Redis settings
 
 load_dotenv()
 
@@ -19,7 +19,7 @@ app = FastAPI()
 # Mount static files if you have any (e.g., CSS, JS)
 # app.mount("/static", StaticFiles(directory="static"), name="static")
 
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 
 REDIS_SETTINGS = WorkerSettings.redis_settings
 redis_pool: ArqRedis = None
