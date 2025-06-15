@@ -59,12 +59,14 @@ python Workers are located in the `./workers/` directory and are responsible for
 ### Installation
 
 1.  **Clone the repository** (if you haven't already) and navigate to the `robotni_arq` directory:
+
     ```bash
     git clone https://github.com/yourusername/robotni.git
     cd robotni/packages/robotni/robotni_arq
     ```
 
 2.  **Install the package in editable mode**:
+
     ```bash
     pip install -e .
     ```
@@ -81,35 +83,33 @@ Ensure your Redis server is running. If using Docker, you can start it with:
 docker run --name some-redis -p 6379:6379 -d redis
 ```
 
-#### 2. Start the ARQ Worker
-
-To start the ARQ worker (from the `robotni_arq` directory):
+On MACOS
 
 ```bash
-arq workers.worker.WorkerSettings
+container run --detach my-redis
+container start my-redis
+container list --all
+```
+
+#### 2. Start the ARQ Worker
+
+Open a terminal in the parent directory (`/Users/johannwaldherr/code/python-utils/packages/robotni/`) and run the ARQ worker:
+
+```bash
+arq robotni_arq.workers.worker.WorkerSettings
 ```
 
 This worker will pick up and execute tasks from the Redis queue.
 
 #### 3. Start the FastAPI Application
 
-Open another terminal, navigate to the `robotni_arq` directory, and run the FastAPI application using Uvicorn:
+Open another terminal in the parent directory (`/Users/johannwaldherr/code/python-utils/packages/robotni/`) and run the FastAPI application using Uvicorn:
 
 ```bash
 uvicorn robotni_arq.api:app --reload
 ```
 
 This will start the API server, typically accessible at `http://127.0.0.1:8000`.
-
-#### 4. Enqueue Tasks (Client Example)
-
-To enqueue tasks, you can run the `client.py` script. In a new terminal:
-
-```bash
-python3 client.py
-```
-
-This will add sample `long_running_task` and `cpu_bound_task` jobs to the Redis queue, which the ARQ worker will then process. Observe the output in the ARQ worker's terminal.
 
 ## Project Structure
 
@@ -118,7 +118,7 @@ robotni_arq/
 ├── __init__.py
 ├── api.py              # FastAPI application, Redis connection setup
 ├── tasks.py            # Defines ARQ tasks (e.g., long_running_task, cpu_bound_task)
-├── client.py           # Example script to enqueue tasks
+
 ├── requirements.txt    # Project dependencies
 ├── README.md           # This file
 ├── container/          # Container configuration files (redis.conf)
