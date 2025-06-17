@@ -154,9 +154,25 @@ async def fake_task(ctx, params: dict):
     # Extract parameters from the params dictionary
     # Handle both old and new parameter structures for backward compatibility
     if 'param' in params:
-        # New structure: single param field - use default values
-        duration = 5
-        task_name = 'Default Fake Task'
+        # New structure: single param field - parse the param string
+        param_str = params.get('param', '5 "Default Fake Task"')
+        try:
+            # Parse the param string: "duration task_name"
+            # Expected format: "5 \"Demo Fake Task\"" or "10 \"My Task\""
+            import shlex
+            parsed_params = shlex.split(param_str)
+            if len(parsed_params) >= 1:
+                duration = int(parsed_params[0])
+            else:
+                duration = 5
+            if len(parsed_params) >= 2:
+                task_name = parsed_params[1]
+            else:
+                task_name = 'Default Fake Task'
+        except (ValueError, IndexError):
+            # Fallback to defaults if parsing fails
+            duration = 5
+            task_name = 'Default Fake Task'
     else:
         # Old structure: separate parameters
         duration = params.get('duration', 5)
