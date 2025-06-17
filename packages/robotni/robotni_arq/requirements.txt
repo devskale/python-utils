@@ -4,3 +4,4 @@ arq
 redis
 jinja2
 python-dotenv
+PyYAML

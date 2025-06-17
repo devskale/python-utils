@@ -268,7 +268,8 @@ async def get_all_jobs_endpoint():
                 )
 
         # Sort by createdAt, newest first
-        all_jobs_details.sort(key=lambda j: j.createdAt, reverse=True)
+        # Handle potential type mismatches in createdAt field
+        all_jobs_details.sort(key=lambda j: j.createdAt if isinstance(j.createdAt, datetime) else datetime.now(timezone.utc), reverse=True)
         return SuccessGetResponse(data=all_jobs_details)
 
     except ResponseError as e_redis:

@@ -1,0 +1,51 @@
+# Subprocess configuration for robotni-arq tasks
+# This file defines command configurations for tasks that execute external processes
+
+subprocess_commands:
+  task_uname:
+    description: "System information using uname command"
+    command: ["uname", "-a"]
+    capture_output: true
+    text: true
+    timeout: 30
+    
+  task_ping:
+    description: "Network connectivity check using ping"
+    command: ["ping", "${param}"]
+    capture_output: true
+    text: true
+    timeout: 30
+    default_params:
+      param: "-c 4 google.com"
+    
+  task_uberlama:
+    description: "AI Model Query to uberlama"
+    command: 
+      - "/Users/johannwaldherr/code/python-utils/packages/robotni/robotni_arq/.venv/bin/python"
+      - "/Users/johannwaldherr/code/python-utils/packages/robotni/robotni_arq/tasks/uberlama.py"
+      - "${param}"
+    capture_output: true
+    text: true
+    timeout: 60
+    default_params:
+      param: "-t \"erzähl einen witz vom onkel fritz\""
+    
+  # Example of a parameterized command configuration
+  task_custom_ping:
+    description: "Custom ping with configurable target"
+    command: ["ping", "-c", "4", "${param}"]
+    capture_output: true
+    text: true
+    timeout: 30
+    default_params:
+      param: "google.com"
+      
+  # Example of a more complex command with multiple parameters
+  task_curl:
+    description: "HTTP request using curl"
+    command: ["curl", "${param}"]
+    capture_output: true
+    text: true
+    timeout: 30
+    default_params:
+      param: "GET https://httpbin.org/get"

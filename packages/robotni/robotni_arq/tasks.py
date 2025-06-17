@@ -4,7 +4,142 @@ import random
 import re
 import logging
 import subprocess
-from typing import Any # Add this import
+import yaml
+import os
+from typing import Any, Dict, List, Optional
+from string import Template
+
+
+# Global variable to cache the subprocess configuration
+_subprocess_config = None
+
+
+def load_subprocess_config() -> Dict:
+    """
+    Load subprocess configuration from YAML file.
+    Caches the configuration to avoid repeated file reads.
+    """
+    global _subprocess_config
+    if _subprocess_config is None:
+        config_path = os.path.join(os.path.dirname(__file__), 'subprocess_config.yaml')
+        try:
+            with open(config_path, 'r') as file:
+                _subprocess_config = yaml.safe_load(file)
+        except FileNotFoundError:
+            print(f"Warning: Subprocess config file not found at {config_path}")
+            _subprocess_config = {'subprocess_commands': {}}
+        except yaml.YAMLError as e:
+            print(f"Error parsing YAML config: {e}")
+            _subprocess_config = {'subprocess_commands': {}}
+    return _subprocess_config
+
+
+def substitute_command_params(command: List[str], params: Dict) -> List[str]:
+    """
+    Substitute parameters in command using Template string substitution.
+    When a parameter contains multiple arguments, they are properly split.
+    
+    Args:
+        command: List of command parts that may contain ${param} placeholders
+        params: Dictionary of parameters to substitute
+        
+    Returns:
+        List of command parts with parameters substituted
+    """
+    import shlex
+    
+    substituted_command = []
+    for part in command:
+        if '${' in part:
+            template = Template(part)
+            try:
+                substituted_part = template.substitute(params)
+                # If the substituted part contains spaces, split it into separate arguments
+                if ' ' in substituted_part and part == '${param}':
+                    # Use shlex to properly parse shell arguments
+                    parsed_args = shlex.split(substituted_part)
+                    substituted_command.extend(parsed_args)
+                else:
+                    substituted_command.append(substituted_part)
+            except KeyError as e:
+                raise ValueError(f"Missing required parameter {e} for command substitution")
+        else:
+            substituted_command.append(part)
+    return substituted_command
+
+
+async def run_subprocess_from_config(task_name: str, params: Dict = None) -> str:
+    """
+    Execute a subprocess command based on configuration from YAML file.
+    
+    Args:
+        task_name: Name of the task configuration to use
+        params: Optional parameters for command substitution
+        
+    Returns:
+        Command output as string or error message
+    """
+    config = load_subprocess_config()
+    subprocess_commands = config.get('subprocess_commands', {})
+    
+    if task_name not in subprocess_commands:
+        return f"Error: Task '{task_name}' not found in subprocess configuration"
+    
+    task_config = subprocess_commands[task_name]
+    command = task_config.get('command', [])
+    
+    if not command:
+        return f"Error: No command specified for task '{task_name}'"
+    
+    # Merge default params with provided params
+    all_params = task_config.get('default_params', {}).copy()
+    if params:
+        all_params.update(params)
+    
+    # Substitute parameters in command
+    try:
+        final_command = substitute_command_params(command, all_params)
+    except ValueError as e:
+        return f"Error: {str(e)}"
+    
+    # Extract subprocess options
+    capture_output = task_config.get('capture_output', True)
+    text = task_config.get('text', True)
+    timeout = task_config.get('timeout', 30)
+    
+    print(f"Starting {task_config.get('description', task_name)}")
+    print(f"Executing command: {' '.join(final_command)}")
+    
+    try:
+        # Use run_in_executor to run the blocking subprocess call in a separate thread
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(
+            None, 
+            lambda: subprocess.run(
+                final_command, 
+                capture_output=capture_output, 
+                text=text, 
+                timeout=timeout
+            )
+        )
+        
+        if result.returncode == 0:
+            output = result.stdout.strip() if result.stdout else "Command completed successfully"
+            print(f"{task_name} result: {output}")
+            return output
+        else:
+            error = result.stderr.strip() if result.stderr else f"Command failed with return code {result.returncode}"
+            print(f"Error during {task_name}: {error}")
+            return f"Error: {error}"
+            
+    except subprocess.TimeoutExpired:
+        error_msg = f"Command timed out after {timeout} seconds"
+        print(error_msg)
+        return f"Error: {error_msg}"
+    except Exception as e:
+        error_msg = f"Exception occurred while running {task_name}: {str(e)}"
+        print(error_msg)
+        return error_msg
 
 
 async def fake_task(ctx, params: dict):
@@ -44,23 +179,7 @@ async def task_uname(ctx, params: dict = None):
     Returns the output of the command as a string.
     Accepts parameters as a dictionary (unused for this task).
     """
-    print("Starting task_uname to fetch system information")
-    try:
-        # Use run_in_executor to run the blocking subprocess call in a separate thread
-        loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(None, lambda: subprocess.run(['uname', '-a'], capture_output=True, text=True))
-        if result.returncode == 0:
-            output = result.stdout.strip()
-            print(f"System information: {output}")
-            return output
-        else:
-            error = result.stderr.strip()
-            print(f"Error fetching system information: {error}")
-            return f"Error: {error}"
-    except Exception as e:
-        error_msg = f"Exception occurred while running uname -a: {str(e)}"
-        print(error_msg)
-        return error_msg
+    return await run_subprocess_from_config('task_uname', params)
 
 
 async def task_ping(ctx, params: dict = None):
@@ -69,23 +188,7 @@ async def task_ping(ctx, params: dict = None):
     Returns the output of the command as a string.
     Accepts parameters as a dictionary (unused for this task).
     """
-    print("Starting task_ping to check network connectivity")
-    try:
-        # Use run_in_executor to run the blocking subprocess call in a separate thread
-        loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(None, lambda: subprocess.run(['ping', '-c', '4', 'google.com'], capture_output=True, text=True))
-        if result.returncode == 0:
-            output = result.stdout.strip()
-            print(f"Ping result: {output}")
-            return output
-        else:
-            error = result.stderr.strip()
-            print(f"Error during ping: {error}")
-            return f"Error: {error}"
-    except Exception as e:
-        error_msg = f"Exception occurred while running ping: {str(e)}"
-        print(error_msg)
-        return error_msg
+    return await run_subprocess_from_config('task_ping', params)
 
 
 async def task_uberlama(ctx, params: dict = None):
@@ -93,28 +196,7 @@ async def task_uberlama(ctx, params: dict = None):
     AI Model Query to uberlama
     Accepts parameters as a dictionary (unused for this task).
     """
-    print("Starting to query uberlama AI Model")
-    try:
-        # Use run_in_executor to run the blocking subprocess call in a separate thread
-        loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(None, lambda: subprocess.run([
-            '/Users/johannwaldherr/code/python-utils/packages/robotni/robotni_arq/.venv/bin/python',
-            '/Users/johannwaldherr/code/python-utils/packages/robotni/robotni_arq/tasks/uberlama.py',
-            '-t',
-            'erzähle einen witz vom onkel fritz',
-        ], capture_output=True, text=True))
-        if result.returncode == 0:
-            output = result.stdout.strip()
-            print(f"Uberlama result: {output}")
-            return output
-        else:
-            error = result.stderr.strip()
-            print(f"Error during uberlama: {error}")
-            return f"Error: {error}"
-    except Exception as e:
-        error_msg = f"Exception occurred while running uberlama: {str(e)}"
-        print(error_msg)
-        return error_msg
+    return await run_subprocess_from_config('task_uberlama', params)
 
 
 async def task_parse(ctx, params: dict):

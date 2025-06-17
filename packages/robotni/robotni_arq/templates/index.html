@@ -320,6 +320,58 @@
       .notification.error {
         background: linear-gradient(135deg, #dc3545, #c82333);
       }
+      
+      .task-parameters {
+        margin-top: 20px;
+        padding: 20px;
+        background: #ffffff;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+      }
+      
+      .task-parameters h3 {
+        margin-bottom: 15px;
+        color: #495057;
+        font-size: 1.2rem;
+        font-weight: 500;
+      }
+      
+      .parameter-inputs {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+      
+      .parameter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      
+      .parameter-label {
+        font-weight: 500;
+        color: #495057;
+        font-size: 0.9rem;
+      }
+      
+      .parameter-input {
+        padding: 10px 12px;
+        border: 2px solid #dee2e6;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.3s ease;
+      }
+      
+      .parameter-input:focus {
+        outline: none;
+        border-color: #4facfe;
+        box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+      }
+      
+      .parameter-textarea {
+        min-height: 80px;
+        resize: vertical;
+      }
     </style>
   </head>
   <body>
@@ -345,6 +397,12 @@
             </select>
             <button id="addTaskBtn" class="add-task-btn" disabled>Add Task</button>
             <button id="refreshBtn" class="refresh-btn">Refresh Jobs</button>
+          </div>
+          
+          <!-- Dynamic parameter inputs -->
+          <div id="taskParameters" class="task-parameters" style="display: none;">
+            <h3>Task Parameters</h3>
+            <div id="parameterInputs" class="parameter-inputs"></div>
           </div>
         </div>
         
@@ -406,17 +464,70 @@
           this.processingCount = document.getElementById('processingCount');
           this.completedCount = document.getElementById('completedCount');
           
-          this.taskParameters = {
-            'fake_task': { duration: 5, task_name: 'Demo Fake Task' },
-            'another_fake_task': { message: 'Hello from Task Manager' },
-            'task_uname': {},
-            'task_ping': {},
-            'task_uberlama': {},
-            'task_anonymize': { 
-              text_to_anonymize: 'This is sensitive data with names like John Doe and email john@example.com', 
-              level: 'basic' 
+          // Define parameter configurations for tasks that need user input
+          this.taskParameterConfigs = {
+            'task_ping': {
+              'param': {
+                type: 'text',
+                label: 'Parameters',
+                placeholder: 'e.g., -c 4 google.com',
+                required: true,
+                default: '-c 4 google.com'
+              }
             },
-            'task_parse': { sample_data: 'Parse this data', format: 'json' }
+            'task_uberlama': {
+              'param': {
+                type: 'text',
+                label: 'Parameters',
+                placeholder: 'e.g., -t "erzähl einen witz vom onkel fritz"',
+                required: true,
+                default: '-t "erzähl einen witz vom onkel fritz"'
+              }
+            },
+            'task_anonymize': {
+              'param': {
+                type: 'text',
+                label: 'Parameters',
+                placeholder: 'e.g., "This is sensitive data" basic',
+                required: true,
+                default: '"This is sensitive data with names like John Doe and email john@example.com" basic'
+              }
+            },
+            'task_parse': {
+              'param': {
+                type: 'text',
+                label: 'Parameters',
+                placeholder: 'e.g., "Parse this data" json',
+                required: true,
+                default: '"Parse this data" json'
+              }
+            }
+          };
+          
+          // Add parameter configs for remaining tasks
+          this.taskParameterConfigs['fake_task'] = {
+            'param': {
+              type: 'text',
+              label: 'Parameters',
+              placeholder: 'e.g., 5 "Demo Fake Task"',
+              required: true,
+              default: '5 "Demo Fake Task"'
+            }
+          };
+          
+          this.taskParameterConfigs['another_fake_task'] = {
+            'param': {
+              type: 'text',
+              label: 'Parameters',
+              placeholder: 'e.g., "Hello from Task Manager"',
+              required: true,
+              default: '"Hello from Task Manager"'
+            }
+          };
+          
+          // Static parameters for tasks that don't need user input
+          this.staticTaskParameters = {
+            'task_uname': {}
           };
           
           this.init();
@@ -424,7 +535,7 @@
         
         init() {
           this.taskSelect.addEventListener('change', () => {
-            this.addTaskBtn.disabled = !this.taskSelect.value;
+            this.handleTaskSelection();
           });
           
           this.addTaskBtn.addEventListener('click', () => {
@@ -444,6 +555,78 @@
           }, 5000);
         }
         
+        handleTaskSelection() {
+          const taskType = this.taskSelect.value;
+          const taskParametersDiv = document.getElementById('taskParameters');
+          const parameterInputsDiv = document.getElementById('parameterInputs');
+          
+          // Clear previous inputs
+          parameterInputsDiv.innerHTML = '';
+          
+          if (!taskType) {
+            this.addTaskBtn.disabled = true;
+            taskParametersDiv.style.display = 'none';
+            return;
+          }
+          
+          this.addTaskBtn.disabled = false;
+          
+          // Check if this task needs parameter inputs
+          if (this.taskParameterConfigs[taskType]) {
+            taskParametersDiv.style.display = 'block';
+            this.renderParameterInputs(taskType);
+          } else {
+            taskParametersDiv.style.display = 'none';
+          }
+        }
+        
+        renderParameterInputs(taskType) {
+          const config = this.taskParameterConfigs[taskType];
+          const parameterInputsDiv = document.getElementById('parameterInputs');
+          
+          Object.entries(config).forEach(([paramName, paramConfig]) => {
+            const paramGroup = document.createElement('div');
+            paramGroup.className = 'parameter-group';
+            
+            const label = document.createElement('label');
+            label.className = 'parameter-label';
+            label.textContent = paramConfig.label + (paramConfig.required ? ' *' : '');
+            label.setAttribute('for', `param_${paramName}`);
+            
+            let input;
+            if (paramConfig.type === 'textarea') {
+              input = document.createElement('textarea');
+              input.className = 'parameter-input parameter-textarea';
+            } else if (paramConfig.type === 'select') {
+              input = document.createElement('select');
+              input.className = 'parameter-input';
+              paramConfig.options.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option.value;
+                optionElement.textContent = option.label;
+                input.appendChild(optionElement);
+              });
+            } else {
+              input = document.createElement('input');
+              input.type = paramConfig.type || 'text';
+              input.className = 'parameter-input';
+            }
+            
+            input.id = `param_${paramName}`;
+            input.name = paramName;
+            input.placeholder = paramConfig.placeholder || '';
+            input.required = paramConfig.required || false;
+            
+            if (paramConfig.default) {
+              input.value = paramConfig.default;
+            }
+            
+            paramGroup.appendChild(label);
+            paramGroup.appendChild(input);
+            parameterInputsDiv.appendChild(paramGroup);
+          });
+        }
+        
         async addTask() {
           const taskType = this.taskSelect.value;
           if (!taskType) return;
@@ -452,6 +635,24 @@
           this.addTaskBtn.textContent = 'Adding...';
           
           try {
+            // Collect parameters from dynamic inputs or use static parameters
+            let parameters = {};
+            
+            if (this.taskParameterConfigs[taskType]) {
+              // Collect parameters from form inputs
+              parameters = this.collectParametersFromInputs(taskType);
+              
+              // Validate required parameters
+              const validation = this.validateParameters(taskType, parameters);
+              if (!validation.valid) {
+                this.showNotification(`Error: ${validation.message}`, 'error');
+                return;
+              }
+            } else {
+              // Use static parameters for tasks that don't need user input
+              parameters = this.staticTaskParameters[taskType] || {};
+            }
+            
             const response = await fetch('/api/worker/jobs', {
               method: 'POST',
               headers: {
@@ -461,7 +662,7 @@
                 type: taskType,
                 name: this.generateJobName(taskType),
                 project: 'Task Manager',
-                parameters: this.taskParameters[taskType] || {}
+                parameters: parameters
               })
             });
             
@@ -470,6 +671,7 @@
             if (data.success) {
               this.showNotification('Task added successfully!', 'success');
               this.taskSelect.value = '';
+              this.handleTaskSelection(); // Reset the form
               this.loadJobs();
             } else {
               this.showNotification(`Error: ${data.error}`, 'error');
@@ -477,9 +679,38 @@
           } catch (error) {
             this.showNotification(`Error: ${error.message}`, 'error');
           } finally {
-            this.addTaskBtn.disabled = true;
+            this.addTaskBtn.disabled = false;
             this.addTaskBtn.textContent = 'Add Task';
           }
+        }
+        
+        collectParametersFromInputs(taskType) {
+          const config = this.taskParameterConfigs[taskType];
+          const parameters = {};
+          
+          Object.keys(config).forEach(paramName => {
+            const input = document.getElementById(`param_${paramName}`);
+            if (input) {
+              parameters[paramName] = input.value.trim();
+            }
+          });
+          
+          return parameters;
+        }
+        
+        validateParameters(taskType, parameters) {
+          const config = this.taskParameterConfigs[taskType];
+          
+          for (const [paramName, paramConfig] of Object.entries(config)) {
+            if (paramConfig.required && (!parameters[paramName] || parameters[paramName] === '')) {
+              return {
+                valid: false,
+                message: `${paramConfig.label} is required`
+              };
+            }
+          }
+          
+          return { valid: true };
         }
         
         async loadJobs() {
