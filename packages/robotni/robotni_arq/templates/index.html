@@ -240,6 +240,32 @@
         color: #adb5bd;
       }
       
+      .job-result {
+        margin-top: 10px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-left: 3px solid #28a745;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-family: 'Courier New', monospace;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        max-height: 150px;
+        overflow-y: auto;
+        color: #495057;
+      }
+      
+      .job-result.error {
+        border-left-color: #dc3545;
+        background: #f8d7da;
+      }
+      
+      .job-result-label {
+        font-weight: 600;
+        margin-bottom: 5px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+      
       .empty-state {
         padding: 40px 20px;
         text-align: center;
@@ -499,6 +525,33 @@
           const createdAt = new Date(job.createdAt).toLocaleString();
           const completedAt = job.completedAt ? new Date(job.completedAt).toLocaleString() : null;
           
+          // Format result for display
+          let resultSection = '';
+          if (['complete', 'failed'].includes(job.status) && job.result !== undefined) {
+            const isError = job.status === 'failed';
+            const resultClass = isError ? 'job-result error' : 'job-result';
+            const resultLabel = isError ? 'Error:' : 'Result:';
+            
+            let displayResult;
+            if (typeof job.result === 'object') {
+              displayResult = JSON.stringify(job.result, null, 2);
+            } else {
+              displayResult = String(job.result);
+            }
+            
+            // Truncate very long results
+            if (displayResult.length > 500) {
+              displayResult = displayResult.substring(0, 500) + '\n... (truncated)';
+            }
+            
+            resultSection = `
+              <div class="${resultClass}">
+                <div class="job-result-label">${resultLabel}</div>
+                ${displayResult}
+              </div>
+            `;
+          }
+          
           return `
             <div class="job-item">
               <div class="job-header">
@@ -514,6 +567,7 @@
                 <div>Created: ${createdAt}</div>
                 ${completedAt ? `<div>Completed: ${completedAt}</div>` : ''}
               </div>
+              ${resultSection}
             </div>
           `;
         }
