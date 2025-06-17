@@ -34,24 +34,24 @@ Python Workers are located in the `./workers/` directory and are responsible for
 
 1. **Clone the repository** (if you haven't already) and navigate to the `robotni_arq` directory:
 
-    ```bash
-    git clone https://github.com/yourusername/robotni.git
-    cd robotni/packages/robotni/robotni_arq
-    ```
+   ```bash
+   git clone https://github.com/yourusername/robotni.git
+   cd robotni/packages/robotni/robotni_arq
+   ```
 
 2. **Install dependencies**:
 
-    ```bash
-    pip install -r requirements.txt
-    ```
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 3. **Install the package in editable mode**:
 
-    ```bash
-    pip install -e .
-    ```
+   ```bash
+   pip install -e .
+   ```
 
-    This command will install all necessary dependencies specified in `pyproject.toml` and link your local project files, allowing for direct execution and development.
+   This command will install all necessary dependencies specified in `pyproject.toml` and link your local project files, allowing for direct execution and development.
 
 ## Usage
 
@@ -88,25 +88,128 @@ This worker will pick up and execute tasks from the Redis queue.
 Open another terminal in the project parent directory and run the FastAPI application using Uvicorn:
 
 ```bash
-uvicorn robotni_arq.api:app --reload
+./start.sh
 ```
 
 This will start the API server, typically accessible at `http://127.0.0.1:8000`.
 
+## API Endpoints
+
+The application exposes the following API endpoints:
+
+- **`GET /`**
+  - **Description:** Serves the main HTML page for the web interface.
+  - **Response:** HTML content.
+
+- **`POST /api/worker/jobs`**
+  - **Description:** Enqueues a new background task.
+  - **Request Body (JSON):**
+    ```json
+    {
+      "type": "string (task function name, e.g., fake_task)",
+      "name": "string (user-defined name for the job)",
+      "project": "string (optional, project identifier)",
+      "parameters": {
+        "key1": "value1", // Task-specific parameters
+        "key2": "value2"
+      }
+    }
+    ```
+  - **Response (JSON - Success):**
+    ```json
+    {
+      "success": true,
+      "data": {
+        "id": "string (job_id)",
+        "type": "string (task function name)",
+        "name": "string (user-defined name)",
+        "status": "string (e.g., pending)",
+        "project": "string (optional)",
+        "createdAt": "datetime (ISO 8601)",
+        "progress": "integer (0-100)",
+        "parameters": {}
+      }
+    }
+    ```
+  - **Response (JSON - Error):**
+    ```json
+    {
+      "success": false,
+      "error": "string (error message)",
+      "details": "string (optional, error details)"
+    }
+    ```
+  - **Example `curl`:**
+    ```bash
+    curl -X POST "http://127.0.0.1:8000/api/worker/jobs" \
+         -H "Content-Type: application/json" \
+         -d '{
+           "type": "task_parse",
+           "name": "My Parsing Job",
+           "project": "Project Beta",
+           "parameters": {
+             "input_file": "/path/to/data.csv",
+             "output_format": "json"
+           }
+         }'
+    ```
+
+- **`GET /api/worker/jobs`**
+  - **Description:** Lists all jobs (queued, active, completed, failed).
+  - **Response (JSON - Success):**
+    ```json
+    {
+      "success": true,
+      "data": [
+        {
+          "id": "string (job_id)",
+          "type": "string (task function name)",
+          "name": "string (user-defined name)",
+          "status": "string (e.g., complete, failed, in_progress, queued)",
+          "project": "string (optional)",
+          "createdAt": "datetime (ISO 8601, enqueue time)",
+          "progress": "integer (0-100)",
+          "parameters": {},
+          "startedAt": "datetime (optional, ISO 8601)",
+          "completedAt": "datetime (optional, ISO 8601)",
+          "duration": "integer (optional, in seconds)",
+          "result": "any (task result or error details for failed jobs)"
+        }
+        // ... more jobs
+      ]
+    }
+    ```
+  - **Response (JSON - Error):**
+    ```json
+    {
+      "success": false,
+      "error": "string (error message)",
+      "details": "string (optional, error details)"
+    }
+    ```
+
+- **`GET /job/{job_id}`**
+  - **Description:** Retrieves the status and information for a specific job.
+  - **Path Parameter:**
+    - `job_id` (string, required): The ID of the job to query.
+  - **Response (JSON):**
+    ```json
+    {
+      "job_id": "string",
+      "status": "string (current job status)",
+      "info": { // Arq JobDef object, structure may vary
+        "function": "string",
+        "args": [],
+        "kwargs": {},
+        "enqueue_time": "datetime",
+        // ... other JobDef fields
+      }
+    }
+    ```
+
 ## Project Structure
 
-```
-robotni_arq/
-├── __init__.py
-├── api.py              # FastAPI application, Redis connection setup
-├── tasks.py            # Defines ARQ tasks (e.g., fake_task, another_fake_task)
-├── requirements.txt    # Project dependencies
-├── README.md           # This file
-├── container/          # Container configuration files (redis.conf)
-├── templates/          # HTML templates for the web interface
-└── workers/
-    └── worker.py       # ARQ worker configuration
-```
+````
 
 ## Container
 
@@ -119,7 +222,7 @@ container run -d --name my-redis \
  --cpus 2 \
  docker.io/library/redis:latest
 container list --all
-```
+````
 
 Test it with:
 
@@ -133,37 +236,37 @@ To add new worker functions that can be processed by `robotni_arq`, follow these
 
 1. **Define your task in `tasks.py`**:
 
-    Create an asynchronous function in `robotni_arq/tasks.py` that performs the desired work. This function will be the task that `arq` workers execute.
+   Create an asynchronous function in `robotni_arq/tasks.py` that performs the desired work. This function will be the task that `arq` workers execute.
 
-    ```python
-    # robotni_arq/tasks.py
+   ```python
+   # robotni_arq/tasks.py
 
-    import asyncio
+   import asyncio
 
-    async def my_new_worker_task(ctx, data: dict):
-        """An example of a new worker task."""
-        print(f"Received data: {data}")
-        await asyncio.sleep(2) # Simulate some work
-        return {"status": "completed", "data_processed": data}
-    ```
+   async def my_new_worker_task(ctx, data: dict):
+       """An example of a new worker task."""
+       print(f"Received data: {data}")
+       await asyncio.sleep(2) # Simulate some work
+       return {"status": "completed", "data_processed": data}
+   ```
 
 2. **Ensure the worker can discover your task**:
 
-    The `arq` worker automatically discovers functions defined in `tasks.py`. No additional configuration is typically needed here, as long as your task is defined in `tasks.py` and the worker is configured to load tasks from this module.
+   The `arq` worker automatically discovers functions defined in `tasks.py`. No additional configuration is typically needed here, as long as your task is defined in `tasks.py` and the worker is configured to load tasks from this module.
 
 3. **Enqueue your task via the API**:
 
-    You can enqueue your new task by making a request to the FastAPI application's `/enqueue_task` endpoint, specifying the task type.
+   You can enqueue your new task by making a request to the FastAPI application's `/enqueue_task` endpoint, specifying the task type.
 
-    Example using `curl`:
+   Example using `curl`:
 
-    ```bash
-    curl -X POST "http://127.0.0.1:8000/enqueue_task" \
-         -H "Content-Type: application/x-www-form-urlencoded" \
-         -d "task_type=fake_task"
-    ```
+   ```bash
+   curl -X POST "http://127.0.0.1:8000/enqueue_task" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -d "task_type=fake_task"
+   ```
 
-    The `task_type` should correspond to a task type handled by the API, such as `fake_task`.
+   The `task_type` should correspond to a task type handled by the API, such as `fake_task`.
 
 By following these steps, you can easily extend `robotni_arq` to handle a variety of background processing needs.
 

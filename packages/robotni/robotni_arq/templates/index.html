@@ -1,175 +1,550 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arq + FastAPI Demo</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Arq Task Queue Manager</title>
     <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h1, h2 { color: #333; }
-        button {
-            background-color: #007bff; color: white; padding: 10px 15px; border: none;
-            border-radius: 4px; cursor: pointer; font-size: 16px; margin-right: 10px; margin-bottom: 10px;
-        }
-        button:hover { background-color: #0056b3; }
-        .add-task-btn {
-            background-color: #28a745; /* Green */
-        }
-        .add-task-btn:hover { background-color: #1e7e34; }
-        .queue-btn {
-            background-color: #ffc107; /* Yellow */
-            color: #212529;
-        }
-        .queue-btn:hover { background-color: #d39e00; }
-        .info, .job-response, .job-list { margin-top: 20px; padding:10px; background-color: #e9ecef; border-radius:4px; }
-        .job-list ul { list-style-type: none; padding: 0; }
-        .job-list li { background-color: #fff; margin-bottom: 8px; padding: 8px; border-radius: 4px; border: 1px solid #ddd; }
-        .job-list li strong { color: #007bff; }
-        pre { background-color: #333; color: #f8f8f2; padding: 10px; border-radius: 4px; overflow-x: auto; }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+        color: #333;
+      }
+      
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+      
+      .header {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+      
+      .header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        font-weight: 300;
+      }
+      
+      .header p {
+        opacity: 0.9;
+        font-size: 1.1rem;
+      }
+      
+      .main-content {
+        padding: 30px;
+      }
+      
+      .task-section {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 25px;
+        margin-bottom: 30px;
+        border: 1px solid #e9ecef;
+      }
+      
+      .task-section h2 {
+        color: #495057;
+        margin-bottom: 20px;
+        font-size: 1.5rem;
+        font-weight: 500;
+      }
+      
+      .task-controls {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      
+      .task-select {
+        flex: 1;
+        min-width: 250px;
+        padding: 12px 15px;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        font-size: 16px;
+        background: white;
+        transition: border-color 0.3s ease;
+      }
+      
+      .task-select:focus {
+        outline: none;
+        border-color: #4facfe;
+        box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+      }
+      
+      .add-task-btn {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+      }
+      
+      .add-task-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+      }
+      
+      .add-task-btn:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+      
+      .refresh-btn {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);
+      }
+      
+      .refresh-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(23, 162, 184, 0.4);
+      }
+      
+      .jobs-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 20px;
+        margin-top: 30px;
+      }
+      
+      .job-category {
+        background: white;
+        border-radius: 10px;
+        border: 1px solid #e9ecef;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      }
+      
+      .job-category-header {
+        padding: 15px 20px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        border-bottom: 1px solid #e9ecef;
+      }
+      
+      .job-category-header.enqueued {
+        background: linear-gradient(135deg, #ffc107, #ffb300);
+        color: #212529;
+      }
+      
+      .job-category-header.processing {
+        background: linear-gradient(135deg, #17a2b8, #138496);
+        color: white;
+      }
+      
+      .job-category-header.completed {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+      }
+      
+      .job-list {
+        max-height: 400px;
+        overflow-y: auto;
+      }
+      
+      .job-item {
+        padding: 15px 20px;
+        border-bottom: 1px solid #f8f9fa;
+        transition: background-color 0.2s ease;
+      }
+      
+      .job-item:hover {
+        background-color: #f8f9fa;
+      }
+      
+      .job-item:last-child {
+        border-bottom: none;
+      }
+      
+      .job-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      
+      .job-name {
+        font-weight: 600;
+        color: #495057;
+        font-size: 0.95rem;
+      }
+      
+      .job-status {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        text-transform: uppercase;
+      }
+      
+      .status-pending {
+        background: #fff3cd;
+        color: #856404;
+      }
+      
+      .status-in_progress {
+        background: #d1ecf1;
+        color: #0c5460;
+      }
+      
+      .status-complete {
+        background: #d4edda;
+        color: #155724;
+      }
+      
+      .status-failed {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      
+      .job-details {
+        font-size: 0.85rem;
+        color: #6c757d;
+        line-height: 1.4;
+      }
+      
+      .job-time {
+        margin-top: 5px;
+        font-size: 0.8rem;
+        color: #adb5bd;
+      }
+      
+      .empty-state {
+        padding: 40px 20px;
+        text-align: center;
+        color: #6c757d;
+        font-style: italic;
+      }
+      
+      .loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 40px;
+        color: #6c757d;
+      }
+      
+      .spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #4facfe;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 10px;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        z-index: 1000;
+        transform: translateX(400px);
+        transition: transform 0.3s ease;
+      }
+      
+      .notification.show {
+        transform: translateX(0);
+      }
+      
+      .notification.success {
+        background: linear-gradient(135deg, #28a745, #20c997);
+      }
+      
+      .notification.error {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h1>Arq + FastAPI Task Queue Demo</h1>
-
-        <button id="enqueueFakeTaskBtn" class="add-task-btn">+ Fake Task</button>
-        <button id="enqueueAnotherFakeTaskBtn" class="add-task-btn">+ Another Fake Task</button>
-        <button id="enqueueTaskUnameBtn" class="add-task-btn">+ System Info Task</button>
-        <button id="enqueueTaskPingBtn" class="add-task-btn">+ Ping Task</button>
-        <button id="enqueueTaskUberlamaBtn" class="add-task-btn">+ Uberlama Task</button>
-        <button id="listQueueBtn" class="queue-btn">Show Queued Tasks</button>
-        <button id="listCompletedBtn" class="queue-btn">Show Last 3 Completed</button>
-
-        <div id="jobResponse" class="job-response" style="display:none;">
-            <h2>Last Enqueued Job:</h2>
-            <pre></pre>
+      <div class="header">
+        <h1>Arq Task Queue Manager</h1>
+        <p>Manage and monitor your background tasks</p>
+      </div>
+      
+      <div class="main-content">
+        <div class="task-section">
+          <h2>Add New Task</h2>
+          <div class="task-controls">
+            <select id="taskSelect" class="task-select">
+              <option value="">Select a task to add...</option>
+              <option value="fake_task">Fake Task (Demo)</option>
+              <option value="another_fake_task">Another Fake Task</option>
+              <option value="task_uname">System Info Task</option>
+              <option value="task_ping">Network Ping Task</option>
+              <option value="task_uberlama">Uberlama AI Task</option>
+              <option value="task_anonymize">Text Anonymization Task</option>
+              <option value="task_parse">Parse Task</option>
+            </select>
+            <button id="addTaskBtn" class="add-task-btn" disabled>Add Task</button>
+            <button id="refreshBtn" class="refresh-btn">Refresh Jobs</button>
+          </div>
         </div>
-
-        <div id="jobList" class="job-list" style="display:none;">
-            <h2>Current Queue:</h2>
-            <ul></ul>
+        
+        <div class="jobs-section">
+          <div class="job-category">
+            <div class="job-category-header enqueued">
+              Enqueued Jobs (<span id="enqueuedCount">0</span>)
+            </div>
+            <div id="enqueuedJobs" class="job-list">
+              <div class="loading">
+                <div class="spinner"></div>
+                Loading...
+              </div>
+            </div>
+          </div>
+          
+          <div class="job-category">
+            <div class="job-category-header processing">
+              Processing Jobs (<span id="processingCount">0</span>)
+            </div>
+            <div id="processingJobs" class="job-list">
+              <div class="loading">
+                <div class="spinner"></div>
+                Loading...
+              </div>
+            </div>
+          </div>
+          
+          <div class="job-category">
+            <div class="job-category-header completed">
+              Completed Jobs (Last 3) (<span id="completedCount">0</span>)
+            </div>
+            <div id="completedJobs" class="job-list">
+              <div class="loading">
+                <div class="spinner"></div>
+                Loading...
+              </div>
+            </div>
+          </div>
         </div>
-
-        <div id="completedJobList" class="job-list" style="display:none;">
-            <h2>Last 3 Completed Jobs:</h2>
-            <ul></ul>
-        </div>
-
-        <div class="info">
-            <p>Click a "+ Enqueue" button to add a new background task. The Job ID will be shown above.</p>
-            <p>Click "Show Queued Tasks" to see tasks currently waiting to be processed.</p>
-            <p>Click "Show Last 3 Completed" to see the most recently finished jobs with their results and timing.</p>
-            <p>Check your terminal where the `arq` worker is running to see task processing logs.</p>
-        </div>
+      </div>
     </div>
-
+    
+    <div id="notification" class="notification"></div>
+    
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const enqueueFakeTaskBtn = document.getElementById('enqueueFakeTaskBtn');
-            const enqueueAnotherFakeTaskBtn = document.getElementById('enqueueAnotherFakeTaskBtn');
-            const enqueueTaskUnameBtn = document.getElementById('enqueueTaskUnameBtn');
-            const enqueueTaskPingBtn = document.getElementById('enqueueTaskPingBtn');
-            const listQueueBtn = document.getElementById('listQueueBtn');
-            const listCompletedBtn = document.getElementById('listCompletedBtn');
-            const jobResponseDiv = document.getElementById('jobResponse');
-            const jobResponsePre = jobResponseDiv.querySelector('pre');
-            const jobListDiv = document.getElementById('jobList');
-            const jobListUl = jobListDiv.querySelector('ul');
-            const completedJobListDiv = document.getElementById('completedJobList');
-            const completedJobListUl = completedJobListDiv.querySelector('ul');
-
-            async function enqueueTask(taskType) {
-                const formData = new FormData();
-                formData.append('task_type', taskType);
-
-                try {
-                    const response = await fetch('/enqueue_task', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    const data = await response.json();
-                    jobResponsePre.textContent = JSON.stringify(data, null, 2);
-                    jobResponseDiv.style.display = 'block';
-                    if (response.ok && data.job_id) {
-                        console.log(`Enqueued ${taskType}:`, data.job_id);
-                    } else {
-                        console.error('Failed to enqueue task:', data);
-                    }
-                } catch (error) {
-                    console.error('Error enqueuing task:', error);
-                    jobResponsePre.textContent = JSON.stringify({ error: error.message }, null, 2);
-                    jobResponseDiv.style.display = 'block';
-                }
+      class TaskManager {
+        constructor() {
+          this.taskSelect = document.getElementById('taskSelect');
+          this.addTaskBtn = document.getElementById('addTaskBtn');
+          this.refreshBtn = document.getElementById('refreshBtn');
+          this.notification = document.getElementById('notification');
+          
+          this.enqueuedJobs = document.getElementById('enqueuedJobs');
+          this.processingJobs = document.getElementById('processingJobs');
+          this.completedJobs = document.getElementById('completedJobs');
+          
+          this.enqueuedCount = document.getElementById('enqueuedCount');
+          this.processingCount = document.getElementById('processingCount');
+          this.completedCount = document.getElementById('completedCount');
+          
+          this.taskParameters = {
+            'fake_task': { duration: 5, task_name: 'Demo Fake Task' },
+            'another_fake_task': { message: 'Hello from Task Manager' },
+            'task_uname': {},
+            'task_ping': {},
+            'task_uberlama': {},
+            'task_anonymize': { 
+              text_to_anonymize: 'This is sensitive data with names like John Doe and email john@example.com', 
+              level: 'basic' 
+            },
+            'task_parse': { sample_data: 'Parse this data', format: 'json' }
+          };
+          
+          this.init();
+        }
+        
+        init() {
+          this.taskSelect.addEventListener('change', () => {
+            this.addTaskBtn.disabled = !this.taskSelect.value;
+          });
+          
+          this.addTaskBtn.addEventListener('click', () => {
+            this.addTask();
+          });
+          
+          this.refreshBtn.addEventListener('click', () => {
+            this.loadJobs();
+          });
+          
+          // Load jobs on page load
+          this.loadJobs();
+          
+          // Auto-refresh every 5 seconds
+          setInterval(() => {
+            this.loadJobs();
+          }, 5000);
+        }
+        
+        async addTask() {
+          const taskType = this.taskSelect.value;
+          if (!taskType) return;
+          
+          this.addTaskBtn.disabled = true;
+          this.addTaskBtn.textContent = 'Adding...';
+          
+          try {
+            const response = await fetch('/api/worker/jobs', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                type: taskType,
+                name: this.generateJobName(taskType),
+                project: 'Task Manager',
+                parameters: this.taskParameters[taskType] || {}
+              })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+              this.showNotification('Task added successfully!', 'success');
+              this.taskSelect.value = '';
+              this.loadJobs();
+            } else {
+              this.showNotification(`Error: ${data.error}`, 'error');
             }
-
-            enqueueFakeTaskBtn.addEventListener('click', () => enqueueTask('fake_task'));
-            enqueueAnotherFakeTaskBtn.addEventListener('click', () => enqueueTask('another_fake_task'));
-            enqueueTaskUnameBtn.addEventListener('click', () => enqueueTask('task_uname'));
-            enqueueTaskPingBtn.addEventListener('click', () => enqueueTask('task_ping'));
-            enqueueTaskUberlamaBtn.addEventListener('click', () => enqueueTask('task_uberlama'));
-
-            listQueueBtn.addEventListener('click', async () => {
-                try {
-                    const response = await fetch('/list_jobs');
-                    const data = await response.json();
-                    jobListUl.innerHTML = ''; // Clear previous list
-                    if (data.jobs && data.jobs.length > 0) {
-                        data.jobs.forEach(job => {
-                            const li = document.createElement('li');
-                            li.innerHTML = `<strong>Job ID:</strong> ${job.job_id}<br>
-                                            <strong>Function:</strong> ${job.function}<br>
-                                            <strong>Status:</strong> ${job.status}<br>
-                                            <strong>Enqueued:</strong> ${job.enqueue_time || 'N/A'}`;
-                            // You can add more details from job.info if needed
-                            jobListUl.appendChild(li);
-                        });
-                    } else {
-                        const li = document.createElement('li');
-                        li.textContent = 'No jobs currently in the queue.';
-                        jobListUl.appendChild(li);
-                    }
-                    jobListDiv.style.display = 'block';
-                    completedJobListDiv.style.display = 'none'; // Hide completed jobs when showing queue
-                } catch (error) {
-                    console.error('Error fetching job list:', error);
-                    jobListUl.innerHTML = '<li>Error fetching job list.</li>';
-                    jobListDiv.style.display = 'block';
-                }
-            });
-
-            listCompletedBtn.addEventListener('click', async () => {
-                try {
-                    const response = await fetch('/completed_jobs');
-                    const data = await response.json();
-                    completedJobListUl.innerHTML = ''; // Clear previous list
-                    if (data.completed_jobs && data.completed_jobs.length > 0) {
-                        data.completed_jobs.forEach(job => {
-                            const li = document.createElement('li');
-                            const duration = job.start_time && job.finish_time ? 
-                                ((new Date(job.finish_time) - new Date(job.start_time)) / 1000).toFixed(1) + 's' : 'N/A';
-                            li.innerHTML = `<strong>Job ID:</strong> ${job.job_id}<br>
-                                            <strong>Function:</strong> ${job.function}<br>
-                                            <strong>Status:</strong> ${job.status}<br>
-                                            <strong>Duration:</strong> ${duration}<br>
-                                            <strong>Finished:</strong> ${job.finish_time ? new Date(job.finish_time).toLocaleString() : 'N/A'}<br>
-                                            <strong>Result:</strong> ${job.result || 'N/A'}`;
-                            completedJobListUl.appendChild(li);
-                        });
-                    } else {
-                        const li = document.createElement('li');
-                        li.textContent = 'No completed jobs found.';
-                        completedJobListUl.appendChild(li);
-                    }
-                    completedJobListDiv.style.display = 'block';
-                    jobListDiv.style.display = 'none'; // Hide queue when showing completed jobs
-                } catch (error) {
-                    console.error('Error fetching completed jobs:', error);
-                    completedJobListUl.innerHTML = '<li>Error fetching completed jobs.</li>';
-                    completedJobListDiv.style.display = 'block';
-                }
-            });
-        });
+          } catch (error) {
+            this.showNotification(`Error: ${error.message}`, 'error');
+          } finally {
+            this.addTaskBtn.disabled = true;
+            this.addTaskBtn.textContent = 'Add Task';
+          }
+        }
+        
+        async loadJobs() {
+          try {
+            const response = await fetch('/api/worker/jobs');
+            const data = await response.json();
+            
+            if (data.success && data.data) {
+              this.renderJobs(data.data);
+            } else {
+              this.showError('Failed to load jobs');
+            }
+          } catch (error) {
+            this.showError('Error loading jobs: ' + error.message);
+          }
+        }
+        
+        renderJobs(jobs) {
+          const enqueued = jobs.filter(job => ['queued', 'deferred'].includes(job.status));
+          const processing = jobs.filter(job => job.status === 'in_progress');
+          const completed = jobs.filter(job => ['complete', 'failed'].includes(job.status))
+                                .sort((a, b) => new Date(b.completedAt || b.createdAt) - new Date(a.completedAt || a.createdAt))
+                                .slice(0, 3);
+          
+          this.renderJobCategory(this.enqueuedJobs, enqueued, this.enqueuedCount);
+          this.renderJobCategory(this.processingJobs, processing, this.processingCount);
+          this.renderJobCategory(this.completedJobs, completed, this.completedCount);
+        }
+        
+        renderJobCategory(container, jobs, countElement) {
+          countElement.textContent = jobs.length;
+          
+          if (jobs.length === 0) {
+            container.innerHTML = '<div class="empty-state">No jobs in this category</div>';
+            return;
+          }
+          
+          container.innerHTML = jobs.map(job => this.renderJobItem(job)).join('');
+        }
+        
+        renderJobItem(job) {
+          const statusClass = `status-${job.status.replace('_', '')}`;
+          const createdAt = new Date(job.createdAt).toLocaleString();
+          const completedAt = job.completedAt ? new Date(job.completedAt).toLocaleString() : null;
+          
+          return `
+            <div class="job-item">
+              <div class="job-header">
+                <div class="job-name">${job.name || job.type}</div>
+                <div class="job-status ${statusClass}">${job.status}</div>
+              </div>
+              <div class="job-details">
+                <div><strong>Type:</strong> ${job.type}</div>
+                <div><strong>ID:</strong> ${job.id.substring(0, 8)}...</div>
+                ${job.progress !== undefined ? `<div><strong>Progress:</strong> ${job.progress}%</div>` : ''}
+              </div>
+              <div class="job-time">
+                <div>Created: ${createdAt}</div>
+                ${completedAt ? `<div>Completed: ${completedAt}</div>` : ''}
+              </div>
+            </div>
+          `;
+        }
+        
+        showError(message) {
+          this.enqueuedJobs.innerHTML = `<div class="empty-state">${message}</div>`;
+          this.processingJobs.innerHTML = `<div class="empty-state">${message}</div>`;
+          this.completedJobs.innerHTML = `<div class="empty-state">${message}</div>`;
+        }
+        
+        generateJobName(taskType) {
+          const now = new Date();
+          const timeStr = now.toLocaleTimeString();
+          return `${taskType.replace(/_/g, ' ')} - ${timeStr}`;
+        }
+        
+        showNotification(message, type) {
+          this.notification.textContent = message;
+          this.notification.className = `notification ${type}`;
+          this.notification.classList.add('show');
+          
+          setTimeout(() => {
+            this.notification.classList.remove('show');
+          }, 3000);
+        }
+      }
+      
+      // Initialize the task manager when the page loads
+      document.addEventListener('DOMContentLoaded', () => {
+        new TaskManager();
+      });
     </script>
-</body>
+  </body>
 </html>
