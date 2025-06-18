@@ -69,6 +69,12 @@ class SuccessGetResponse(BaseModel):
     data: List[JobDetails]
 
 
+class FlushSuccessResponse(BaseModel):
+    success: bool = True
+    message: str
+    deleted_keys_count: int
+
+
 class ErrorResponse(BaseModel):
     success: bool = False
     error: str
@@ -322,6 +328,67 @@ async def get_all_jobs_endpoint():
             status_code=500,
             content=ErrorResponse(
                 error="An unexpected error occurred while fetching all jobs.", details=str(e_main)).dict()
+        )
+
+
+@app.post("/api/worker/jobs/flush", response_model=FlushSuccessResponse, responses={500: {"model": ErrorResponse}})
+async def flush_all_jobs_endpoint():
+    if not redis_pool:
+        return JSONResponse(
+            status_code=500,
+            content=ErrorResponse(
+                error="Redis connection not available").dict()
+        )
+
+    deleted_keys_count = 0
+    try:
+        # Keys to delete:
+        # 1. The main queue (default_queue_name)
+        # 2. All result keys (arq:result:*)
+        # 3. Potentially other Arq internal keys if necessary (e.g., for job scores, in-progress tracking)
+        #    For a basic flush, queue and results are the primary targets.
+
+        # Delete the main queue (zset or list)
+        if await redis_pool.exists(default_queue_name):
+            await redis_pool.delete(default_queue_name)
+            deleted_keys_count += 1
+            print(f"Deleted queue: {default_queue_name}")
+
+        # Delete all result keys
+        result_keys_pattern = f"{result_key_prefix}*"
+        result_keys_to_delete = await redis_pool.keys(result_keys_pattern)
+        if result_keys_to_delete:
+            # redis.delete can take multiple keys
+            await redis_pool.delete(*result_keys_to_delete)
+            deleted_keys_count += len(result_keys_to_delete)
+            print(f"Deleted {len(result_keys_to_delete)} result keys matching {result_keys_pattern}")
+
+        # Potentially delete other arq internal keys if known and necessary
+        # For example, arq might use other patterns for its internal workings.
+        # A more comprehensive flush might involve scanning for all keys starting with 'arq:'
+        # but this could be risky if other applications use the same prefix.
+        # For now, focusing on the main queue and result keys.
+
+        # Example: If arq uses a specific pattern for job definitions or other metadata
+        # job_def_keys_pattern = "arq:job:*" # Fictional example
+        # job_def_keys_to_delete = await redis_pool.keys(job_def_keys_pattern)
+        # if job_def_keys_to_delete:
+        #     await redis_pool.delete(*job_def_keys_to_delete)
+        #     deleted_keys_count += len(job_def_keys_to_delete)
+
+        return FlushSuccessResponse(
+            message=f"Successfully flushed all known Arq jobs and associated data. {deleted_keys_count} key(s)/group(s) deleted.",
+            deleted_keys_count=deleted_keys_count
+        )
+
+    except Exception as e:
+        print(f"Error flushing Arq jobs: {e}")
+        return JSONResponse(
+            status_code=500,
+            content=ErrorResponse(
+                error="An error occurred while flushing Arq jobs.",
+                details=str(e)
+            ).dict()
         )
 
 

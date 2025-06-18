@@ -130,6 +130,30 @@
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(23, 162, 184, 0.4);
       }
+
+      .flush-all-btn {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+      }
+
+      .flush-all-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+      }
+
+      .flush-all-btn:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
       
       .jobs-section {
         display: grid;
@@ -397,6 +421,7 @@
             </select>
             <button id="addTaskBtn" class="add-task-btn" disabled>Add Task</button>
             <button id="refreshBtn" class="refresh-btn">Refresh Jobs</button>
+            <button id="flushAllBtn" class="flush-all-btn">Flush All Jobs</button>
           </div>
           
           <!-- Dynamic parameter inputs -->
@@ -454,6 +479,7 @@
           this.taskSelect = document.getElementById('taskSelect');
           this.addTaskBtn = document.getElementById('addTaskBtn');
           this.refreshBtn = document.getElementById('refreshBtn');
+          this.flushAllBtn = document.getElementById('flushAllBtn'); // Added flush button
           this.notification = document.getElementById('notification');
           
           this.enqueuedJobs = document.getElementById('enqueuedJobs');
@@ -545,6 +571,10 @@
           this.refreshBtn.addEventListener('click', () => {
             this.loadJobs();
           });
+
+          this.flushAllBtn.addEventListener('click', () => {
+            this.flushAllJobs();
+          });
           
           // Load jobs on page load
           this.loadJobs();
@@ -553,6 +583,38 @@
           setInterval(() => {
             this.loadJobs();
           }, 5000);
+        }
+
+        async flushAllJobs() {
+          if (!confirm('Are you sure you want to flush ALL jobs? This action cannot be undone.')) {
+            return;
+          }
+
+          this.flushAllBtn.disabled = true;
+          this.flushAllBtn.textContent = 'Flushing...';
+
+          try {
+            const response = await fetch('/api/worker/jobs/flush', {
+              method: 'POST', // Or DELETE, depending on your API design
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+              this.showNotification('All jobs flushed successfully!', 'success');
+              this.loadJobs(); // Refresh the job lists
+            } else {
+              this.showNotification(`Error flushing jobs: ${data.error}`, 'error');
+            }
+          } catch (error) {
+            this.showNotification(`Error: ${error.message}`, 'error');
+          } finally {
+            this.flushAllBtn.disabled = false;
+            this.flushAllBtn.textContent = 'Flush All Jobs';
+          }
         }
         
         handleTaskSelection() {
