@@ -110,9 +110,12 @@ The application exposes the following API endpoints:
       "name": "string (user-defined name for the job)",
       "project": "string (optional, project identifier)",
       "parameters": {
-        "key1": "value1", // Task-specific parameters
+        "param": "string (task-specific parameter, e.g., '5 \"My Custom Task\"' for fake_task, or 'some message' for another_fake_task)",
+        "key1": "value1", // Other task-specific parameters
         "key2": "value2"
       }
+    ```
+  - **Note on `parameters`:** For `fake_task` and `another_fake_task`, a single `param` field can be used to pass arguments. For `fake_task`, the `param` string should be in the format `"<duration> \"<task_name>\""` (e.g., `"5 \"My Custom Task\""`). For `another_fake_task`, the `param` field can be any string message. If `param` is present, other keys in `parameters` might be ignored by these specific tasks for backward compatibility.
     }
     ```
   - **Response (JSON - Success):**
@@ -140,19 +143,32 @@ The application exposes the following API endpoints:
     }
     ```
   - **Example `curl`:**
-    ```bash
-    curl -X POST "http://127.0.0.1:8000/api/worker/jobs" \
-         -H "Content-Type: application/json" \
-         -d '{
-           "type": "task_parse",
-           "name": "My Parsing Job",
-           "project": "Project Beta",
-           "parameters": {
-             "input_file": "/path/to/data.csv",
-             "output_format": "json"
-           }
-         }'
-    ```
+     ```bash
+     curl -X POST "http://127.0.0.1:8000/api/worker/jobs" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "type": "task_parse",
+            "name": "My Parsing Job",
+            "project": "Project Beta",
+            "parameters": {
+              "input_file": "/path/to/data.csv",
+              "output_format": "json"
+            }
+          }'
+     ```
+   - **Example `curl` for `fake_task`:**
+     ```bash
+     curl -X POST "http://127.0.0.1:8000/api/worker/jobs" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "type": "fake_task",
+            "name": "My Fake Task",
+            "parameters": {
+              "duration": 10,
+              "task_name": "Custom Fake Task"
+            }
+          }'
+     ```
 
 - **`GET /api/worker/jobs`**
   - **Description:** Lists all jobs (queued, active, completed, failed).
@@ -188,10 +204,14 @@ The application exposes the following API endpoints:
     }
     ```
 
-- **`GET /job/{job_id}`**
+- **`GET /api/worker/jobs/{job_id}`
   - **Description:** Retrieves the status and information for a specific job.
   - **Path Parameter:**
     - `job_id` (string, required): The ID of the job to query.
+  - **Example `curl`:**
+    ```bash
+    curl http://127.0.0.1:8000/api/worker/jobs/job_1678886400000_abcde
+    ```
   - **Response (JSON):**
     ```json
     {
@@ -205,7 +225,48 @@ The application exposes the following API endpoints:
         // ... other JobDef fields
       }
     }
+```
+
+- **`GET /api/worker/list/`
+  - **Description:** Lists all available task names dynamically discovered from `tasks.py` and `subprocess_config.yaml`.
+  - **Example `curl`:**
+    ```bash
+    curl http://127.0.0.1:8000/api/worker/list/
     ```
+  - **Response (JSON):
+    ```json
+    {
+      "tasks": [
+        {"id": "string (task_name)"},
+        {"id": "string (another_task_name)"}
+        // ... more tasks
+      ]
+    }
+    ```
+
+
+- **`POST /api/worker/jobs/flush`
+  - **Description:** Flushes (deletes) all queued, active, and completed/failed jobs and their associated data from Redis.
+  - **Example `curl`:**
+    ```bash
+    curl -X POST http://127.0.0.1:8000/api/worker/jobs/flush
+    ```
+  - **Response (JSON - Success):
+    ```json
+    {
+      "success": true,
+      "message": "string (confirmation message)",
+      "deleted_keys_count": "integer (number of keys deleted)"
+    }
+    ```
+  - **Response (JSON - Error):
+    ```json
+    {
+      "success": false,
+      "error": "string (error message)",
+      "details": "string (optional, error details)"
+    }
+```
 
 ## Project Structure
 
