@@ -26,12 +26,13 @@ else
     exit 1
 fi
 
-uvicorn robotni_arq.api:app --reload &
+# Add the current directory to PYTHONPATH to ensure modules are found
+PYTHONPATH=$(pwd) uvicorn robotni_arq.api:app --reload &
 API_PID=$!
 
 # Start the Arq worker in the background
 echo "Starting Arq worker..."
-arq robotni_arq.workers.worker.WorkerSettings &
+PYTHONPATH=$(pwd) arq robotni_arq.workers.worker.WorkerSettings &
 WORKER_PID=$!
 
 echo "FastAPI server (PID: $API_PID) and Arq worker (PID: $WORKER_PID) started."

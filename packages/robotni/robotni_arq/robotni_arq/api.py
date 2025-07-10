@@ -22,12 +22,13 @@ from datetime import datetime, timezone
 # Added List here as well for JobDetails
 from typing import Optional, Dict, Any, List
 
-from arq import create_pool
-from arq.connections import RedisSettings
-
 load_dotenv()
 
 app = FastAPI()
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # Mount static files if you have any (e.g., CSS, JS)
 # app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -86,7 +87,12 @@ class ErrorResponse(BaseModel):
 @app.on_event("startup")
 async def startup_event():
     global redis_pool
-    redis_pool = await create_pool(REDIS_SETTINGS)
+    logger.info(f"Attempting to connect to Redis at {REDIS_SETTINGS.host}:{REDIS_SETTINGS.port}")
+    try:
+        redis_pool = await create_pool(REDIS_SETTINGS)
+        logger.info("Successfully connected to Redis.")
+    except Exception as e:
+        logger.error(f"Failed to connect to Redis: {e}", exc_info=True)
 
 
 @app.on_event("shutdown")
@@ -155,10 +161,7 @@ async def enqueue_job_endpoint(request_body: JobEnqueueRequest):
         return SuccessPostResponse(data=created_job_data)
 
     except Exception as e:
-        print(
-            f"Error enqueueing job {job_function_name} with params {job_parameters}: {e}")
-        # Check if it's a Zod-like validation error (though Pydantic handles it before this point)
-        # For now, general error for enqueueing issues.
+        logger.error(f"Error enqueueing job {job_function_name} with params {job_parameters}: {e}", exc_info=True)
         return JSONResponse(
             status_code=400,  # Or 500 depending on error type
             content=ErrorResponse(
@@ -219,14 +222,27 @@ async def get_all_jobs_endpoint():
 
                 if status_str == 'complete':  # Use string literal 'complete'
                     # Add a small timeout
-                    result_data = await job_instance.result(timeout=1)
-                    progress_val = 100
+                    try:
+                        result_data = await job_instance.result(timeout=1)
+                        progress_val = 100
+                    except OSError as ose:
+                        logger.error(f"OSError when fetching result for job {job_id}: {ose}", exc_info=True)
+                        result_data = {"error": f"Failed to retrieve result due to I/O error: {str(ose)}"}
+                        progress_val = 100 # Still considered complete, but with an error in result
+                    except Exception as e_res:
+                        logger.error(f"Unexpected error when fetching result for job {job_id}: {e_res}", exc_info=True)
+                        result_data = {"error": f"Failed to retrieve result: {str(e_res)}"}
+                        progress_val = 100 # Still considered complete, but with an error in result
                 elif status_str == 'failed':  # Use string literal 'failed'
                     # Attempt to get result, which might contain error details for failed jobs
                     try:
                         result_data = await job_instance.result(timeout=1)
+                    except OSError as ose:
+                        logger.error(f"OSError when fetching failed job result for job {job_id}: {ose}", exc_info=True)
+                        result_data = {"error": f"Failed to retrieve failed result due to I/O error: {str(ose)}"}
                     except Exception as e_res:
-                        result_data = {"error_fetching_result": str(e_res)}
+                        logger.error(f"Unexpected error when fetching failed job result for job {job_id}: {e_res}", exc_info=True)
+                        result_data = {"error": f"Failed to retrieve failed result: {str(e_res)}"}
                     progress_val = 100  # Or some other indicator for failed
                 elif status_str in ['in_progress', 'deferred']:  # Use string literals
                     # For in-progress, progress might be dynamically updated by the task itself.
@@ -294,8 +310,7 @@ async def get_all_jobs_endpoint():
                         )
                     )
             except Exception as e_job:
-                print(f"Error fetching details for job {job_id}: {e_job}")
-                # Add a basic entry for jobs that error during detail fetching
+                logger.error(f"Error fetching details for job {job_id}: {e_job}", exc_info=True)
                 all_jobs_details.append(
                     JobDetails(
                         id=job_id,
@@ -315,15 +330,14 @@ async def get_all_jobs_endpoint():
         return SuccessGetResponse(data=all_jobs_details)
 
     except ResponseError as e_redis:
-        # Handle specific Redis errors like WRONGTYPE more gracefully if needed
-        print(f"Redis ResponseError while fetching all jobs: {e_redis}")
+        logger.error(f"Redis ResponseError while fetching all jobs: {e_redis}", exc_info=True)
         return JSONResponse(
             status_code=500,
             content=ErrorResponse(
                 error="A Redis error occurred while fetching job list.", details=str(e_redis)).dict()
         )
     except Exception as e_main:
-        print(f"Unexpected error in get_all_jobs_endpoint: {e_main}")
+        logger.error(f"Unexpected error in get_all_jobs_endpoint: {e_main}", exc_info=True)
         return JSONResponse(
             status_code=500,
             content=ErrorResponse(
@@ -352,7 +366,7 @@ async def flush_all_jobs_endpoint():
         if await redis_pool.exists(default_queue_name):
             await redis_pool.delete(default_queue_name)
             deleted_keys_count += 1
-            print(f"Deleted queue: {default_queue_name}")
+            logger.info(f"Deleted queue: {default_queue_name}")
 
         # Delete all result keys
         result_keys_pattern = f"{result_key_prefix}*"
@@ -361,7 +375,7 @@ async def flush_all_jobs_endpoint():
             # redis.delete can take multiple keys
             await redis_pool.delete(*result_keys_to_delete)
             deleted_keys_count += len(result_keys_to_delete)
-            print(f"Deleted {len(result_keys_to_delete)} result keys matching {result_keys_pattern}")
+            logger.info(f"Deleted {len(result_keys_to_delete)} result keys matching {result_keys_pattern}")
 
         # Potentially delete other arq internal keys if known and necessary
         # For example, arq might use other patterns for its internal workings.
@@ -382,7 +396,7 @@ async def flush_all_jobs_endpoint():
         )
 
     except Exception as e:
-        print(f"Error flushing Arq jobs: {e}")
+        logger.error(f"Error flushing Arq jobs: {e}", exc_info=True)
         return JSONResponse(
             status_code=500,
             content=ErrorResponse(

@@ -26,9 +26,8 @@ dependencies = [
 "Homepage" = "https://github.com/yourusername/robotni_arq"
 "Bug Tracker" = "https://github.com/yourusername/robotni_arq/issues"
 
-[tool.setuptools.packages.find]
-where = ["./"]
-include = ["robotni_arq", "robotni_arq.*"]
+[tool.setuptools]
+packages = find:
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]

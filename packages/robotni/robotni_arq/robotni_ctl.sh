@@ -14,6 +14,7 @@ clean_orphaned_robotnis() {
     # It's better to have a more specific way to identify orphaned processes.
     # For now, let's just kill any 'arq worker' processes that might be lingering.
     pkill -f "arq worker"
+    pkill -f "uvicorn robotni_arq.api:app"
     echo "Orphaned robotni processes cleaned (if any)."
 }
 

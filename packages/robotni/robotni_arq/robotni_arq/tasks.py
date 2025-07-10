@@ -9,6 +9,10 @@ import os
 from typing import Any, Dict, List, Optional
 from string import Template
 
+# Configure logging for this module
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
 
 # Global variable to cache the subprocess configuration
 _subprocess_config = None
@@ -22,7 +26,7 @@ def load_subprocess_config() -> Dict:
     global _subprocess_config
     if _subprocess_config is None:
         config_path = os.path.join(os.path.dirname(
-            __file__), 'subprocess_config.yaml')
+            os.path.dirname(__file__)), 'subprocess_config.yaml')
         try:
             with open(config_path, 'r') as file:
                 _subprocess_config = yaml.safe_load(file)
@@ -181,7 +185,7 @@ async def fake_task(ctx, params: dict):
     print(f"Starting task: {task_name} (will run for {duration}s)")
     await asyncio.sleep(duration)
     result = f"Task '{task_name}' completed after {duration}s"
-    print(result)
+    logger.info(f"fake_task returning: {result}")
     return result
 
 
@@ -199,10 +203,10 @@ async def another_fake_task(ctx, params: dict):
         # Old structure: separate parameters
         message = params.get('message', 'Default message')
 
-    print(f"Starting another_fake_task with message: {message}")
+    logger.info(f"Starting another_fake_task with message: {message}")
     await asyncio.sleep(random.randint(1, 5))
     result = f"Another_fake_task completed with message: '{message}'"
-    print(result)
+    logger.info(f"another_fake_task returning: {result}")
     return result
 
 
