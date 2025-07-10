@@ -57,6 +57,8 @@ Python Workers are located in the `./workers/` directory and are responsible for
 
 ### Running the Application
 
+The `robotni_arq.sh` script is provided to easily manage the FastAPI server and the Arq worker.
+
 #### 1. Start the Redis Server
 
 Ensure your Redis server is running. If using Docker, you can start it with:
@@ -65,33 +67,45 @@ Ensure your Redis server is running. If using Docker, you can start it with:
 docker run --name some-redis -p 6379:6379 -d redis
 ```
 
-On MACOS
-
+Or on macOS with the `container` command:
 ```bash
 container run --detach my-redis
 container start my-redis
-container list --all
 ```
 
-#### 2. Start the ARQ Worker
+#### 2. Manage the Services with `robotni_arq.sh`
 
-Open a terminal in the project parent directory and run the ARQ worker:
+The script provides `start`, `stop`, `restart`, and `status` commands to manage the application.
 
-```bash
-arq robotni_arq.workers.worker.WorkerSettings
-```
+*   **To start the FastAPI server and Arq worker:**
 
-This worker will pick up and execute tasks from the Redis queue.
+    ```bash
+    ./robotni_arq.sh start
+    ```
+    This will start both services in the background.
 
-#### 3. Start the FastAPI Application
+*   **To check the status of the services:**
 
-Open another terminal in the project parent directory and run the FastAPI application using Uvicorn:
+    ```bash
+    ./robotni_arq.sh status
+    ```
+    This will show whether the FastAPI server and Arq worker are running and list their PIDs.
 
-```bash
-./start.sh
-```
+*   **To stop the services:**
 
-This will start the API server, typically accessible at `http://127.0.0.1:8000`.
+    ```bash
+    ./robotni_arq.sh stop
+    ```
+    This command will find and terminate the running `uvicorn` and `arq` processes.
+
+*   **To restart the services:**
+
+    ```bash
+    ./robotni_arq.sh restart
+    ```
+    This is a convenient way to stop and then immediately start the services again.
+
+The server will be accessible at `http://127.0.0.1:8000`.
 
 ## API Endpoints
 
