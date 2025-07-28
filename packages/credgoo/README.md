@@ -21,6 +21,7 @@ Credgoo combines the convenience of centralized credential management with the s
 ## Installation
 
 ```bash
+pip install -r https://skale.dev/credgoo
 pip install git+https://github.com/devskale/python-utils.git@v0.1.3#subdirectory=packages/credgoo
 ```
 
