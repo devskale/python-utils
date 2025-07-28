@@ -24,6 +24,12 @@ try:
 except ImportError:
     HAS_GENAI = False
 
+try:
+    from .tu import TuAIProvider
+    HAS_TU = True
+except ImportError:
+    HAS_TU = False
+
 # Import other providers with optional dependencies
 try:
     from .huggingface import HuggingFaceProvider
@@ -72,6 +78,7 @@ __all__ = [
     'ChutesProvider',
     'PollinationsProvider',
     'BigmodelProvider',
+    'TuAIProvider',
 ]
 
 # Add optional providers to __all__ if available

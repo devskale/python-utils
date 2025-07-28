@@ -12,7 +12,7 @@ from .providers import (
     OllamaProvider, OpenRouterProvider, ArliAIProvider,
     InternLMProvider, StepFunProvider, SambanovaProvider,
     UpstageProvider, NGCProvider, CloudflareProvider, ChutesProvider,
-    PollinationsProvider, BigmodelProvider
+    PollinationsProvider, BigmodelProvider, TuAIProvider
 )
 from .errors import (
     UniInferError, ProviderError, AuthenticationError,
@@ -73,6 +73,7 @@ ProviderFactory.register_provider("cloudflare", CloudflareProvider)
 ProviderFactory.register_provider("chutes", ChutesProvider)
 ProviderFactory.register_provider("pollinations", PollinationsProvider)
 ProviderFactory.register_provider("bigmodel", BigmodelProvider)
+ProviderFactory.register_provider("tu", TuAIProvider)
 
 # Register optional providers if available
 if HAS_HUGGINGFACE:
@@ -123,6 +124,10 @@ __all__ = [
     'UpstageProvider',
     'NGCProvider',
     'CloudflareProvider',
+    'ChutesProvider',
+    'PollinationsProvider',
+    'BigmodelProvider',
+    'TuAIProvider',
     'UniInferError',
     'ProviderError',
     'AuthenticationError',

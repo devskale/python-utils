@@ -35,6 +35,7 @@ UniInfer provides a consistent Python interface for LLM chat completions across 
 - **Streaming** - Real-time token streaming for all providers
 - **Error Resilience** - Automatic retries & fallback strategies
 - **Model Discovery** - List available models across all providers
+- **TU Wien** - Support for TU Wien's internal AI models
 
 ## Key Benefits
 
@@ -566,10 +567,24 @@ OpenAI-compatible chat completions endpoint. Uses the 'model' field in the forma
 ## Implementation Status
 
 Providers:
-[x] 20 providers
-[x] Anthropic
-[x] Mistral
-[ ] uberlama
+- OpenAI
+- Anthropic
+- Mistral AI
+- Google Gemini
+- NVIDIA GPU Cloud (NGC)
+- Cloudflare Workers AI
+- Cohere
+- AI21 Labs
+- OpenRouter
+- Ollama
+- Hugging Face Inference Endpoints
+- Moonshot AI
+- InternLM
+- StepFun
+- Sambanova
+- Pollinations
+- Arli
+- TU Wien
 
 Features:
 [ ] rate limiting (each provider has different limits)

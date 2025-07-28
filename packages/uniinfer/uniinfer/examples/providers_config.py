@@ -125,6 +125,11 @@ PROVIDER_CONFIGS = {
         'default_model': 'glm-4-flash',
         'needs_api_key': True,
     },
+    'tu': {
+        'name': 'tu',
+        'default_model': 'openai/RedHatAI/DeepSeek-R1-0528-quantized.w4a16',
+        'needs_api_key': True,
+    },
     'pollinations': {
         'name': 'Pollinations AI',
         'default_model': 'grok',
