@@ -3,7 +3,7 @@
 from pdf2md.config import config
 from pdf2md.converter import PDFtoMarkdown
 from pdf2md.factory import ExtractorFactory
-from pdf2md.index import create_index, update_index, clear_index
+from pdf2md.index import create_index, update_index, clear_index, get_index_data
 import os
 import argparse
 import platform
@@ -298,6 +298,74 @@ def clear_parser_files(directory: str, parser_name: Optional[str] = None, recurs
     clear_dir(directory)
 
 
+def show_parsing_status(directory: str, recursive: bool, parser_name: Optional[str]):
+    """Show the parsing status of files based on the index.
+
+    Args:
+        directory: The root directory to check.
+        recursive: Whether to check subdirectories recursively.
+        parser_name: The specific parser to check for. If None, checks for any parsing.
+    """
+    print(f"Checking parsing status in: {os.path.abspath(directory)}")
+    if parser_name:
+        print(f"Looking for files not parsed by: '{parser_name}'")
+    else:
+        print("Looking for files that have not been parsed by any parser.")
+    print("-" * 20)
+
+    unparsed_files_map = {}
+    total_unparsed_count = 0
+    start_directory = os.path.abspath(directory)
+
+    for root, dirs, _ in os.walk(start_directory):
+        # Modify dirs in-place to control traversal
+        dirs[:] = [d for d in dirs if not d.startswith('.') and d != 'md']
+
+        index_data = get_index_data(root)
+
+        if not index_data:
+            print(f"[Warning] No index file found in: {root}. Skipping.")
+            continue
+
+        unparsed_in_dir = []
+        for file_info in index_data.get('files', []):
+            file_name = file_info['name']
+            parsers_detected = file_info.get('parsers', {}).get('det', [])
+
+            is_unparsed = False
+            if parser_name:
+                if parser_name not in parsers_detected:
+                    is_unparsed = True
+            else:
+                if not parsers_detected:
+                    is_unparsed = True
+
+            if is_unparsed:
+                unparsed_in_dir.append(file_name)
+
+        if unparsed_in_dir:
+            unparsed_files_map[root] = unparsed_in_dir
+            total_unparsed_count += len(unparsed_in_dir)
+
+        if not recursive:
+            break  # Stop after the first level if not recursive
+
+    # Print the results
+    if not unparsed_files_map:
+        print("\nAll relevant files seem to be parsed according to the criteria.")
+    else:
+        print(f"\nFound {total_unparsed_count} unparsed file(s):")
+        for dir_path, files in unparsed_files_map.items():
+            relative_dir_path = os.path.relpath(dir_path, start_directory)
+            if relative_dir_path == '.':
+                print(f"\nIn directory: {start_directory}")
+            else:
+                print(f"\nIn directory: {relative_dir_path}")
+
+            for file_name in files:
+                print(f"  - {file_name}")
+
+
 def main():
     """Main entry point for the PDF to Markdown converter."""
     # Get default input directory from config
@@ -335,12 +403,21 @@ def main():
                         help="Index operations: create new index, update existing, clear all indexes, or test index update (dry run)")
     parser.add_argument("--index-age", type=int, default=30,
                         help="Maximum age (in seconds) for index files before they're considered stale (default: 5)")
+    parser.add_argument("--status", nargs='?', const='all', default=None,
+                        help="Show parsing status. Provide a parser name to see files not yet parsed by it. Without a name, it shows completely unparsed files.")
     args = parser.parse_args()
 
     if args.version:
         from pkg_resources import get_distribution
         version = get_distribution('pdf2md-skale').version
         print(f"pdf2md version {version}")
+        return
+
+    # Handle status check
+    if args.status is not None:
+        parser_to_check = None if args.status == 'all' else args.status
+        show_parsing_status(args.input_directory,
+                              args.recursive, parser_to_check)
         return
 
     # Handle index operations

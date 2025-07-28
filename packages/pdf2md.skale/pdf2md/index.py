@@ -544,3 +544,21 @@ def clear_index(directory: str, recursive: bool = False) -> None:
 
         if not recursive:
             break
+
+
+def get_index_data(directory: str) -> Optional[Dict]:
+    """Get index data for a directory.
+
+    Args:
+        directory: Path to directory to get index data for
+
+    Returns:
+        Dictionary with index data, or None if index file not found
+    """
+    config = ConfigManager()
+    index_file_name = config.get('index_file_name')
+    index_path = os.path.join(directory, index_file_name)
+    if os.path.exists(index_path):
+        with open(index_path, 'r') as f:
+            return json.load(f)
+    return None
