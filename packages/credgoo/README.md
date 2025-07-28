@@ -21,7 +21,7 @@ Credgoo combines the convenience of centralized credential management with the s
 ## Installation
 
 ```bash
-pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/credgoo
+pip install git+https://github.com/devskale/python-utils.git@v0.1.3#subdirectory=packages/credgoo
 ```
 
 ## Usage
@@ -37,6 +37,7 @@ Optional arguments:
 - `--url`: Custom Google Apps Script URL (defaults to built-in URL)
 - `--cache-dir`: Custom cache directory (defaults to ~/.config/api_keys)
 - `--no-cache`: Bypass cache and force retrieval from Google Sheets
+- `--update`: Update cached key: checks if another key is online, updates it, and provides verbose output if the online key has changed.
 - `--save {all,token,key,url,none}`: Specify which credentials to persist (default: `all`). Use `token`, `key`, or `url` to save specific parts, or `none` to disable saving.
 
 ### Python API

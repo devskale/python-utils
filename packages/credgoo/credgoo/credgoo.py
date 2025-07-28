@@ -305,6 +305,8 @@ def main():
         "--cache-dir", help="Directory to store cached API keys (default: ~/.config/api_keys/)")
     parser.add_argument("--no-cache", action="store_true",
                         help="Bypass cache and force retrieval from source")
+    parser.add_argument("--update", action="store_true",
+                        help="Update cached key: checks if another key is online, updates it, and provides verbose output if the online key has changed.")
     parser.add_argument('--save', choices=['all', 'token', 'key', 'url', 'none'],
                         default='all',
                         help="Specify which credentials to persist: 'all' (default), 'token', 'key', 'url', or 'none' to disable saving")
@@ -317,7 +319,7 @@ def main():
     # print("Starting API key retrieval...")
 
     # Determine cache directory
-    cache_dir = Path(args.cache_dir) if args.cache_dir else None
+    cache_dir = Path(args.cache_dir) if args.cache_dir else (Path.home() / '.config' / 'api_keys')
 
     # Store credentials if requested
     cred_file = (cache_dir or Path.home() / '.config' / 'api_keys') / 'credgoo.txt'
@@ -336,14 +338,48 @@ def main():
         )
 
     # Get API key using the more flexible function
+    # If --update is used, force no_cache to true to fetch from source
+    force_no_cache = args.no_cache or args.update
+
+    # Retrieve the current cached key for comparison if --update is active
+    current_cached_key = None
+    if args.update:
+        # Temporarily set no_cache to False to read from cache first
+        current_cached_key = get_api_key(
+            args.service,
+            bearer_token=args.token,
+            encryption_key=args.key,
+            api_url=args.url,
+            cache_dir=cache_dir,
+            no_cache=False  # Read from cache for comparison
+        )
+        if current_cached_key:
+            print(f"credgoo: Found cached key for {args.service}.")
+        else:
+            print(f"credgoo: No cached key found for {args.service}.")
+
     api_key = get_api_key(
         args.service,
         bearer_token=args.token,
         encryption_key=args.key,
         api_url=args.url,
         cache_dir=cache_dir,
-        no_cache=args.no_cache
+        no_cache=force_no_cache
     )
+
+    if args.update and api_key and current_cached_key:
+        if api_key != current_cached_key:
+            print(f"credgoo: Online key for {args.service} has changed. Updating cache.")
+            # The get_api_key function already caches if retrieval was successful and no_cache is False
+            # So, if force_no_cache was True (due to --update), we need to explicitly cache it now
+            if force_no_cache:
+                cache_api_key(args.service, api_key, args.key, cache_dir)
+        else:
+            print(f"credgoo: Online key for {args.service} is the same as cached key. No update needed.")
+    elif args.update and api_key and not current_cached_key:
+        print(f"credgoo: Fetched online key for {args.service}. No previous cached key to compare.")
+    elif args.update and not api_key:
+        print(f"credgoo: Failed to fetch online key for {args.service}. Cannot update cache.")
 
     if api_key:
         print(f" credgoo: Success {args.service}: {api_key}")
