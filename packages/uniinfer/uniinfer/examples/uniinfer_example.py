@@ -155,13 +155,26 @@ def main():
         except Exception as e:
             print(f"Error reading file: {e}")
 
-    model = args.model if args.model else PROVIDER_CONFIGS[provider]['default_model']
-    print(
-        f"Prompt: {prompt} ( {provider}@{model} )")
+    model = args.model
+    if not model:
+        if provider in PROVIDER_CONFIGS and 'default_model' in PROVIDER_CONFIGS[provider]:
+            model = PROVIDER_CONFIGS[provider]['default_model']
+        else:
+            print(f"Error: No default model configured for provider '{provider}' and no model specified via --model.")
+            return
+    if model:
+        print(
+            f"Prompt: {prompt} ( {provider}@{model} )")
+    else:
+        print(f"Prompt: {prompt} ( {provider} ) - No model specified or found.")
     # Create a simple chat request
     messages = [
         ChatMessage(role="user", content=prompt)
     ]
+    if not model:
+        print("Cannot proceed without a model.")
+        return
+
     request = ChatCompletionRequest(
         messages=messages,
         model=model,

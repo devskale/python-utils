@@ -79,7 +79,7 @@ PROVIDER_CONFIGS = {
     },
     'arli': {
         'name': 'ArliAI',
-        'default_model': 'Mistral-Nemo-12B-Instruct-2407',
+        'default_model': 'Qwen3-14B',
         'needs_api_key': True,
     },
     'openrouter': {
@@ -127,7 +127,7 @@ PROVIDER_CONFIGS = {
     },
     'tu': {
         'name': 'tu',
-        'default_model': 'openai/RedHatAI/DeepSeek-R1-0528-quantized.w4a16',
+        'default_model': 'deepseek-r1',
         'needs_api_key': True,
     },
     'pollinations': {
@@ -189,7 +189,7 @@ if HAS_AI21:
 if HAS_GENAI:
     PROVIDER_CONFIGS['gemini'] = {
         'name': 'Google Gemini',
-        'default_model': 'gemini-2.0-flash',
+        'default_model': 'gemini-2.5-flash',
         'needs_api_key': True,
     }
 
