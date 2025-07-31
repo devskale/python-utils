@@ -11,17 +11,26 @@ from .config import ConfigManager
 RELEVANT_EXTENSIONS = ['.pdf', '.docx', '.xlsx', '.pptx', '.jpg', '.jpeg', '.png', '.gif']
 
 # Helper function to generate index data for a specific path
-def _generate_index_data_for_path(current_root: str, sub_dir_names: List[str], files_in_current_root: List[str]) -> Dict:
+def _generate_index_data_for_path(current_root: str, sub_dir_names: List[str], files_in_current_root: List[str], existing_index_path: Optional[str] = None) -> Dict:
     """Generates index data for a specific path, its files, and subdirectories.
 
     Args:
         current_root: The current directory path being processed.
         sub_dir_names: List of filtered subdirectory names within current_root.
         files_in_current_root: List of all file names within current_root.
+        existing_index_path: Path to an existing .pdf2md_index.json file to preserve metadata.
 
     Returns:
         A dictionary containing the index data for the given path.
     """
+    # Load existing index data if available
+    existing_meta = {}
+    if existing_index_path and os.path.exists(existing_index_path):
+        with open(existing_index_path, 'r') as f:
+            existing_data = json.load(f)
+            for file_entry in existing_data.get('files', []):
+                existing_meta[file_entry['name']] = file_entry.get('meta', {})
+
     index_data = {
         'files': [],
         'directories': [],
@@ -90,6 +99,9 @@ def _generate_index_data_for_path(current_root: str, sub_dir_names: List[str], f
                 if not default_parser and parsers:
                     default_parser = parsers[0]
 
+            # Preserve existing metadata if available
+            meta = existing_meta.get(file_name, {})
+
             index_data['files'].append({
                 'name': file_name,
                 'size': file_size,
@@ -98,33 +110,31 @@ def _generate_index_data_for_path(current_root: str, sub_dir_names: List[str], f
                     'det': parsers if parsers else [],
                     'default': default_parser,
                     'status': ''
-                }
+                },
+                'meta': meta  # Add preserved metadata
             })
 
     # Process directories (using the pre-filtered sub_dir_names)
     for dir_name in sub_dir_names:
-        # Ensure dir_name itself is not hidden (already done by caller, but good for safety if used elsewhere)
-        # if dir_name.startswith('.') or dir_name.startswith('_') or dir_name == 'md':
-        #     continue
         dir_path = os.path.join(current_root, dir_name)
         dir_size = 0
         try:
-            # Calculate size only for files directly within the subdirectory
             dir_size = sum(os.path.getsize(os.path.join(dir_path, f)) for f in os.listdir(
                 dir_path) if os.path.isfile(os.path.join(dir_path, f)))
             dir_hash = hashlib.md5(
                 str(sorted(os.listdir(dir_path))).encode()).hexdigest()
-        except FileNotFoundError:  # Handle case where directory might be removed during processing
+        except FileNotFoundError:
             print(
                 f"Warning: Directory {dir_path} not found during size/hash calculation.")
-            dir_hash = ''  # Or some other placeholder
+            dir_hash = ''
 
         index_data['directories'].append({
             'name': dir_name,
             'size': dir_size,
             'hash': dir_hash,
-            'parser': ''  # Directories don't have parsers
+            'parser': ''
         })
+
     return index_data
 
 
@@ -370,7 +380,7 @@ def update_index(directory: str, max_age: int = 5, recursive: bool = False, test
                 needs_update = False
 
         if needs_update:
-            new_index_data = _generate_index_data_for_path(root, dirs, files)
+            new_index_data = _generate_index_data_for_path(root, dirs, files, index_path)
             _compare_and_print_index_changes(old_index_data, new_index_data, index_path, test_mode=test_mode)
             if not test_mode:
                 write_index_file(index_path, new_index_data)
