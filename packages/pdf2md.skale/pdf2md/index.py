@@ -7,6 +7,8 @@ import hashlib
 from typing import Optional, Dict, List  # Added Optional, Dict, List
 from .config import ConfigManager
 
+# Define constants for relevant file extensions
+RELEVANT_EXTENSIONS = ['.pdf', '.docx', '.xlsx', '.pptx', '.jpg', '.jpeg', '.png', '.gif']
 
 # Helper function to generate index data for a specific path
 def _generate_index_data_for_path(current_root: str, sub_dir_names: List[str], files_in_current_root: List[str]) -> Dict:
@@ -306,244 +308,81 @@ def _compare_and_print_index_changes(old_data: Optional[Dict], new_data: Dict, i
         return
 
 
-def create_index(directory: str, recursive: bool = False, test_mode: bool = False) -> None:
-    """Create fresh .pdf2md_index.json files in each directory.
+# Helper function to filter directories
+def filter_directories(dirs: List[str]) -> List[str]:
+    """Filter out hidden directories and specific subdirectories."""
+    return [d for d in dirs if not d.startswith('.') and d != 'md' and d != 'archive']
 
-    Args:
-        directory: Root directory to create indexes in
-        recursive: Whether to process subdirectories recursively
-    """
+# Helper function to filter files
+def filter_files(files: List[str]) -> List[str]:
+    """Filter out hidden files and irrelevant extensions."""
+    return [f for f in files if not f.startswith('.') and os.path.splitext(f)[1].lower() in RELEVANT_EXTENSIONS]
+
+# Helper function to read index file
+def read_index_file(path: str) -> Optional[Dict]:
+    """Read and return index data from a file."""
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            return json.load(f)
+    return None
+
+# Helper function to write index file
+def write_index_file(path: str, data: Dict) -> None:
+    """Write index data to a file."""
+    with open(path, 'w') as f:
+        json.dump(data, f, indent=4)
+
+# Reusable directory traversal function
+def traverse_directories(directory: str, recursive: bool = False):
+    """Traverse directories with filtering."""
     for root, dirs, files in os.walk(directory):
-        # Skip hidden directories, ./md subdirs, and directories starting with '_'
-        dirs[:] = [d for d in dirs if not d.startswith(
-            '.') and not d.startswith('_') and d != 'md']
-
-        index_data = {
-            'files': [],
-            'directories': [],
-            'timestamp': time.time()
-        }
-
-        # Process files
-        for file in files:
-            if file.startswith('.') or file.startswith('_'):
-                continue
-
-            file_path = os.path.join(root, file)
-            lower_file = file.lower()
-
-            if (lower_file.endswith('.pdf') or
-                any(lower_file.endswith(ext) for ext in ['.docx', '.xlsx', '.pptx']) or
-                    any(lower_file.endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif'])):
-                # Get file size and hash
-                file_size = os.path.getsize(file_path)
-                with open(file_path, 'rb') as f:
-                    file_hash = hashlib.md5(f.read()).hexdigest()
-
-                # Check for corresponding .md files
-                parsers = []
-                md_dir_path = os.path.join(root, 'md')
-                if os.path.exists(md_dir_path) and os.path.isdir(md_dir_path):
-                    file_base_name = os.path.splitext(file)[0]
-
-                    # 1. Check for Marker parser (md/file_base_name/file_base_name.marker.md)
-                    marker_sub_dir = os.path.join(md_dir_path, file_base_name)
-                    if os.path.isdir(marker_sub_dir):
-                        expected_marker_file_path = os.path.join(
-                            marker_sub_dir, file_base_name + ".marker.md")
-                        if os.path.exists(expected_marker_file_path) and 'marker' not in parsers:
-                            parsers.append('marker')
-
-                    # 1b. Check for md/<basename>.md (plain md file, treat as parser "md")
-                    plain_md_file_path = os.path.join(
-                        md_dir_path, file_base_name + ".md")
-                    if os.path.isfile(plain_md_file_path) and 'md' not in parsers:
-                        parsers.append('md')
-
-                    # 2. Check for other parsers (md/file_base_name.parser.md)
-                    for item_in_md_dir in os.listdir(md_dir_path):
-                        if item_in_md_dir.startswith('.') or item_in_md_dir.startswith('_'):
-                            continue
-
-                        item_path_in_md_dir = os.path.join(
-                            md_dir_path, item_in_md_dir)
-
-                        # Process only files directly under md_dir_path for non-marker parsers
-                        if os.path.isfile(item_path_in_md_dir):
-                            # Check if the md file corresponds to the current source file (file_base_name)
-                            # and is in the format file_base_name.parser.md
-                            if item_in_md_dir.startswith(file_base_name + '.') and item_in_md_dir.endswith('.md'):
-                                # Extract parser name: file_base_name.(parser).md
-                                potential_parser_name = item_in_md_dir[len(
-                                    file_base_name)+1: -len('.md')]
-
-                                # Ensure it's not 'marker' (already handled) and is a valid parser name (not empty)
-                                if potential_parser_name and potential_parser_name != 'marker' and potential_parser_name not in parsers:
-                                    parsers.append(potential_parser_name)
-
-                # Determine default parser based on hierarchy
-                default_parser = ''
-                parser_hierarchy = ['docling', 'marker',
-                                    'llamaparse', 'pdfplumber']
-                if parsers:
-                    for p_hier in parser_hierarchy:
-                        if p_hier in parsers:
-                            default_parser = p_hier
-                            break
-                    if not default_parser and parsers:  # if no hierarchy match, pick first available
-                        default_parser = parsers[0]
-
-                index_data['files'].append({
-                    'name': file,
-                    'size': file_size,
-                    'hash': file_hash,
-                    'parsers': {
-                        'det': parsers if parsers else [],
-                        'default': default_parser,
-                        'status': ''
-                    }
-                })
-
-        # Process directories
-        for dir_name in dirs:
-            if not dir_name.startswith('.') and not dir_name.startswith('_') and dir_name != 'md':
-                dir_path = os.path.join(root, dir_name)
-                dir_size = sum(os.path.getsize(os.path.join(dir_path, f)) for f in os.listdir(
-                    dir_path) if os.path.isfile(os.path.join(dir_path, f)))
-                dir_hash = hashlib.md5(
-                    str(sorted(os.listdir(dir_path))).encode()).hexdigest()
-
-                index_data['directories'].append({
-                    'name': dir_name,
-                    'size': dir_size,
-                    'hash': dir_hash,
-                    'parser': ''  # Directories don't have parsers
-                })
-
-        # Write index file
-        config = ConfigManager()
-        index_file_name = config.get('index_file_name')
-        index_path = os.path.join(root, index_file_name)
-        with open(index_path, 'w') as f:
-            json.dump(index_data, f, indent=4)  # Added indent for readability
-
-        # Verbose output is now handled by _compare_and_print_index_changes or directly in update_index for new creations.
-        # For create_index, we can assume it's a fresh creation, so a simple message is fine,
-        # or rely on update_index to call _compare_and_print_index_changes with old_data=None.
-        # To avoid duplicate printing if create_index is called from update_index,
-        # we'll let update_index handle the verbose output.
-        # However, if create_index is called directly, it should still be verbose.
-        # The current _compare_and_print_index_changes handles the old_data=None case well.
-
-        # If create_index is called directly (not from update_index), it should print changes.
-        # We can simulate this by calling _compare_and_print_index_changes with old_data=None.
-        # This check `__name__ == '__main__'` is a placeholder for a more robust way to detect direct call context if needed.
-        # For now, let's assume direct calls to create_index should be verbose.
-        if not test_mode:
-            with open(index_path, 'w') as f:
-                json.dump(index_data, f, indent=4)
-        else:
-            print(
-                f"[TEST MODE] Would create index (not writing): {index_path}")
-        _compare_and_print_index_changes(
-            None, index_data, index_path, test_mode=test_mode)
-
+        dirs[:] = filter_directories(dirs)  # Filter directories in place
+        yield root, dirs, filter_files(files)
         if not recursive:
             break
 
-
-def update_index(directory: str, max_age: int = 5, recursive: bool = False, test_mode: bool = False) -> None:
-    """Update existing index files if they're older than max_age seconds.
-
-    Args:
-        directory: Root directory to update indexes in
-        max_age: Maximum age (in seconds) before index is considered stale
-        recursive: Whether to process subdirectories recursively
-    """
-    for root, dirs, files_in_root in os.walk(directory):
-        # Skip hidden directories, ./md subdirs, and directories starting with '_'
-        filtered_sub_dirs = [d for d in dirs if not d.startswith(
-            '.') and not d.startswith('_') and d != 'md']
-        dirs[:] = filtered_sub_dirs  # Modify dirs in place for os.walk
-
-        config = ConfigManager()
-        index_file_name = config.get('index_file_name')
+# Update create_index to use helper functions
+def create_index(directory: str, recursive: bool = False, test_mode: bool = False) -> None:
+    """Create fresh .pdf2md_index.json files in each directory."""
+    for root, dirs, files in traverse_directories(directory, recursive):
+        index_data = _generate_index_data_for_path(root, dirs, files)
+        index_file_name = ConfigManager().get('index_file_name')
         index_path = os.path.join(root, index_file_name)
+        if not test_mode:
+            write_index_file(index_path, index_data)
+        else:
+            print(f"[TEST MODE] Would create index (not writing): {index_path}")
+        _compare_and_print_index_changes(None, index_data, index_path, test_mode=test_mode)
 
-        old_index_data: Optional[Dict] = None
+# Update update_index to use helper functions
+def update_index(directory: str, max_age: int = 5, recursive: bool = False, test_mode: bool = False) -> None:
+    """Update existing index files if they're older than max_age seconds."""
+    for root, dirs, files in traverse_directories(directory, recursive):
+        index_file_name = ConfigManager().get('index_file_name')
+        index_path = os.path.join(root, index_file_name)
+        old_index_data = read_index_file(index_path)
         needs_update = True
 
-        if os.path.exists(index_path):
+        if old_index_data:
             index_age = time.time() - os.path.getmtime(index_path)
-            if index_age <= max_age and not test_mode:  # In test_mode, always proceed to check for changes
-                print(
-                    f"Index is up-to-date: {index_path} (age: {index_age:.2f}s)")
+            if index_age <= max_age and not test_mode:
+                print(f"Index is up-to-date: {index_path} (age: {index_age:.2f}s)")
                 needs_update = False
-            else:
-                try:
-                    with open(index_path, 'r') as f:
-                        old_index_data = json.load(f)
-                except json.JSONDecodeError:
-                    print(
-                        f"  Warning: Could not read old index file {index_path}. Will create a new one.")
-                    old_index_data = None
-                except Exception as e:
-                    print(
-                        f"  Warning: Error reading old index file {index_path}: {e}. Will create a new one.")
-                    old_index_data = None
-        else:
-            # This message will be effectively shown by _compare_and_print_index_changes when old_data is None
-            # print(f"Index file not found, will create: {index_path}")
-            old_index_data = None  # Ensure old_index_data is None if file not found
 
-        if not needs_update and not test_mode:
-            if not recursive:
-                break
-            continue
+        if needs_update:
+            new_index_data = _generate_index_data_for_path(root, dirs, files)
+            _compare_and_print_index_changes(old_index_data, new_index_data, index_path, test_mode=test_mode)
+            if not test_mode:
+                write_index_file(index_path, new_index_data)
 
-        # Generate new index data
-        new_index_data = _generate_index_data_for_path(
-            root, filtered_sub_dirs, files_in_root)
-
-        # Compare and print changes
-        _compare_and_print_index_changes(
-            old_index_data, new_index_data, index_path, test_mode=test_mode)
-
-        # Write the new index file only if not in test_mode
-        if not test_mode:
-            try:
-                with open(index_path, 'w') as f:
-                    json.dump(new_index_data, f, indent=4)
-            except IOError as e:
-                print(f"  Error writing index file {index_path}: {e}")
-        # else:
-            # If in test_mode, the _compare_and_print_index_changes function already indicates actions.
-            # print(f"[TEST MODE] Would update/create index (not writing): {index_path}")
-
-        if not recursive:
-            break
-
-
+# Update clear_index to use helper functions
 def clear_index(directory: str, recursive: bool = False) -> None:
-    """Remove all .pdf2md_index.json files.
-
-    Args:
-        directory: Root directory to clear indexes from
-        recursive: Whether to process subdirectories recursively
-    """
-    for root, dirs, files in os.walk(directory):
-        # Skip hidden directories, ./md subdirs, and directories starting with '_'
-        dirs[:] = [d for d in dirs if not d.startswith(
-            '.') and not d.startswith('_') and d != 'md']
-
-        config = ConfigManager()
-        index_file_name = config.get('index_file_name')
+    """Remove all .pdf2md_index.json files."""
+    for root, dirs, _ in traverse_directories(directory, recursive):
+        index_file_name = ConfigManager().get('index_file_name')
         index_path = os.path.join(root, index_file_name)
         if os.path.exists(index_path):
             os.remove(index_path)
-
-        if not recursive:
-            break
 
 
 def get_index_data(directory: str) -> Optional[Dict]:
@@ -564,10 +403,43 @@ def get_index_data(directory: str) -> Optional[Dict]:
     return None
 
 
+def process_index_file(index_path: str) -> tuple[int, int, int]:
+    """
+    Process a .pdf2md_index.json file and return counts for documents, parsers, and categories.
+
+    Args:
+        index_path: Path to the .pdf2md_index.json file.
+
+    Returns:
+        A tuple containing:
+        - Total number of documents.
+        - Number of parsed documents (with non-empty parsers.det).
+        - Number of categorized documents (with non-empty meta.kategorie).
+    """
+    if not os.path.exists(index_path):
+        return 0, 0, 0
+
+    with open(index_path, 'r') as f:
+        index_data = json.load(f)
+
+    total_docs = len(index_data.get('files', []))
+    parsed_docs = 0
+    categorized_docs = 0
+
+    for file_entry in index_data.get('files', []):
+        if file_entry.get('parsers', {}).get('det'):
+            parsed_docs += 1
+        if file_entry.get('meta', {}).get('kategorie'):
+            categorized_docs += 1
+
+    return total_docs, parsed_docs, categorized_docs
+
+
 # Index stats: Print project name and number of subdirectories in B
 def print_index_stats(root_dir: str):
     """
-    Print stats for each top-level project: project name, number of relevant documents in A, subdirectories in B, and number of relevant documents in each subdirectory.
+    Print stats for each top-level project: project name, number of relevant documents in A,
+    subdirectories in B, and number of relevant documents, parsers, and categories in each.
     """
     config = ConfigManager()
     index_file_name = config.get('index_file_name')
@@ -582,36 +454,32 @@ def print_index_stats(root_dir: str):
         if not os.path.isdir(entry_path):
             print(f"Debug: Skipping non-directory entry: {entry}")
             continue
-        # Count relevant files in A directory
+        # Process A directory
         a_dir_path = os.path.join(entry_path, 'A')
-        num_a_docs = 0
-        if os.path.exists(a_dir_path) and os.path.isdir(a_dir_path):
-            relevant_extensions = ['.pdf', '.docx', '.xlsx', '.pptx', '.jpg', '.jpeg', '.png', '.gif']
-            num_a_docs = len([f for f in os.listdir(a_dir_path) if os.path.isfile(os.path.join(a_dir_path, f)) and os.path.splitext(f)[1].lower() in relevant_extensions])
+        a_docs, a_parsers, a_categories = 0, 0, 0
+        if os.path.exists(a_dir_path):
+            index_path = os.path.join(a_dir_path, index_file_name)
+            a_docs, a_parsers, a_categories = process_index_file(index_path)
         # Process B directory
         b_dir_path = os.path.join(entry_path, 'B')
         subdirs = []
-        if os.path.exists(b_dir_path) and os.path.isdir(b_dir_path):
-            try:
-                for d in os.listdir(b_dir_path):
-                    if d == 'archive':
-                        print(f"Debug: Skipping archive folder in B: {d}")
-                        continue
-                    subdir_path = os.path.join(b_dir_path, d)
-                    if os.path.isdir(subdir_path):
-                        num_docs = len([f for f in os.listdir(subdir_path) if os.path.isfile(os.path.join(subdir_path, f)) and os.path.splitext(f)[1].lower() in relevant_extensions])
-                        subdirs.append((d, num_docs))
-            except Exception as e:
-                print(f"Error reading B directory for {entry}: {e}")
-        else:
-            print(f"Debug: B directory not found for {entry}")
-        results.append((entry, num_a_docs, subdirs))
+        if os.path.exists(b_dir_path):
+            for d in os.listdir(b_dir_path):
+                if d == 'archive':
+                    print(f"Debug: Skipping archive folder in B: {d}")
+                    continue
+                subdir_path = os.path.join(b_dir_path, d)
+                if os.path.isdir(subdir_path):
+                    index_path = os.path.join(subdir_path, index_file_name)
+                    b_docs, b_parsers, b_categories = process_index_file(index_path)
+                    subdirs.append((d, b_docs, b_parsers, b_categories))
+        results.append((entry, a_docs, a_parsers, a_categories, subdirs))
     # Print results
     print("Debug: Finished processing directories. Preparing results...")
-    for project, num_a_docs, subdirs in results:
-        print(f"{project} ({num_a_docs} docs)")
-        for subdir, num_docs in subdirs:
-            print(f"   ├─ {subdir} ({num_docs} docs)")
+    for project, a_docs, a_parsers, a_categories, subdirs in results:
+        print(f"{project} ({a_docs} docs, {a_parsers} pars, {a_categories} kat)")
+        for subdir, b_docs, b_parsers, b_categories in subdirs:
+            print(f"   ├─ {subdir} ({b_docs} docs, {b_parsers} pars, {b_categories} kat)")
 
 
 # CLI entry for index stats
