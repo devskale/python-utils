@@ -567,34 +567,51 @@ def get_index_data(directory: str) -> Optional[Dict]:
 # Index stats: Print project name and number of subdirectories in B
 def print_index_stats(root_dir: str):
     """
-    Print stats for each top-level project: project name and number of subdirectories in B.
+    Print stats for each top-level project: project name, number of relevant documents in A, subdirectories in B, and number of relevant documents in each subdirectory.
     """
     config = ConfigManager()
     index_file_name = config.get('index_file_name')
     results = []
     print(f"Debug: Starting to process root directory: {root_dir}")
     for entry in os.listdir(root_dir):
+        if entry.startswith('.') or entry == 'archive':
+            print(f"Debug: Skipping hidden or archive folder: {entry}")
+            continue
         entry_path = os.path.join(root_dir, entry)
         print(f"Debug: Processing entry: {entry}")
         if not os.path.isdir(entry_path):
             print(f"Debug: Skipping non-directory entry: {entry}")
             continue
-        # Only consider directories (projects)
+        # Count relevant files in A directory
+        a_dir_path = os.path.join(entry_path, 'A')
+        num_a_docs = 0
+        if os.path.exists(a_dir_path) and os.path.isdir(a_dir_path):
+            relevant_extensions = ['.pdf', '.docx', '.xlsx', '.pptx', '.jpg', '.jpeg', '.png', '.gif']
+            num_a_docs = len([f for f in os.listdir(a_dir_path) if os.path.isfile(os.path.join(a_dir_path, f)) and os.path.splitext(f)[1].lower() in relevant_extensions])
+        # Process B directory
         b_dir_path = os.path.join(entry_path, 'B')
+        subdirs = []
         if os.path.exists(b_dir_path) and os.path.isdir(b_dir_path):
             try:
-                subdirs = [d for d in os.listdir(b_dir_path) if os.path.isdir(os.path.join(b_dir_path, d))]
-                results.append((entry, subdirs))
+                for d in os.listdir(b_dir_path):
+                    if d == 'archive':
+                        print(f"Debug: Skipping archive folder in B: {d}")
+                        continue
+                    subdir_path = os.path.join(b_dir_path, d)
+                    if os.path.isdir(subdir_path):
+                        num_docs = len([f for f in os.listdir(subdir_path) if os.path.isfile(os.path.join(subdir_path, f)) and os.path.splitext(f)[1].lower() in relevant_extensions])
+                        subdirs.append((d, num_docs))
             except Exception as e:
                 print(f"Error reading B directory for {entry}: {e}")
         else:
             print(f"Debug: B directory not found for {entry}")
+        results.append((entry, num_a_docs, subdirs))
     # Print results
     print("Debug: Finished processing directories. Preparing results...")
-    for project, subdirs in results:
-        print(f"{project}")
-        for subdir in subdirs:
-            print(f"   └── {subdir}")
+    for project, num_a_docs, subdirs in results:
+        print(f"{project} ({num_a_docs} docs)")
+        for subdir, num_docs in subdirs:
+            print(f"   ├─ {subdir} ({num_docs} docs)")
 
 
 # CLI entry for index stats
