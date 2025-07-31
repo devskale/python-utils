@@ -5,18 +5,23 @@ setup(
     version='0.3.2',
     packages=find_packages(),
     install_requires=[
-        'pdfplumber',
-        'PyPDF2',
-        'pymupdf',
         'python-dotenv',
-        'llama_parse',
-        'pytesseract',
-        'docling',
-        'easyocr',
-        'pdf2image',
-        'llama-index-core',
-        'marker-pdf'
+        # Add CLI library if needed, e.g. 'click' or 'argparse'
     ],
+    extras_require={
+        'pdfplumber': ['pdfplumber'],
+        'pypdf2': ['PyPDF2'],
+        'pymupdf': ['pymupdf'],
+        'llamaparse': ['llama_parse', 'llama-index-core'],
+        'ocr': ['pytesseract', 'pdf2image'],
+        'easyocr': ['easyocr'],
+        'docling': ['docling'],
+        'marker': ['marker-pdf'],
+        'all': [
+            'pdfplumber', 'PyPDF2', 'pymupdf', 'llama_parse', 'llama-index-core',
+            'pytesseract', 'pdf2image', 'easyocr', 'docling', 'marker-pdf'
+        ]
+    },
     entry_points={
         'console_scripts': [
             'pdf2md=pdf2md.main:main'

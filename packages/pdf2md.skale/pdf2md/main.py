@@ -3,7 +3,7 @@
 from pdf2md.config import config
 from pdf2md.converter import PDFtoMarkdown
 from pdf2md.factory import ExtractorFactory
-from pdf2md.index import create_index, update_index, clear_index, get_index_data
+from pdf2md.index import create_index, update_index, clear_index, get_index_data, print_index_stats
 import os
 import argparse
 import platform
@@ -399,8 +399,8 @@ def main():
                         help="Update pdf2md to the latest version from GitHub")
     parser.add_argument("--clear-parser",
                         help="Clear markdown files for a specific parser (e.g. 'marker')")
-    parser.add_argument("--index", choices=['create', 'update', 'clear', 'test'],
-                        help="Index operations: create new index, update existing, clear all indexes, or test index update (dry run)")
+    parser.add_argument("--index", choices=['create', 'update', 'clear', 'test', 'stats'],
+                        help="Index operations: create new index, update existing, clear all indexes, test index update (dry run), or print stats")
     parser.add_argument("--index-age", type=int, default=30,
                         help="Maximum age (in seconds) for index files before they're considered stale (default: 5)")
     parser.add_argument("--status", nargs='?', const='all', default=None,
@@ -444,6 +444,10 @@ def main():
         print(f"Clearing indexes in {args.input_directory}")
         clear_index(args.input_directory, args.recursive)
         print("Index clearing complete!")
+        return
+    elif args.index == 'stats':
+        print(f"Showing stats for indexes in {args.input_directory}")
+        print_index_stats(args.input_directory)
         return
 
     if args.clear_parser:

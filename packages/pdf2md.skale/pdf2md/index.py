@@ -562,3 +562,47 @@ def get_index_data(directory: str) -> Optional[Dict]:
         with open(index_path, 'r') as f:
             return json.load(f)
     return None
+
+
+# Index stats: Print project name and number of subdirectories in B
+def print_index_stats(root_dir: str):
+    """
+    Print stats for each top-level project: project name and number of subdirectories in B.
+    """
+    config = ConfigManager()
+    index_file_name = config.get('index_file_name')
+    results = []
+    print(f"Debug: Starting to process root directory: {root_dir}")
+    for entry in os.listdir(root_dir):
+        entry_path = os.path.join(root_dir, entry)
+        print(f"Debug: Processing entry: {entry}")
+        if not os.path.isdir(entry_path):
+            print(f"Debug: Skipping non-directory entry: {entry}")
+            continue
+        # Only consider directories (projects)
+        b_dir_path = os.path.join(entry_path, 'B')
+        if os.path.exists(b_dir_path) and os.path.isdir(b_dir_path):
+            try:
+                subdirs = [d for d in os.listdir(b_dir_path) if os.path.isdir(os.path.join(b_dir_path, d))]
+                results.append((entry, subdirs))
+            except Exception as e:
+                print(f"Error reading B directory for {entry}: {e}")
+        else:
+            print(f"Debug: B directory not found for {entry}")
+    # Print results
+    print("Debug: Finished processing directories. Preparing results...")
+    for project, subdirs in results:
+        print(f"{project}")
+        for subdir in subdirs:
+            print(f"   └── {subdir}")
+
+
+# CLI entry for index stats
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) >= 3 and sys.argv[1] == "--index" and sys.argv[2] == "stats":
+        # Usage: python index.py --index stats <root_dir>
+        if len(sys.argv) >= 4:
+            print_index_stats(sys.argv[3])
+        else:
+            print("Usage: python index.py --index stats <root_dir>")
