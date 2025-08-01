@@ -3,7 +3,7 @@
 from pdf2md.config import config
 from pdf2md.converter import PDFtoMarkdown
 from pdf2md.factory import ExtractorFactory
-from pdf2md.index import create_index, update_index, clear_index, get_index_data, print_index_stats
+from pdf2md.index import create_index, update_index, clear_index, get_index_data, print_index_stats, generate_unparsed_file_list
 import os
 import argparse
 import platform
@@ -399,10 +399,14 @@ def main():
                         help="Update pdf2md to the latest version from GitHub")
     parser.add_argument("--clear-parser",
                         help="Clear markdown files for a specific parser (e.g. 'marker')")
-    parser.add_argument("--index", choices=['create', 'update', 'clear', 'test', 'stats'],
-                        help="Index operations: create new index, update existing, clear all indexes, test index update (dry run), or print stats")
+    parser.add_argument("--index", choices=['create', 'update', 'clear', 'test', 'stats', 'noparsers'],
+                        help="Index operations: create new index, update existing, clear all indexes, test index update (dry run), print stats, or generate a list of files without parsed content")
+    parser.add_argument("-J", "--json", action="store_true",
+                        help="Output the result in JSON format (used with --index noparsers)")
+    parser.add_argument("-o", "--output", type=str,
+                        help="Specify the output file (used with --index noparsers)")
     parser.add_argument("--index-age", type=int, default=30,
-                        help="Maximum age (in seconds) for index files before they're considered stale (default: 5)")
+                        help="Maximum age (in seconds) for index files before they're considered stale (default: 30)")
     parser.add_argument("--status", nargs='?', const='all', default=None,
                         help="Show parsing status. Provide a parser name to see files not yet parsed by it. Without a name, it shows completely unparsed files.")
     args = parser.parse_args()
@@ -448,6 +452,12 @@ def main():
     elif args.index == 'stats':
         print(f"Showing stats for indexes in {args.input_directory}")
         print_index_stats(args.input_directory)
+        return
+    elif args.index == 'noparsers':
+        print(f"Generating list of files without parsed content in {args.input_directory}")
+        output_file = args.output or os.path.join(args.input_directory, "unparsed_files.txt")
+        generate_unparsed_file_list(args.input_directory, output_file, args.recursive, args.json)
+        print(f"Unparsed file list saved to: {output_file}")
         return
 
     if args.clear_parser:

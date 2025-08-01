@@ -138,6 +138,15 @@ The index helps with:
 3. **Change Detection:** Identifies added, removed or modified files
 4. **Directory Monitoring:** Tracks nested directory structures
 
+### Current Index Features
+
+- **Index Creation:** Generates `.pdf2md_index.json` files in directories to track file and directory metadata.
+- **Index Updates:** Updates existing index files if they are older than a specified age (default: 30 seconds, configurable with `--index-age`).
+- **Index Clearing:** Removes all index files from specified directories.
+- **Index Stats:** Provides detailed statistics about indexed files, including document counts, parser usage, and categories.
+- **Test Mode:** Allows testing index updates without making changes.
+- **Parsing Status:** Displays files that have not been parsed by any parser or a specific parser.
+
 Index files (`.pdf2md_index.json`) are created in each processed directory. You can manage indexes using these CLI options:
 
 ```bash
@@ -145,10 +154,17 @@ Index files (`.pdf2md_index.json`) are created in each processed directory. You 
 pdf2md --index create
 
 # Update existing indexes
-pdf2md --index update
+pdf2md --index update --index-age 60  # Update indexes older than 60 seconds
 
 # Clear all indexes
 pdf2md --index clear
+
+# Print index stats
+pdf2md --index stats
+
+# Show parsing status
+pdf2md --status all  # Show files not parsed by any parser
+pdf2md --status pdfplumber  # Show files not parsed by 'pdfplumber'
 ```
 
 ## Example

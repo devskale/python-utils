@@ -351,7 +351,7 @@ def traverse_directories(directory: str, recursive: bool = False):
         if not recursive:
             break
 
-# Update create_index to use helper functions
+# Create fresh .pdf2md_index.json files in each directory
 def create_index(directory: str, recursive: bool = False, test_mode: bool = False) -> None:
     """Create fresh .pdf2md_index.json files in each directory."""
     for root, dirs, files in traverse_directories(directory, recursive):
@@ -364,7 +364,7 @@ def create_index(directory: str, recursive: bool = False, test_mode: bool = Fals
             print(f"[TEST MODE] Would create index (not writing): {index_path}")
         _compare_and_print_index_changes(None, index_data, index_path, test_mode=test_mode)
 
-# Update update_index to use helper functions
+# Update existing index files if they're older than max_age seconds
 def update_index(directory: str, max_age: int = 5, recursive: bool = False, test_mode: bool = False) -> None:
     """Update existing index files if they're older than max_age seconds."""
     for root, dirs, files in traverse_directories(directory, recursive):
@@ -385,7 +385,7 @@ def update_index(directory: str, max_age: int = 5, recursive: bool = False, test
             if not test_mode:
                 write_index_file(index_path, new_index_data)
 
-# Update clear_index to use helper functions
+# Remove all .pdf2md_index.json files
 def clear_index(directory: str, recursive: bool = False) -> None:
     """Remove all .pdf2md_index.json files."""
     for root, dirs, _ in traverse_directories(directory, recursive):
@@ -445,12 +445,9 @@ def process_index_file(index_path: str) -> tuple[int, int, int]:
     return total_docs, parsed_docs, categorized_docs
 
 
-# Index stats: Print project name and number of subdirectories in B
+# Print stats for indexed files and directories
 def print_index_stats(root_dir: str):
-    """
-    Print stats for each top-level project: project name, number of relevant documents in A,
-    subdirectories in B, and number of relevant documents, parsers, and categories in each.
-    """
+    """Print stats for indexed files and directories."""
     config = ConfigManager()
     index_file_name = config.get('index_file_name')
     results = []
@@ -501,3 +498,49 @@ if __name__ == "__main__":
             print_index_stats(sys.argv[3])
         else:
             print("Usage: python index.py --index stats <root_dir>")
+            print_index_stats(sys.argv[3])
+
+
+def generate_unparsed_file_list(directory: str, output_file: str, recursive: bool = False, json_output: bool = False) -> None:
+    """
+    Generate a list of files without parsed content and save it to a file.
+
+    Args:
+        directory: The root directory to scan.
+        output_file: Path to the output file where the list will be saved.
+        recursive: Whether to scan subdirectories recursively.
+        json_output: Whether to output the result in JSON format.
+    """
+    unparsed_files = []
+
+    for root, dirs, files in traverse_directories(directory, recursive):
+        index_file_name = ConfigManager().get('index_file_name')
+        index_path = os.path.join(root, index_file_name)
+
+        # Read index data
+        index_data = read_index_file(index_path)
+        if not index_data:
+            print(f"[Warning] No index file found in: {root}. Skipping.")
+            continue
+
+        # Identify unparsed files
+        for file_entry in index_data.get('files', []):
+            if not file_entry.get('parsers', {}).get('det'):  # No parsers detected
+                relative_path = os.path.relpath(os.path.join(root, file_entry['name']), directory)
+                unparsed_files.append(relative_path)
+
+    # Write unparsed files to the output file
+    if unparsed_files:
+        if json_output:
+            with open(output_file, 'w') as f:
+                json.dump({"unparsed_files": unparsed_files}, f, indent=4)
+        else:
+            with open(output_file, 'w') as f:
+                f.write("\n".join(unparsed_files))
+        print(f"Found {len(unparsed_files)} unparsed file(s).")
+    else:
+        print("No unparsed files found.")
+        if os.path.exists(output_file):
+            os.remove(output_file)  # Remove the output file if it exists and no unparsed files were found.
+        if os.path.exists(output_file):
+            os.remove(output_file)  # Remove the output file if it exists and no unparsed files were found.
