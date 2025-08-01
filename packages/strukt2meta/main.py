@@ -1,7 +1,7 @@
 import argparse
 import json
 import os
-from strukt2meta.main import generate_metadata
+from strukt2meta.metadata_generator import generate_metadata
 
 # Placeholder for AI model interaction
 def query_ai_model(prompt, input_text):
@@ -18,11 +18,15 @@ def load_prompt(prompt_name):
 
 def main():
     parser = argparse.ArgumentParser(description="Process a strukt file and generate JSON metadata.")
-    parser.add_argument("--i", "--inpath", required=True, help="Path to the input markdown strukt file")
+    parser.add_argument("--i", "--inpath", required=False, default="./default_input.md", help="Path to the input markdown strukt file (default: ./default_input.md)")
     parser.add_argument("--p", "--prompt", default="zusammenfassung", help="Prompt file name (without .md) to use from the ./prompts directory (default: zusammenfassung)")
-    parser.add_argument("--o", "--outfile", required=True, help="Path to the output JSON file")
+    parser.add_argument("--o", "--outfile", required=False, help="Path to the output JSON file")
 
     args = parser.parse_args()
+
+    if args.o is None:
+        parser.print_help()
+        return
 
     # Read the input file
     with open(args.i, "r") as infile:

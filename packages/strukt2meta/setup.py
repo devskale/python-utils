@@ -1,5 +1,4 @@
 from setuptools import setup, find_packages
-import os
 
 setup(
     name="strukt2meta",
@@ -24,7 +23,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'strukt2meta=strukt2meta.main:generate_metadata',
+            'strukt2meta=strukt2meta.main:main',
         ],
     },
 )
