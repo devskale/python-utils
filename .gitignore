@@ -42,3 +42,4 @@ robotni.db*
 *.rdb
 
 packages/pdf2md.skale/un.json
+tree.md

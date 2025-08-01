@@ -18,4 +18,9 @@ setup(
         "Programming Language :: Python :: 3.10",
     ],
     python_requires=">=3.8",
+    entry_points={
+        'console_scripts': [
+            'hello-world=hello_world.greeter:say_hello',
+        ],
+    },
 )
