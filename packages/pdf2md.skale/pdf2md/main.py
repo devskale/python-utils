@@ -578,7 +578,10 @@ def main():
         if os.path.isfile(input_path):
             input_path = os.path.dirname(input_path)
         print(f"Generating list of unparsed and uncategorized items in {input_path}")
-        output_file = args.output or os.path.join(input_path, "un_items.txt")
+        if args.json:
+            output_file = args.output or os.path.join(input_path, "un_items.json")
+        else:
+            output_file = args.output or os.path.join(input_path, "un_items.txt")
         generate_un_items_list(input_path, output_file, args.recursive, args.json)
         print(f"Unparsed and uncategorized items list saved to: {output_file}")
         return
