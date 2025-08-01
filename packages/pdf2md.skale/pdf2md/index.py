@@ -544,3 +544,52 @@ def generate_unparsed_file_list(directory: str, output_file: str, recursive: boo
             os.remove(output_file)  # Remove the output file if it exists and no unparsed files were found.
         if os.path.exists(output_file):
             os.remove(output_file)  # Remove the output file if it exists and no unparsed files were found.
+
+def generate_un_items_list(directory: str, output_file: str, recursive: bool = False, json_output: bool = False) -> None:
+    """
+    Generate a list of unparsed and uncategorized items and save it to a file.
+
+    Args:
+        directory: The root directory to scan.
+        output_file: Path to the output file where the list will be saved.
+        recursive: Whether to scan subdirectories recursively.
+        json_output: Whether to output the result in JSON format.
+    """
+    un_items = []
+
+    for root, dirs, files in traverse_directories(directory, recursive):
+        index_file_name = ConfigManager().get('index_file_name')
+        index_path = os.path.join(root, index_file_name)
+
+        # Read index data
+        index_data = read_index_file(index_path)
+        if not index_data:
+            print(f"[Warning] No index file found in: {root}. Skipping.")
+            continue
+
+        # Identify unparsed and uncategorized items
+        for file_entry in index_data.get('files', []):
+            is_unparsed = not file_entry.get('parsers', {}).get('det')  # No parsers detected
+            is_unkategorized = not file_entry.get('meta', {}).get('kategorie')  # No category metadata
+            if is_unparsed or is_unkategorized:
+                relative_path = os.path.relpath(os.path.join(root, file_entry['name']), directory)
+                un_items.append({
+                    "path": relative_path,
+                    "unparsed": is_unparsed,
+                    "uncategorized": is_unkategorized
+                })
+
+    # Write unparsed and uncategorized items to the output file
+    if un_items:
+        if json_output:
+            with open(output_file, 'w') as f:
+                json.dump({"un_items": un_items}, f, indent=4)
+        else:
+            with open(output_file, 'w') as f:
+                for item in un_items:
+                    f.write(f"{item['path']} (Unparsed: {item['unparsed']}, Uncategorized: {item['uncategorized']})\n")
+        print(f"Found {len(un_items)} unparsed or uncategorized item(s).")
+    else:
+        print("No unparsed or uncategorized items found.")
+        if os.path.exists(output_file):
+            os.remove(output_file)  # Remove the output file if it exists and no items were found.
