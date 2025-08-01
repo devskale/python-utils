@@ -201,6 +201,27 @@ def process_directory(input_dir: str, converter: PDFtoMarkdown, args) -> tuple[i
             if result:
                 processed_files += 1
                 print(f"  ✓ Converted to {output_filename} using {parser}")
+
+                # Update index file after successful conversion
+                index_file_path = os.path.join(input_dir, '.pdf2md_index.json')
+                if not os.path.exists(index_file_path):
+                    index_data = {"files": []}
+                else:
+                    with open(index_file_path, 'r') as index_file:
+                        index_data = json.load(index_file)
+
+                # Update or add file entry in the index
+                file_entry = next((entry for entry in index_data["files"] if entry["name"] == file), None)
+                if not file_entry:
+                    file_entry = {"name": file, "parsers": {"det": []}}
+                    index_data["files"].append(file_entry)
+
+                if parser not in file_entry["parsers"]["det"]:
+                    file_entry["parsers"]["det"].append(parser)
+
+                with open(index_file_path, 'w') as index_file:
+                    json.dump(index_data, index_file, indent=4)
+
             else:
                 skipped_files += 1
 

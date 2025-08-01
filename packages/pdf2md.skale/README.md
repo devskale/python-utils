@@ -29,7 +29,11 @@
 - **Environment Variable Support:** Uses `.env` file for API keys (e.g., `LLAMA_CLOUD_API_KEY`).
 - **Multiple Parsers:** You can select multiple parsers to use.
 - **System Architecture:** Updated architecture supports modular extractors and processors.
-- **Indexing System:** Comprehensive file tracking with hash-based change detection and parser status tracking.
+- **Indexing System:** A robust indexing system that tracks file metadata, parser status, and directory changes. It enables:
+  - Incremental updates by processing only changed files.
+  - Parser status tracking to identify which files have been processed by specific parsers.
+  - Change detection for added, removed, or modified files.
+  - Directory monitoring for nested structures.
 
 ## Prerequisites
 
@@ -125,47 +129,114 @@
 
 ## Indexing System
 
-The pdf2md tool includes a sophisticated indexing system that tracks:
+The indexing system is a core feature of `pdf2md-skale`, designed to streamline and optimize the conversion process. It creates and manages `.pdf2md_index.json` files in each directory, which store metadata about files and directories.
 
-- File metadata (name, size, hash)
-- Parser status for each file
-- Directory structure changes
+### Key Benefits
 
-The index helps with:
+1. **Incremental Updates:** 
+   - Tracks file changes using hashes and metadata.
+   - Processes only files that have been added, modified, or removed since the last index update.
 
-1. **Incremental Updates:** Only processes changed files by comparing hashes
-2. **Parser Status Tracking:** Knows which parsers have already processed each file
-3. **Change Detection:** Identifies added, removed or modified files
-4. **Directory Monitoring:** Tracks nested directory structures
+2. **Parser Status Tracking:**
+   - Records which parsers have processed each file.
+   - Helps identify unparsed files or files that need reprocessing with specific parsers.
 
-### Current Index Features
+3. **Change Detection:**
+   - Detects added, removed, or modified files and directories.
+   - Ensures accurate and up-to-date indexing.
 
-- **Index Creation:** Generates `.pdf2md_index.json` files in directories to track file and directory metadata.
-- **Index Updates:** Updates existing index files if they are older than a specified age (default: 30 seconds, configurable with `--index-age`).
-- **Index Clearing:** Removes all index files from specified directories.
-- **Index Stats:** Provides detailed statistics about indexed files, including document counts, parser usage, and categories.
-- **Test Mode:** Allows testing index updates without making changes.
-- **Parsing Status:** Displays files that have not been parsed by any parser or a specific parser.
+4. **Directory Monitoring:**
+   - Tracks nested directory structures.
+   - Provides detailed statistics about indexed files and directories.
 
-Index files (`.pdf2md_index.json`) are created in each processed directory. You can manage indexes using these CLI options:
+### Index Management Commands
 
-```bash
-# Create fresh indexes
-pdf2md --index create
+You can manage indexes using the following CLI options:
 
-# Update existing indexes
-pdf2md --index update --index-age 60  # Update indexes older than 60 seconds
+- **Create Indexes:**
+  ```bash
+  pdf2md --index create
+  ```
+  Creates fresh `.pdf2md_index.json` files in the specified directory and its subdirectories (if `--recursive` is used).
 
-# Clear all indexes
-pdf2md --index clear
+- **Update Indexes:**
+  ```bash
+  pdf2md --index update --index-age 60
+  ```
+  Updates existing `.pdf2md_index.json` files if they are older than 60 seconds.
 
-# Print index stats
-pdf2md --index stats
+- **Clear Indexes:**
+  ```bash
+  pdf2md --index clear
+  ```
+  Removes all `.pdf2md_index.json` files from the specified directory.
 
-# Show parsing status
-pdf2md --status all  # Show files not parsed by any parser
-pdf2md --status pdfplumber  # Show files not parsed by 'pdfplumber'
-```
+- **Print Index Stats:**
+  ```bash
+  pdf2md --index stats
+  ```
+  Displays detailed statistics about indexed files, including document counts, parser usage, and categories.
+
+- **Show Parsing Status:**
+  ```bash
+  pdf2md --status all
+  ```
+  Lists files that have not been parsed by any parser.
+
+  ```bash
+  pdf2md --status pdfplumber
+  ```
+  Lists files that have not been parsed by the `pdfplumber` parser.
+
+### Example Workflow
+
+1. **Create Indexes:**
+   ```bash
+   pdf2md --index create /path/to/directory
+   ```
+   Generates `.pdf2md_index.json` files in `/path/to/directory` and its subdirectories.
+
+2. **Update Indexes:**
+   ```bash
+   pdf2md --index update /path/to/directory --index-age 30
+   ```
+   Updates `.pdf2md_index.json` files if they are older than 30 seconds.
+
+3. **Clear Indexes:**
+   ```bash
+   pdf2md --index clear /path/to/directory
+   ```
+   Deletes all `.pdf2md_index.json` files in the specified directory.
+
+4. **Print Index Stats:**
+   ```bash
+   pdf2md --index stats /path/to/directory
+   ```
+   Displays statistics about indexed files and directories.
+
+5. **Check Parsing Status:**
+   ```bash
+   pdf2md --status all /path/to/directory
+   ```
+   Lists files that have not been parsed by any parser.
+
+### Technical Details
+
+- **Index File Format:** 
+  - `.pdf2md_index.json` files store metadata about files and directories, including:
+    - File name, size, and hash.
+    - Parsers used and their status.
+    - Metadata such as categories.
+
+- **Hash-Based Tracking:** 
+  - Uses MD5 hashes to detect file changes.
+  - Ensures efficient and accurate indexing.
+
+- **Parser Hierarchy:** 
+  - Prioritizes parsers based on a predefined hierarchy (e.g., `docling`, `marker`, `llamaparse`, `pdfplumber`).
+
+- **Test Mode:** 
+  - Allows testing index creation or updates without making changes.
 
 ## Example
 
