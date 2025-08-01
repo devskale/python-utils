@@ -387,6 +387,83 @@ def show_parsing_status(directory: str, recursive: bool, parser_name: Optional[s
                 print(f"  - {file_name}")
 
 
+def process_single_file(file_path: str, converter: PDFtoMarkdown, args) -> tuple[int, int]:
+    """Process a single file with the given converter and arguments.
+
+    Returns:
+        Tuple of (processed_files_count, skipped_files_count)
+    """
+    # Get file details
+    file_dir = os.path.dirname(file_path)
+    file_name = os.path.basename(file_path)
+    base_name = os.path.splitext(file_name)[0]
+    
+    print(f"Processing single file: {file_name}")
+
+    processed_files = 0
+    skipped_files = 0
+
+    # Validate file extension against each parser
+    for parser in args.parsers:
+        if parser not in converter.extractors:
+            print(f"  Warning: Unknown parser '{parser}'. Skipping.")
+            continue
+
+        # Validate file extension against parser support
+        if not ExtractorFactory.validate_file_extension(parser, file_path):
+            supported_exts = ExtractorFactory.get_supported_extensions(parser)
+            print(f"  Warning: {parser} extractor only supports {', '.join(supported_exts)} files. Skipping.")
+            continue
+
+        output_filename = f"{base_name}.{parser}.md"
+
+        # For marker extractor, create a dedicated subdirectory structure
+        if parser == 'marker':
+            if not file_name.lower().endswith('.pdf'):
+                print(f"  Warning: Marker extractor can only process PDF files. Skipping.")
+                continue
+
+            # Check if marker output directory already exists
+            marker_output_dir = os.path.join(file_dir, 'md', base_name)
+            if os.path.exists(marker_output_dir) and not args.overwrite:
+                print(f"  Marker output directory already exists. Skipping conversion.")
+                continue
+
+            result = converter.convert(file_path, marker_output_dir, output_filename, parser, args.overwrite)
+        else:
+            result = converter.convert(file_path, os.path.join(file_dir, 'md'), output_filename, parser, args.overwrite)
+
+        if result:
+            processed_files += 1
+            print(f"  ✓ Converted to {output_filename} using {parser}")
+
+            # Update index file after successful conversion
+            index_file_path = os.path.join(file_dir, '.pdf2md_index.json')
+            if not os.path.exists(index_file_path):
+                index_data = {"files": []}
+            else:
+                with open(index_file_path, 'r') as index_file:
+                    index_data = json.load(index_file)
+
+            # Update or add file entry in the index
+            file_entry = next((entry for entry in index_data["files"] if entry["name"] == file_name), None)
+            if not file_entry:
+                file_entry = {"name": file_name, "parsers": {"det": []}}
+                index_data["files"].append(file_entry)
+
+            if parser not in file_entry["parsers"]["det"]:
+                file_entry["parsers"]["det"].append(parser)
+
+            with open(index_file_path, 'w') as index_file:
+                json.dump(index_data, index_file, indent=4)
+
+        else:
+            skipped_files += 1
+
+    print(f"\n[Single File: {file_name}] Processed: {processed_files}, Skipped: {skipped_files}")
+    return processed_files, skipped_files
+
+
 def main():
     """Main entry point for the PDF to Markdown converter."""
     # Get default input directory from config
@@ -397,8 +474,8 @@ def main():
         description="Convert PDF to Markdown\n\nInstallation:\n  pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/pdf2md.skale")
     parser.add_argument("--version", action="store_true",
                         help="Show version and exit")
-    parser.add_argument("input_directory", nargs='?', default=default_input,
-                        help=f"Directory containing PDF files (default: {default_input})")
+    parser.add_argument("input_path", nargs='?', default=default_input,
+                        help=f"Path to PDF file or directory containing PDF files (default: {default_input})")
     parser.add_argument("--overwrite", action="store_true",
                         help="Overwrite existing files")
     parser.add_argument("--ocr", action="store_true",
@@ -441,50 +518,78 @@ def main():
     # Handle status check
     if args.status is not None:
         parser_to_check = None if args.status == 'all' else args.status
-        show_parsing_status(args.input_directory,
-                              args.recursive, parser_to_check)
+        input_path = args.input_path
+        
+        # For single files, use the parent directory for status check
+        if os.path.isfile(input_path):
+            input_path = os.path.dirname(input_path)
+        
+        show_parsing_status(input_path, args.recursive, parser_to_check)
         return
 
     # Handle index operations
     if args.index == 'create':
-        print(f"Creating new indexes in {args.input_directory}")
-        create_index(args.input_directory, args.recursive)
+        input_path = args.input_path
+        # For single files, use the parent directory for index operations
+        if os.path.isfile(input_path):
+            input_path = os.path.dirname(input_path)
+        print(f"Creating new indexes in {input_path}")
+        create_index(input_path, args.recursive)
         print("Index creation complete!")
         return
     elif args.index == 'update':
-        print(
-            f"Updating indexes in {args.input_directory} (max age: {args.index_age}s)")
-        update_index(args.input_directory, args.index_age,
-                     args.recursive, test_mode=False)
+        input_path = args.input_path
+        # For single files, use the parent directory for index operations
+        if os.path.isfile(input_path):
+            input_path = os.path.dirname(input_path)
+        print(f"Updating indexes in {input_path} (max age: {args.index_age}s)")
+        update_index(input_path, args.index_age, args.recursive, test_mode=False)
         print("Index update complete!")
         return
     elif args.index == 'test':
-        print(
-            f"Testing index update in {args.input_directory} (max age: {args.index_age}s) - NO CHANGES WILL BE SAVED")
-        update_index(args.input_directory, args.index_age,
-                     args.recursive, test_mode=True)
+        input_path = args.input_path
+        # For single files, use the parent directory for index operations
+        if os.path.isfile(input_path):
+            input_path = os.path.dirname(input_path)
+        print(f"Testing index update in {input_path} (max age: {args.index_age}s) - NO CHANGES WILL BE SAVED")
+        update_index(input_path, args.index_age, args.recursive, test_mode=True)
         print("Index test complete!")
         return
     elif args.index == 'clear':
-        print(f"Clearing indexes in {args.input_directory}")
-        clear_index(args.input_directory, args.recursive)
+        input_path = args.input_path
+        # For single files, use the parent directory for index operations
+        if os.path.isfile(input_path):
+            input_path = os.path.dirname(input_path)
+        print(f"Clearing indexes in {input_path}")
+        clear_index(input_path, args.recursive)
         print("Index clearing complete!")
         return
     elif args.index == 'stats':
-        print(f"Showing stats for indexes in {args.input_directory}")
-        print_index_stats(args.input_directory)
+        input_path = args.input_path
+        # For single files, use the parent directory for index operations
+        if os.path.isfile(input_path):
+            input_path = os.path.dirname(input_path)
+        print(f"Showing stats for indexes in {input_path}")
+        print_index_stats(input_path)
         return
     elif args.index == 'un':
-        print(f"Generating list of unparsed and uncategorized items in {args.input_directory}")
-        output_file = args.output or os.path.join(args.input_directory, "un_items.txt")
-        generate_un_items_list(args.input_directory, output_file, args.recursive, args.json)
+        input_path = args.input_path
+        # For single files, use the parent directory for index operations
+        if os.path.isfile(input_path):
+            input_path = os.path.dirname(input_path)
+        print(f"Generating list of unparsed and uncategorized items in {input_path}")
+        output_file = args.output or os.path.join(input_path, "un_items.txt")
+        generate_un_items_list(input_path, output_file, args.recursive, args.json)
         print(f"Unparsed and uncategorized items list saved to: {output_file}")
         return
 
     if args.clear_parser:
+        input_path = args.input_path
+        # For single files, use the parent directory for clear operations
+        if os.path.isfile(input_path):
+            input_path = os.path.dirname(input_path)
         print(f"Clearing markdown files for parser: {args.clear_parser}")
-        clear_parser_files(args.input_directory,
-                           args.clear_parser, args.recursive)
+        clear_parser_files(input_path, args.clear_parser, args.recursive)
         print("Clear operation complete!")
         return
 
@@ -500,17 +605,55 @@ def main():
             print(f"Update failed: {e}")
             return
 
-    input_directory = args.input_directory
+    input_path = args.input_path
 
-    if not os.path.exists(input_directory):
-        print(f"Error: The input directory {input_directory} does not exist.")
+    if not os.path.exists(input_path):
+        print(f"Error: The input path {input_path} does not exist.")
         return
+
+    # Determine if input is a file or directory
+    is_single_file = os.path.isfile(input_path)
+    
+    if is_single_file:
+        # Validate file extension for single file input
+        file_ext = os.path.splitext(input_path)[1].lower()
+        valid_extensions = ['.pdf', '.docx', '.xlsx', '.pptx']
+        
+        if file_ext not in valid_extensions:
+            print(f"Error: Unsupported file type '{file_ext}'. Supported types: {', '.join(valid_extensions)}")
+            return
+            
+        # For single files, check parser compatibility
+        compatible_parsers = []
+        for parser in args.parsers:
+            if ExtractorFactory.validate_file_extension(parser, input_path):
+                compatible_parsers.append(parser)
+        
+        if not compatible_parsers:
+            supported_by_parser = {}
+            for parser in args.parsers:
+                supported_by_parser[parser] = ExtractorFactory.get_supported_extensions(parser)
+            
+            print(f"Error: None of the specified parsers support '{file_ext}' files.")
+            print("Parser compatibility:")
+            for parser, exts in supported_by_parser.items():
+                print(f"  {parser}: {', '.join(exts)}")
+            return
 
     if args.dry:
-        print_directory_stats(input_directory, args.recursive)
+        if is_single_file:
+            print(f"Single file: {os.path.basename(input_path)}")
+            print(f"Location: {os.path.dirname(input_path)}")
+            print(f"Compatible parsers: {', '.join(compatible_parsers)}")
+        else:
+            print_directory_stats(input_path, args.recursive)
         return
 
-    print(f"\nProcessing files in: {os.path.abspath(input_directory)}")
+    if is_single_file:
+        print(f"\nProcessing single file: {os.path.abspath(input_path)}")
+    else:
+        print(f"\nProcessing files in: {os.path.abspath(input_path)}")
+    
     print(f"Using parsers: {', '.join(args.parsers)}")
     print(f"Overwrite existing files: {'Yes' if args.overwrite else 'No'}")
     print(f"OCR enabled: {'Yes' if args.ocr else 'No'}")
@@ -532,7 +675,10 @@ def main():
     if args.ocr and 'ocr' in converter.extractors:
         converter.update_ocr_extractor(args.ocr_lang)
 
-    if args.recursive:
+    if is_single_file:
+        # Process single file
+        process_single_file(input_path, converter, args)
+    elif args.recursive:
         # Process directories recursively
         processed_files = 0
         processed_dirs = 0
@@ -541,7 +687,7 @@ def main():
         # First count total directories and files to process
         total_dirs = 0
         total_files_to_process = 0
-        for root, dirs, files in os.walk(input_directory):
+        for root, dirs, files in os.walk(input_path):
             dirs[:] = [d for d in dirs if not d.startswith('.')]
             total_dirs += len(dirs)
 
@@ -561,7 +707,7 @@ def main():
             f"Found {total_dirs + 1} directories and {total_files_to_process} processable files")
         print("Starting conversion...\n")
 
-        for root, dirs, files in os.walk(input_directory):
+        for root, dirs, files in os.walk(input_path):
             # Skip hidden directories, ./md subdirs, and directories starting with '_'
             dirs[:] = [d for d in dirs if not d.startswith(
                 '.') and not d.startswith('_')]
@@ -586,7 +732,7 @@ def main():
             f"\n=== FINAL SUMMARY ===\nDirectories: {processed_dirs}/{total_dirs + 1} completed ({round(processed_dirs/(total_dirs + 1)*100)}%)\nFiles: {processed_files} processed, {skipped_files} skipped, {processed_files + skipped_files} total")
     else:
         # Process single directory
-        process_directory(input_directory, converter, args)
+        process_directory(input_path, converter, args)
 
     print("\n✓ Conversion complete!")
 
