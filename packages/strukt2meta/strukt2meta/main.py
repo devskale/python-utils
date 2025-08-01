@@ -2,11 +2,11 @@ import argparse
 import json
 import os
 from strukt2meta.metadata_generator import generate_metadata
+from strukt2meta.apicall import call_ai_model
 
-# Placeholder for AI model interaction
+# Replace the placeholder function
 def query_ai_model(prompt, input_text):
-    # Simulate AI model response
-    return generate_metadata(input_text)
+    return call_ai_model(prompt, input_text)
 
 def load_prompt(prompt_name):
     prompts_dir = "./prompts"
@@ -31,9 +31,11 @@ def main():
     # Read the input file
     with open(args.i, "r") as infile:
         input_text = infile.read()
+        print(f"Input text loaded from: {args.i}")
 
     # Load the prompt
     prompt = load_prompt(args.p)
+    print(f"Using prompt: {args.p}")
 
     # Query the AI model
     result = query_ai_model(prompt, input_text)
