@@ -46,3 +46,4 @@ tree.md
 packages/strukt2meta/strukt2meta.code-workspace
 packages/strukt2meta/default_input.md
 packages/strukt2meta/un.json
+packages/strukt2meta/out.json

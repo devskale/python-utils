@@ -26,6 +26,7 @@ python
     [x] prompts file
     [ ] json output schema
     [ ] calling api with uniinfer
+    [ ] JSON cleanify routine to handle AI-generated JSON
 
 
 ## Lessons Learned

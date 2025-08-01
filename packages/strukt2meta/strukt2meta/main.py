@@ -41,10 +41,9 @@ def main():
     # Query the AI model
     result = query_ai_model(prompt, input_text, verbose=args.verbose)
 
-    # Write the result to the output file if not in verbose mode
-    if not args.verbose:
-        with open(args.o, "w") as outfile:
-            json.dump(result, outfile, indent=4)
+    # Write the cleanified result to the output file
+    with open(args.o, "w") as outfile:
+        json.dump(result, outfile, indent=4)
         print(f"Output written to: {args.o}")
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ from uniinfer import (
     ProviderFactory
 )
 from credgoo import get_api_key
+from strukt2meta.jsonclean import cleanify_json
 
 # Load configuration from config.json
 with open("./config.json", "r") as config_file:
@@ -42,8 +43,8 @@ def call_ai_model(prompt, input_text, verbose=False):
             print(content, end="", flush=True)
             response_text += content
         print("\n=== End of Response ===\n")
-        return response_text
+        return cleanify_json(response_text)  # Cleanify the streamed response
     else:
         # Get the completion response
         response = provider.complete(request)
-        return response.message.content
+        return cleanify_json(response.message.content)  # Cleanify the response
