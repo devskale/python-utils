@@ -10,10 +10,10 @@ from credgoo import get_api_key
 with open("./config.json", "r") as config_file:
     config = json.load(config_file)
 
-def call_ai_model(prompt, input_text):
+def call_ai_model(prompt, input_text, verbose=False):
     # Get provider and model from config
-    provider_name = config.get("provider", "tu")  # Default to OpenAI if not specified
-    model_name = config.get("model", "deepseek-r1")  # Default to GPT-4 if not specified
+    provider_name = config.get("provider", "tu")  # Default to TU if not specified
+    model_name = config.get("model", "deepseek-r1")  # Default to deepseek-r1 if not specified
 
     # Get a provider instance (API key is retrieved automatically via Credgoo)
     provider = ProviderFactory.get_provider(
@@ -29,11 +29,21 @@ def call_ai_model(prompt, input_text):
         ],
         model=model_name,  # Use model from config
         temperature=0.7,  # Adjust randomness
-        max_tokens=4096  # Limit the response length
+        max_tokens=4096,  # Limit the response length
+        streaming=verbose  # Enable streaming if verbose mode is on
     )
 
-    # Get the completion response
-    response = provider.complete(request)
-
-    # Return the response content
-    return response.message.content
+    if verbose:
+        # Stream the response and write it to the terminal
+        print("\n=== Streaming Response ===\n")
+        response_text = ""
+        for chunk in provider.stream_complete(request):
+            content = chunk.message.content
+            print(content, end="", flush=True)
+            response_text += content
+        print("\n=== End of Response ===\n")
+        return response_text
+    else:
+        # Get the completion response
+        response = provider.complete(request)
+        return response.message.content
