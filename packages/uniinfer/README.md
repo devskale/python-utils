@@ -25,6 +25,7 @@ UniInfer provides a consistent Python interface for LLM chat completions across 
 - [Provider Development](#adding-a-new-provider)
 - [Contributing](#contributing)
 - [License](#license)
+- [Running and Deploying the Web Proxy](#running-and-deploying-the-web-proxy)
 
 ## Features ✨
 
@@ -563,6 +564,73 @@ OpenAI-compatible chat completions endpoint. Uses the 'model' field in the forma
          }
      }
      ```
+
+## Running and Deploying the Web Proxy
+
+### Running the Proxy Server
+
+1. **Ensure Prerequisites**:
+   - Python 3.8+ is installed.
+   - Install the required packages:
+
+     ```bash
+     pip install fastapi uvicorn credgoo
+     ```
+
+2. **Run the Proxy Server**:
+   Navigate to the `uniinfer` directory and execute the following command:
+
+   ```bash
+   uvicorn packages.uniinfer.uniinfer.uniioai_proxy:app --host 0.0.0.0 --port 8123 --workers 1 --reload
+   ```
+
+   - This will start the server on `http://localhost:8123`.
+   - The server provides an OpenAI-compatible `/v1/chat/completions` endpoint.
+
+3. **Authentication**:
+   - Use a Bearer token for authentication. The token is managed by `credgoo` for API key retrieval.
+
+### Deploying the Proxy Server
+
+1. **Docker Deployment**:
+   - Create a `Dockerfile`:
+
+     ```dockerfile
+     FROM python:3.9
+     WORKDIR /app
+     COPY . .
+     RUN pip install uniinfer fastapi uvicorn
+     CMD ["uvicorn", "uniinfer.uniioai_proxy:app", "--host", "0.0.0.0", "--port", "8000"]
+     ```
+
+   - Build and run the Docker container:
+
+     ```bash
+     docker build -t uniinfer-proxy .
+     docker run -p 8000:8000 uniinfer-proxy
+     ```
+
+2. **NGINX Reverse Proxy**:
+   - Configure NGINX to forward requests to the proxy server:
+
+     ```nginx
+     server {
+         listen 80;
+         server_name yourdomain.com;
+
+         location / {
+             proxy_pass http://localhost:8000;
+             proxy_set_header Host $host;
+             proxy_set_header X-Real-IP $remote_addr;
+         }
+     }
+     ```
+
+   - Restart NGINX to apply the changes.
+
+3. **Production Considerations**:
+   - Use a process manager like `supervisord` or `systemd` to keep the server running.
+   - Secure the server with HTTPS using tools like Let's Encrypt.
 
 ## Implementation Status
 

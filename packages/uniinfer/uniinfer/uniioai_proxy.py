@@ -248,13 +248,11 @@ async def stream_response_generator(messages: List[Dict], provider_model: str, t
 @app.get("/webdemo", include_in_schema=False)
 async def get_web_demo():
     """Serves the web demo HTML file."""
-    # Calculate the path relative to this script file
-    html_file_path = os.path.join(
-        script_dir, "examples", "webdemo", "webdemo.html")
+    # Serve webdemo.html as the default file for /webdemo/
+    html_file_path = os.path.join(script_dir, "examples", "webdemo", "webdemo.html")
     if not os.path.exists(html_file_path):
         raise HTTPException(status_code=404, detail="webdemo.html not found")
     return FileResponse(html_file_path)
-# --- End Web Demo Endpoint ---
 
 
 @app.get("/v1/models", response_model=ModelList)
