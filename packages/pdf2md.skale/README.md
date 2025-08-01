@@ -127,6 +127,53 @@
     ```
     - This will create two markdown files for each pdf, one with the pdfplumber parser and one with the pymupdf parser.
 
+## New Feature: Single File Input Support
+
+`pdf2md-skale` now supports processing single files in addition to directories. This enhancement provides greater flexibility and efficiency for users who want to process individual files without scanning entire directories.
+
+### Key Features of Single File Support
+
+- **File vs Directory Detection:** Automatically detects whether the input path is a file or a directory.
+- **Supported File Types:** Single file processing supports `.pdf`, `.docx`, `.xlsx`, and `.pptx` file types.
+- **Parser Compatibility Check:** Ensures the specified parsers are compatible with the file type.
+- **Error Handling:** Provides clear error messages for unsupported file types or non-existent paths.
+- **Index Operations:** All index-related commands (`create`, `update`, `clear`, `stats`, `un`) work seamlessly with single files by using the parent directory for index management.
+- **Dry Run Mode:** Displays file details and compatible parsers for single files without performing conversion.
+
+### Usage Examples
+
+1. **Process a Single File:**
+
+    ```bash
+    pdf2md /path/to/document.pdf --parsers pdfplumber
+    ```
+
+2. **Dry Run for a Single File:**
+
+    ```bash
+    pdf2md /path/to/document.pdf --dry
+    ```
+
+3. **Index Operations for Single Files:**
+
+    ```bash
+    pdf2md /path/to/document.pdf --index update
+    ```
+
+4. **Check Parsing Status for Single Files:**
+
+    ```bash
+    pdf2md /path/to/document.pdf --status
+    ```
+
+### Benefits
+
+- **Flexibility:** Process individual files without scanning directories.
+- **Efficiency:** Focus on specific files for faster processing.
+- **Consistency:** Single file processing integrates seamlessly with existing features like indexing and status checks.
+
+This update ensures that `pdf2md-skale` remains a versatile and user-friendly tool for all your PDF-to-Markdown conversion needs.
+
 ## Indexing System
 
 The indexing system is a core feature of `pdf2md-skale`, designed to streamline and optimize the conversion process. It creates and manages `.pdf2md_index.json` files in each directory, which store metadata about files and directories.
