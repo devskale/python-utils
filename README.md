@@ -29,6 +29,7 @@ pip install git+https://github.com/devskale/python-utils.git#subdirectory=packag
 pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/md2blank
 pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/md2pdfs
 pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/robotni
+pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/strukt2meta
 ```
 
 ## Development Setup

@@ -1,0 +1,3 @@
+-r https://skale.dev/credgoo
+-r https://skale.dev/uniinfer
+requests
