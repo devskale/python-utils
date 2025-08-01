@@ -13,6 +13,7 @@ from typing import List, Optional
 import time
 import json
 import hashlib
+from datetime import datetime
 # Import local modules
 
 
@@ -578,11 +579,27 @@ def main():
         if os.path.isfile(input_path):
             input_path = os.path.dirname(input_path)
         print(f"Generating list of unparsed and uncategorized items in {input_path}")
+        
+        start_time = time.time()
+
         if args.json:
             output_file = args.output or os.path.join(input_path, "un_items.json")
         else:
             output_file = args.output or os.path.join(input_path, "un_items.txt")
         generate_un_items_list(input_path, output_file, args.recursive, args.json)
+
+        end_time = time.time()
+        processing_time = end_time - start_time
+
+        # Append processing time to the output
+        with open(output_file, 'r+') as f:
+            data = json.load(f)
+            data['processing_time'] = processing_time
+            data['date'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            f.seek(0)
+            json.dump(data, f, indent=4)
+            f.truncate()
+
         print(f"Unparsed and uncategorized items list saved to: {output_file}")
         return
 
