@@ -41,3 +41,4 @@ robotni.db*
 *.sql
 *.rdb
 
+packages/pdf2md.skale/un.json
