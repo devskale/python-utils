@@ -591,7 +591,11 @@ def main():
         end_time = time.time()
         processing_time = end_time - start_time
 
-        # Append processing time to the output
+        # Ensure the file exists before opening it in 'r+' mode
+        if not os.path.exists(output_file):
+            with open(output_file, 'w') as f:
+                json.dump({}, f)  # Initialize with an empty JSON object
+
         with open(output_file, 'r+') as f:
             data = json.load(f)
             data['processing_time'] = processing_time

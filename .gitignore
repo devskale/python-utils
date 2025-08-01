@@ -44,3 +44,5 @@ robotni.db*
 packages/pdf2md.skale/un.json
 tree.md
 packages/strukt2meta/strukt2meta.code-workspace
+packages/strukt2meta/default_input.md
+packages/strukt2meta/un.json
