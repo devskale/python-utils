@@ -34,9 +34,9 @@ class FileDiscovery:
 
     # Parser rankings by file type (higher index = higher priority)
     PARSER_RANKINGS = {
-        'pdf': ['pdfplumber', 'llmparse', 'docling', 'marker', 'direct'],
-        'docx': ['pdfplumber', 'llmparse', 'marker', 'docling', 'direct'],
-        'xlsx': ['pdfplumber', 'llmparse', 'marker', 'docling', 'direct']
+        'pdf': ['pypdf2', 'pymupdf', 'ocr', 'easyocr', 'pdfplumber', 'llmparse', 'llamaparse', 'docling', 'marker', 'direct'],
+        'docx': ['pypdf2', 'pymupdf', 'ocr', 'easyocr', 'pdfplumber', 'llmparse', 'llamaparse', 'marker', 'docling', 'direct'],
+        'xlsx': ['pypdf2', 'pymupdf', 'ocr', 'easyocr', 'pdfplumber', 'llmparse', 'llamaparse', 'marker', 'docling', 'direct']
     }
 
     # File extensions to search for
@@ -131,34 +131,53 @@ class FileDiscovery:
                 basename = Path(source_file).stem
                 existing_basenames.add(basename)
         
+        # Known parser names to identify converted files
+        known_parsers = set()
+        for parser_list in self.PARSER_RANKINGS.values():
+            known_parsers.update(parser_list)
+        # Remove 'direct' as it's not a real parser
+        known_parsers.discard('direct')
+        
         # Find markdown files that don't correspond to any source file
         for md_file in all_md_files:
             md_path = Path(md_file)
             md_stem = md_path.stem
             
             # Check if this is a standalone markdown file (no parser suffix)
-            # Standalone files have format: "filename.md" (no parser name)
-            # Parser-generated files have format: "filename.parser.md"
-            parts = md_stem.split('.')
+            # Parser-generated files can have formats:
+            # - "filename.parser.md" (dot format)
+            # - "filename_parser.md" (underscore format)
             
-            if len(parts) == 1:
-                # This is a standalone markdown file (no parser suffix)
-                basename = parts[0]
+            is_converted_file = False
+            basename = md_stem
+            
+            # Check for dot-separated parser suffix
+            dot_parts = md_stem.split('.')
+            if len(dot_parts) >= 2 and dot_parts[-1] in known_parsers:
+                is_converted_file = True
+                basename = '.'.join(dot_parts[:-1])
+            
+            # Check for underscore-separated parser suffix
+            if not is_converted_file:
+                underscore_parts = md_stem.split('_')
+                if len(underscore_parts) >= 2 and underscore_parts[-1] in known_parsers:
+                    is_converted_file = True
+                    basename = '_'.join(underscore_parts[:-1])
+            
+            # Only consider files that are NOT converted files and have no corresponding source
+            if not is_converted_file and basename not in existing_basenames:
+                # Create a virtual source filename (the markdown file is the source)
+                virtual_source = f"{basename}.md"
                 
-                # Check if there's no corresponding source file
-                if basename not in existing_basenames:
-                    # Create a virtual source filename (the markdown file is the source)
-                    virtual_source = f"{basename}.md"
-                    
-                    mapping = FileMapping(
-                        source_file=virtual_source,
-                        source_type="md",  # Mark as markdown type
-                        markdown_files=[md_path.name],
-                        best_markdown=md_path.name,
-                        parser_used="original",  # Mark as original document
-                        confidence_score=1.0  # High confidence for original documents
-                    )
-                    mappings.append(mapping)
+                mapping = FileMapping(
+                    source_file=virtual_source,
+                    source_type="md",  # Mark as markdown type
+                    markdown_files=[md_path.name],
+                    best_markdown=md_path.name,
+                    parser_used="original",  # Mark as original document
+                    confidence_score=1.0  # High confidence for original documents
+                )
+                mappings.append(mapping)
         
         return mappings
 
@@ -177,16 +196,29 @@ class FileDiscovery:
         basename = source_path.stem
 
         # Find all markdown files for this source file
-        # Look for both parser-suffixed files (basename.parser.md) and direct files (basename.md)
-        md_pattern_with_parser = str(self.md_directory / f"{basename}.*.md")
-        md_pattern_direct = str(self.md_directory / f"{basename}.md")
+        # Look for parser-suffixed files in both formats:
+        # - basename.parser.md (dot format)
+        # - basename_parser.md (underscore format)
+        # - basename.md (direct format)
         
-        markdown_files = glob.glob(md_pattern_with_parser)
+        markdown_files = []
+        
+        # Pattern for dot-separated parser names
+        md_pattern_dot = str(self.md_directory / f"{basename}.*.md")
+        markdown_files.extend(glob.glob(md_pattern_dot))
+        
+        # Pattern for underscore-separated parser names
+        md_pattern_underscore = str(self.md_directory / f"{basename}_*.md")
+        markdown_files.extend(glob.glob(md_pattern_underscore))
         
         # Also check for direct markdown file (without parser suffix)
+        md_pattern_direct = str(self.md_directory / f"{basename}.md")
         direct_md_file = Path(md_pattern_direct)
         if direct_md_file.exists():
             markdown_files.append(str(direct_md_file))
+        
+        # Remove duplicates (in case a file matches multiple patterns)
+        markdown_files = list(set(markdown_files))
 
         if not markdown_files:
             return None
@@ -224,15 +256,23 @@ class FileDiscovery:
         best_score = -1
 
         for md_file in markdown_files:
-            # Extract parser name from filename (e.g., "doc.marker.md" -> "marker")
+            # Extract parser name from filename
+            # Supports both formats: "doc.marker.md" -> "marker" and "doc_marker.md" -> "marker"
             md_path = Path(md_file)
-            parts = md_path.stem.split('.')
-
-            if len(parts) >= 2:
-                parser = parts[-1]  # Last part before .md
+            md_stem = md_path.stem
+            
+            # Try dot-separated format first
+            dot_parts = md_stem.split('.')
+            if len(dot_parts) >= 2:
+                parser = dot_parts[-1]  # Last part before .md
             else:
-                # This is a direct markdown file (no parser suffix)
-                parser = "direct"
+                # Try underscore-separated format
+                underscore_parts = md_stem.split('_')
+                if len(underscore_parts) >= 2:
+                    parser = underscore_parts[-1]  # Last part before .md
+                else:
+                    # This is a direct markdown file (no parser suffix)
+                    parser = "direct"
 
             # Calculate confidence score
             score = self._calculate_confidence_score(
