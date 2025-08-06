@@ -1,8 +1,4 @@
-"""
-Command handlers for strukt2meta CLI.
-
-This module contains individual command handlers that were extracted from main.py
-to improve code organization and maintainability.
+"""Command handlers for strukt2meta.
 """
 
 from .base import BaseCommand
@@ -12,13 +8,15 @@ from .discover import DiscoverCommand
 from .analyze import AnalyzeCommand
 from .batch import BatchCommand
 from .dirmeta import DirmetaCommand
+from .clearmeta import ClearmetaCommand
 
 __all__ = [
     'BaseCommand',
     'GenerateCommand',
-    'InjectCommand', 
+    'InjectCommand',
     'DiscoverCommand',
     'AnalyzeCommand',
     'BatchCommand',
-    'DirmetaCommand'
+    'DirmetaCommand',
+    'ClearmetaCommand'
 ]

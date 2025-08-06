@@ -1,11 +1,13 @@
 import argparse
+import sys
 from strukt2meta.commands import (
     GenerateCommand,
     InjectCommand,
     DiscoverCommand,
     AnalyzeCommand,
     BatchCommand,
-    DirmetaCommand
+    DirmetaCommand,
+    ClearmetaCommand
 )
 
 
@@ -118,6 +120,16 @@ def main():
         help='Enable JSON cleanup to repair and clean AI-generated JSON output'
     )
 
+    # Clearmeta command
+    clearmeta_parser = subparsers.add_parser('clearmeta', help='Clear metadata fields from JSON file')
+    clearmeta_parser.add_argument('json_file', help='JSON file to process')
+    clearmeta_group = clearmeta_parser.add_mutually_exclusive_group(required=True)
+    clearmeta_group.add_argument('--clean', dest='fields', help='Comma-separated list of metadata fields to clear (e.g., "name,dokumententyp")')
+    clearmeta_group.add_argument('--all', action='store_true', help='Clear all metadata fields')
+    clearmeta_parser.add_argument('--dry-run', action='store_true', help='Show what would be cleared without making changes')
+    clearmeta_parser.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
+    clearmeta_parser.set_defaults(command_class=ClearmetaCommand)
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -131,7 +143,8 @@ def main():
         'discover': DiscoverCommand,
         'analyze': AnalyzeCommand,
         'batch': BatchCommand,
-        'dirmeta': DirmetaCommand
+        'dirmeta': DirmetaCommand,
+        'clearmeta': ClearmetaCommand
     }
     
     # Execute the appropriate command
