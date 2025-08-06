@@ -52,3 +52,4 @@ packages/strukt2meta/out.json
 packages/strukt2meta/out.json
 packages/strukt2meta/out.md
 .gitignore
+packages/strukt2meta/output_example.json

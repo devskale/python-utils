@@ -1,5 +1,5 @@
 {
   "provider": "tu",
-  "model": "qwen-32b",
+  "model": "mistral-small-3.1-24b",
   "default_input_file": "./default_input.md"
 }
