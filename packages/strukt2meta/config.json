@@ -1,5 +1,39 @@
 {
   "provider": "tu",
   "model": "mistral-small-3.1-24b",
-  "default_input_file": "./default_input.md"
+  "default_input_file": "./default_input.md",
+  "file_discovery": {
+    "parser_rankings": {
+      "pdf": [
+        "pdfplumber",
+        "llmparse",
+        "docling",
+        "marker"
+      ],
+      "docx": [
+        "pdfplumber",
+        "llmparse",
+        "marker",
+        "docling"
+      ],
+      "xlsx": [
+        "pdfplumber",
+        "llmparse",
+        "marker",
+        "docling"
+      ]
+    },
+    "source_extensions": {
+      "pdf": "*.pdf",
+      "docx": "*.docx",
+      "xlsx": "*.xlsx"
+    },
+    "markdown_pattern": "{basename}.{parser}.md",
+    "confidence_weights": {
+      "parser_rank": 0.7,
+      "file_size": 0.2,
+      "file_age": 0.1
+    },
+    "minimum_confidence": 0.3
+  }
 }

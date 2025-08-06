@@ -1,0 +1,34 @@
+.disk/HLS-Material/B/HKLSAG
+├── ankö-führungsbestätigung.pdf
+├── finanzamt unbedenklichkeitsbescheinigung.pdf
+├── firmenbuch.pdf
+├── formblatt gewährleistungspflicht.pdf
+├── formblatt leistungsfähigkeit dienstnehmer umsatz.pdf
+├── formblatt zuschlagskrierium standortanzahl.pdf
+├── gisa auszug.pdf
+├── md
+│   ├── ankö-führungsbestätigung.md
+│   ├── finanzamt unbedenklichkeitsbescheinigung.md
+│   ├── firmenbuch.md
+│   ├── formblatt gewährleistungspflicht.md
+│   ├── formblatt leistungsfähigkeit dienstnehmer umsatz.md
+│   ├── formblatt zuschlagskrierium standortanzahl.md
+│   ├── gisa auszug.md
+│   ├── ogk auskunft verwaltungsstrafeevidenz.md
+│   ├── ogk unbedenklichkeit.md
+│   ├── registerauskunft verbände.md
+│   ├── santkionen selbstauskunft.md
+│   ├── versicherungsbestätigung.md
+│   ├── wko firmenprofil.md
+│   ├── wko grundumlage.md
+│   └── zuschlagskriterium produktionsstandort.md
+├── ogk auskunft verwaltungsstrafeevidenz.pdf
+├── ogk unbedenklichkeit.pdf
+├── registerauskunft verbände.pdf
+├── santkionen selbstauskunft.pdf
+├── versicherungsbestätigung.pdf
+├── wko firmenprofil.pdf
+├── wko grundumlage.pdf
+└── zuschlagskriterium produktionsstandort.pdf
+
+2 directories, 30 files
