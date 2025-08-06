@@ -129,11 +129,14 @@ def main():
         'dirmeta': DirmetaCommand
     }
     
+    # Execute the appropriate command
     if args.command in command_handlers:
-        handler = command_handlers[args.command](args)
-        handler.run()
+        handler_class = command_handlers[args.command]
+        handler = handler_class(args)
+        handler.validate_and_run()
     else:
-        parser.print_help()
+        print(f"Unknown command: {args.command}")
+        sys.exit(1)
 
 
 

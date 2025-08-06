@@ -13,29 +13,24 @@ class InjectCommand(BaseCommand):
         """Execute the inject command to inject metadata into JSON file."""
         from strukt2meta.injector import JSONInjector
 
-        try:
+        if self.verbose:
+            self.log(f"Loading parameters from: {self.args.params}")
+
+        injector = JSONInjector(self.args.params)
+
+        if self.args.dry_run:
+            self._handle_dry_run(injector)
+            return
+
+        # Execute injection
+        result = injector.inject()
+
+        if result['success']:
+            self.log("Injection completed successfully!", "success")
             if self.verbose:
-                self.log(f"Loading parameters from: {self.args.params}")
-
-            injector = JSONInjector(self.args.params)
-
-            if self.args.dry_run:
-                self._handle_dry_run(injector)
-                return
-
-            # Execute injection
-            result = injector.inject()
-
-            if result['success']:
-                self.log("Injection completed successfully!", "success")
-                if self.verbose:
-                    self._log_injection_details(result)
-            else:
-                self.log("Injection failed", "error")
-
-        except Exception as e:
-            self.log(f"Error during injection: {e}", "error")
-            raise
+                self._log_injection_details(result)
+        else:
+            self.log("Injection failed", "error")
     
     def _handle_dry_run(self, injector) -> None:
         """Handle dry run mode for injection."""

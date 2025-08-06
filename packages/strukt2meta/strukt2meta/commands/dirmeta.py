@@ -16,41 +16,36 @@ class DirmetaCommand(BaseCommand):
         from strukt2meta.file_discovery import FileDiscovery
         from strukt2meta.injector import inject_metadata_to_json
 
-        try:
-            # Validate directory
-            directory_path = self.validate_directory_path(self.args.directory)
-            
-            if self.verbose:
-                self.log(f"Processing directory: {directory_path}", "search")
+        # Validate directory
+        directory_path = self.validate_directory_path(self.args.directory)
+        
+        if self.verbose:
+            self.log(f"Processing directory: {directory_path}", "search")
 
-            # Check for supported files
-            if not self._has_supported_files(directory_path):
-                self.log("No supported files found in directory", "warning")
-                return
+        # Check for supported files
+        if not self._has_supported_files(directory_path):
+            self.handle_warning("No supported files found in directory")
+            return
 
-            # Discover files with markdown strukts
-            discovery = FileDiscovery(str(directory_path))
-            mappings = discovery.discover_files()
+        # Discover files with markdown strukts
+        discovery = FileDiscovery(str(directory_path))
+        mappings = discovery.discover_files()
 
-            if not mappings:
-                self.log("No files with markdown strukts found", "warning")
-                return
+        if not mappings:
+            self.handle_warning("No files with markdown strukts found")
+            return
 
-            # Identify files that need metadata processing
-            files_to_process = self._identify_files_to_process(mappings, discovery)
+        # Identify files that need metadata processing
+        files_to_process = self._identify_files_to_process(mappings, discovery)
 
-            if not files_to_process:
-                self.log("No files need metadata processing", "info")
-                return
+        if not files_to_process:
+            self.log("No files need metadata processing", "info")
+            return
 
-            self.log(f"Found {len(files_to_process)} files needing metadata processing", "info")
+        self.log(f"Found {len(files_to_process)} files needing metadata processing", "info")
 
-            # Process each file
-            self._process_files(files_to_process, discovery)
-
-        except Exception as e:
-            self.log(f"Error during directory metadata processing: {e}", "error")
-            raise
+        # Process each file
+        self._process_files(files_to_process, discovery)
     
     def _has_supported_files(self, directory_path: Path) -> bool:
         """Check if directory contains supported files."""
@@ -95,20 +90,19 @@ class DirmetaCommand(BaseCommand):
         failed = 0
         
         for i, mapping in enumerate(files_to_process, 1):
-            self.log(f"Processing {i}/{len(files_to_process)}: {mapping.source_file}", 
-                    "processing")
+            self.log(f"Processing {i}/{len(files_to_process)}: {mapping.source_file}")
             
             try:
                 if self._process_single_file(mapping, discovery):
                     successful += 1
-                    self.log(f"✅ Processed: {mapping.source_file}", "success")
+                    self.log(f"Processed: {mapping.source_file}", "success")
                 else:
                     failed += 1
-                    self.log(f"❌ Failed: {mapping.source_file}", "error")
+                    self.handle_warning(f"Processing failed for {mapping.source_file}")
                     
             except Exception as e:
                 failed += 1
-                self.log(f"❌ Error processing {mapping.source_file}: {e}", "error")
+                self.handle_warning(f"Error processing {mapping.source_file}: {e}")
         
         # Print summary
         self._print_summary(successful, failed, len(files_to_process))

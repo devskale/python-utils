@@ -13,20 +13,15 @@ class AnalyzeCommand(BaseCommand):
         """Execute the analyze command for intelligent file analysis."""
         from strukt2meta.file_discovery import FileDiscovery
 
-        try:
-            # Validate directory
-            directory_path = self.validate_directory_path(self.args.directory)
-            
-            discovery = FileDiscovery(str(directory_path), self.args.config)
+        # Validate directory
+        directory_path = self.validate_directory_path(self.args.directory)
+        
+        discovery = FileDiscovery(str(directory_path), self.args.config)
 
-            if self.args.file:
-                self._analyze_specific_file(discovery)
-            else:
-                self._show_available_files(discovery)
-
-        except Exception as e:
-            self.log(f"Error during analysis: {e}", "error")
-            raise
+        if self.args.file:
+            self._analyze_specific_file(discovery)
+        else:
+            self._show_available_files(discovery)
     
     def _analyze_specific_file(self, discovery) -> None:
         """Analyze a specific file."""

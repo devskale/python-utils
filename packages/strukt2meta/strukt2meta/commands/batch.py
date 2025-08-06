@@ -16,39 +16,34 @@ class BatchCommand(BaseCommand):
         from strukt2meta.file_discovery import FileDiscovery
         from strukt2meta.injector import JSONInjector
 
-        try:
-            # Validate directory
-            directory_path = self.validate_directory_path(self.args.directory)
-            
-            discovery = FileDiscovery(str(directory_path), self.args.config)
-            mappings = discovery.discover_files()
+        # Validate directory
+        directory_path = self.validate_directory_path(self.args.directory)
+        
+        discovery = FileDiscovery(str(directory_path), self.args.config)
+        mappings = discovery.discover_files()
 
-            if not mappings:
-                self.log("No files found for processing", "error")
-                return
+        if not mappings:
+            self.log("No files found for processing", "error")
+            return
 
-            # Filter mappings to only include those with good markdown files
-            valid_mappings = self._filter_valid_mappings(mappings)
+        # Filter mappings to only include those with good markdown files
+        valid_mappings = self._filter_valid_mappings(mappings)
 
-            if self.verbose:
-                self.log(f"Found {len(mappings)} total files")
-                self.log(f"{len(valid_mappings)} files have suitable markdown", "success")
+        if self.verbose:
+            self.log(f"Found {len(mappings)} total files")
+            self.log(f"{len(valid_mappings)} files have suitable markdown", "success")
 
-            if self.args.dry_run:
-                self._handle_dry_run(valid_mappings)
-                return
+        if self.args.dry_run:
+            self._handle_dry_run(valid_mappings)
+            return
 
-            # Ask for confirmation
-            if not self._get_user_confirmation(len(valid_mappings)):
-                self.log("Batch processing cancelled", "warning")
-                return
+        # Ask for confirmation
+        if not self._get_user_confirmation(len(valid_mappings)):
+            self.log("Batch processing cancelled", "warning")
+            return
 
-            # Process files
-            self._process_files(valid_mappings, discovery)
-
-        except Exception as e:
-            self.log(f"Error during batch processing: {e}", "error")
-            raise
+        # Process files
+        self._process_files(valid_mappings, discovery)
     
     def _filter_valid_mappings(self, mappings) -> list:
         """Filter mappings to include only those with good markdown files."""
@@ -73,19 +68,18 @@ class BatchCommand(BaseCommand):
         failed = 0
 
         for i, mapping in enumerate(valid_mappings, 1):
-            self.log(f"Processing {i}/{len(valid_mappings)}: {mapping.source_file}", 
-                    "processing")
+            self.log(f"Processing {i}/{len(valid_mappings)}: {mapping.source_file}")
 
             try:
                 if self._process_single_file(mapping, discovery):
                     self.log(f"Success: {mapping.source_file}", "success")
                     successful += 1
                 else:
-                    self.log(f"Failed: {mapping.source_file}", "error")
+                    self.handle_warning(f"Processing failed for {mapping.source_file}")
                     failed += 1
 
             except Exception as e:
-                self.log(f"Error: {mapping.source_file} - {str(e)}", "error")
+                self.handle_warning(f"Error processing {mapping.source_file}: {str(e)}")
                 failed += 1
 
         # Summary
