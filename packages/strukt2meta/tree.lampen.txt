@@ -1,0 +1,155 @@
+.disk/2025-04 Lampen/A
+├── 191341-00.pdf
+├── 2024_06001_AAB_EV.pdf
+├── 2024_06001_Beilage 01_Formblatt_Erkl„rung Bieter- und Arbeitsgemeinschaften.docx
+├── 2024_06001_Beilage 02_Formblatt_Subunternehmerliste.docx
+├── 2024_06001_Beilage 03_Formblatt_Verpflichtungserkl„rung Subunternehmer.docx
+├── 2024_06001_Beilage 04_Leistungsverzeichnis und Preisblatt.xlsx
+├── 2024_06001_Beilage 05_Formblatt_Leistungsf„higkeit Dienstnehmer und Ums„tze.docx
+├── 2024_06001_Beilage 06_Formblatt_Leistungsf„higkeit Referenzen.docx
+├── 2024_06001_Beilage 07_Formblatt_Erkl„rung SanktionenVO.docx
+├── 2024_06001_Beilage 08_Formblatt_Zuschlagskriterium ISO-Zertifizierungen.docx
+├── 2024_06001_Beilage 09_Formblatt_Zuschlagskriterium Lieferfrist.docx
+├── 2024_06001_Beilage 10_Merkblatt_Elektronische Signatur.pdf
+├── 2024_06001_Beilage 11_Musterbankgarantie.docx
+├── 2024_06001_Beilage 12_Skizze Stiegennummernleuchte.pdf
+├── 2024_06001_Beilage 13_Skizze Wandleuchte Quadrat.pdf
+├── 2024_06001_Beilage 14_Skizze Deckenleuchte Dreieck.pdf
+├── 2024_06001_Beilage 15_Skizze Deckenleuchte Quadrat.pdf
+├── 2024_06001_Beilage 16_Skizze Wandausleger.pdf
+├── 2024_06001_Beilage 17_Skizze Mastausleger Typ 7 1F.pdf
+├── 2024_06001_Beilage 18_Skizze Mastausleger Typ 8 2F 180˚.pdf
+├── 2024_06001_Beilage 19_Skizze Mastausleger Typ 8 2F 90˚.pdf
+├── 2024_06001_Rahmenvertrag_EV.pdf
+├── 2025-OJS077-00255196-de-ts.pdf
+├── Fragenbeantwortung-240420251555.zip
+└── md
+    ├── 191341-00
+    │   └── 191341-00.marker.md
+    ├── 191341-00.docling.md
+    ├── 191341-00.llamaparse.md
+    ├── 191341-00.pdfplumber.md
+    ├── 2024_06001_AAB_EV
+    │   ├── 2024_06001_AAB_EV.marker.md
+    │   ├── _page_0_Picture_5.jpeg
+    │   ├── _page_11_Picture_0.jpeg
+    │   ├── _page_12_Picture_0.jpeg
+    │   ├── _page_13_Picture_0.jpeg
+    │   ├── _page_14_Picture_0.jpeg
+    │   ├── _page_16_Picture_1.jpeg
+    │   ├── _page_17_Picture_0.jpeg
+    │   ├── _page_18_Picture_0.jpeg
+    │   ├── _page_1_Picture_0.jpeg
+    │   ├── _page_21_Picture_0.jpeg
+    │   ├── _page_2_Picture_0.jpeg
+    │   ├── _page_3_Picture_0.jpeg
+    │   ├── _page_7_Picture_0.jpeg
+    │   └── _page_9_Picture_0.jpeg
+    ├── 2024_06001_AAB_EV.docling.md
+    ├── 2024_06001_AAB_EV.llamaparse.md
+    ├── 2024_06001_AAB_EV.pdfplumber.md
+    ├── 2024_06001_Beilage 01_Formblatt_Erkl„rung Bieter- und Arbeitsgemeinschaften.docling.md
+    ├── 2024_06001_Beilage 02_Formblatt_Subunternehmerliste.docling.md
+    ├── 2024_06001_Beilage 03_Formblatt_Verpflichtungserkl„rung Subunternehmer.docling.md
+    ├── 2024_06001_Beilage 04_Leistungsverzeichnis und Preisblatt.docling.md
+    ├── 2024_06001_Beilage 05_Formblatt_Leistungsf„higkeit Dienstnehmer und Ums„tze.docling.md
+    ├── 2024_06001_Beilage 06_Formblatt_Leistungsf„higkeit Referenzen.docling.md
+    ├── 2024_06001_Beilage 07_Formblatt_Erkl„rung SanktionenVO.docling.md
+    ├── 2024_06001_Beilage 08_Formblatt_Zuschlagskriterium ISO-Zertifizierungen.docling.md
+    ├── 2024_06001_Beilage 09_Formblatt_Zuschlagskriterium Lieferfrist.docling.md
+    ├── 2024_06001_Beilage 10_Merkblatt_Elektronische Signatur
+    │   ├── 2024_06001_Beilage 10_Merkblatt_Elektronische Signatur.marker.md
+    │   ├── _page_0_Picture_1.jpeg
+    │   ├── _page_1_Picture_14.jpeg
+    │   ├── _page_1_Picture_15.jpeg
+    │   ├── _page_1_Picture_17.jpeg
+    │   ├── _page_2_Figure_7.jpeg
+    │   ├── _page_2_Picture_0.jpeg
+    │   ├── _page_3_Figure_3.jpeg
+    │   ├── _page_3_Picture_1.jpeg
+    │   ├── _page_4_Picture_1.jpeg
+    │   └── _page_4_Picture_5.jpeg
+    ├── 2024_06001_Beilage 10_Merkblatt_Elektronische Signatur.docling.md
+    ├── 2024_06001_Beilage 10_Merkblatt_Elektronische Signatur.llamaparse.md
+    ├── 2024_06001_Beilage 10_Merkblatt_Elektronische Signatur.pdfplumber.md
+    ├── 2024_06001_Beilage 11_Musterbankgarantie.docling.md
+    ├── 2024_06001_Beilage 12_Skizze Stiegennummernleuchte
+    │   ├── 2024_06001_Beilage 12_Skizze Stiegennummernleuchte.marker.md
+    │   ├── _page_0_Figure_0.jpeg
+    │   └── _page_1_Figure_0.jpeg
+    ├── 2024_06001_Beilage 12_Skizze Stiegennummernleuchte.docling.md
+    ├── 2024_06001_Beilage 12_Skizze Stiegennummernleuchte.llamaparse.md
+    ├── 2024_06001_Beilage 12_Skizze Stiegennummernleuchte.pdfplumber.md
+    ├── 2024_06001_Beilage 13_Skizze Wandleuchte Quadrat
+    │   ├── 2024_06001_Beilage 13_Skizze Wandleuchte Quadrat.marker.md
+    │   ├── _page_0_Figure_0.jpeg
+    │   ├── _page_0_Picture_1.jpeg
+    │   └── _page_1_Figure_0.jpeg
+    ├── 2024_06001_Beilage 13_Skizze Wandleuchte Quadrat.docling.md
+    ├── 2024_06001_Beilage 13_Skizze Wandleuchte Quadrat.llamaparse.md
+    ├── 2024_06001_Beilage 13_Skizze Wandleuchte Quadrat.pdfplumber.md
+    ├── 2024_06001_Beilage 14_Skizze Deckenleuchte Dreieck
+    │   ├── 2024_06001_Beilage 14_Skizze Deckenleuchte Dreieck.marker.md
+    │   ├── _page_0_Figure_0.jpeg
+    │   └── _page_1_Figure_0.jpeg
+    ├── 2024_06001_Beilage 14_Skizze Deckenleuchte Dreieck.docling.md
+    ├── 2024_06001_Beilage 14_Skizze Deckenleuchte Dreieck.llamaparse.md
+    ├── 2024_06001_Beilage 14_Skizze Deckenleuchte Dreieck.pdfplumber.md
+    ├── 2024_06001_Beilage 15_Skizze Deckenleuchte Quadrat
+    │   ├── 2024_06001_Beilage 15_Skizze Deckenleuchte Quadrat.marker.md
+    │   ├── _page_0_Figure_0.jpeg
+    │   └── _page_1_Figure_0.jpeg
+    ├── 2024_06001_Beilage 15_Skizze Deckenleuchte Quadrat.docling.md
+    ├── 2024_06001_Beilage 15_Skizze Deckenleuchte Quadrat.llamaparse.md
+    ├── 2024_06001_Beilage 15_Skizze Deckenleuchte Quadrat.pdfplumber.md
+    ├── 2024_06001_Beilage 16_Skizze Wandausleger
+    │   ├── 2024_06001_Beilage 16_Skizze Wandausleger.marker.md
+    │   └── _page_0_Figure_0.jpeg
+    ├── 2024_06001_Beilage 16_Skizze Wandausleger.docling.md
+    ├── 2024_06001_Beilage 16_Skizze Wandausleger.llamaparse.md
+    ├── 2024_06001_Beilage 16_Skizze Wandausleger.pdfplumber.md
+    ├── 2024_06001_Beilage 17_Skizze Mastausleger Typ 7 1F
+    │   ├── 2024_06001_Beilage 17_Skizze Mastausleger Typ 7 1F.marker.md
+    │   ├── _page_0_Figure_0.jpeg
+    │   └── _page_0_Figure_1.jpeg
+    ├── 2024_06001_Beilage 17_Skizze Mastausleger Typ 7 1F.docling.md
+    ├── 2024_06001_Beilage 17_Skizze Mastausleger Typ 7 1F.llamaparse.md
+    ├── 2024_06001_Beilage 17_Skizze Mastausleger Typ 7 1F.pdfplumber.md
+    ├── 2024_06001_Beilage 18_Skizze Mastausleger Typ 8 2F 180˚
+    │   ├── 2024_06001_Beilage 18_Skizze Mastausleger Typ 8 2F 180˚.marker.md
+    │   ├── _page_0_Figure_0.jpeg
+    │   └── _page_0_Picture_12.jpeg
+    ├── 2024_06001_Beilage 18_Skizze Mastausleger Typ 8 2F 180˚.docling.md
+    ├── 2024_06001_Beilage 18_Skizze Mastausleger Typ 8 2F 180˚.llamaparse.md
+    ├── 2024_06001_Beilage 18_Skizze Mastausleger Typ 8 2F 180˚.pdfplumber.md
+    ├── 2024_06001_Beilage 19_Skizze Mastausleger Typ 8 2F 90˚
+    │   ├── 2024_06001_Beilage 19_Skizze Mastausleger Typ 8 2F 90˚.marker.md
+    │   └── _page_0_Figure_0.jpeg
+    ├── 2024_06001_Beilage 19_Skizze Mastausleger Typ 8 2F 90˚.docling.md
+    ├── 2024_06001_Beilage 19_Skizze Mastausleger Typ 8 2F 90˚.llamaparse.md
+    ├── 2024_06001_Beilage 19_Skizze Mastausleger Typ 8 2F 90˚.pdfplumber.md
+    ├── 2024_06001_Rahmenvertrag_EV
+    │   ├── 2024_06001_Rahmenvertrag_EV.marker.md
+    │   ├── _page_0_Picture_3.jpeg
+    │   ├── _page_11_Picture_1.jpeg
+    │   ├── _page_12_Picture_0.jpeg
+    │   ├── _page_13_Picture_0.jpeg
+    │   ├── _page_14_Picture_0.jpeg
+    │   ├── _page_1_Picture_0.jpeg
+    │   ├── _page_2_Picture_0.jpeg
+    │   ├── _page_3_Picture_0.jpeg
+    │   ├── _page_5_Picture_0.jpeg
+    │   ├── _page_6_Picture_0.jpeg
+    │   ├── _page_7_Picture_0.jpeg
+    │   ├── _page_8_Picture_0.jpeg
+    │   └── _page_9_Picture_0.jpeg
+    ├── 2024_06001_Rahmenvertrag_EV.docling.md
+    ├── 2024_06001_Rahmenvertrag_EV.llamaparse.md
+    ├── 2024_06001_Rahmenvertrag_EV.pdfplumber.md
+    ├── 2025-OJS077-00255196-de-ts
+    │   └── 2025-OJS077-00255196-de-ts.marker.md
+    ├── 2025-OJS077-00255196-de-ts.docling.md
+    ├── 2025-OJS077-00255196-de-ts.llamaparse.md
+    └── 2025-OJS077-00255196-de-ts.pdfplumber.md
+
+15 directories, 138 files

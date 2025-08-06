@@ -1,0 +1,32 @@
+{
+  "input_path": ".disk/2025-04 Lampen/A/md/191341-00.docling.md",
+  "prompt": "lampen_metadata_extraction",
+  "json_inject_file": ".disk/2025-04 Lampen/A/.pdf2md_index.json",
+  "target_filename": "191341-00.pdf",
+  "injection_schema": {
+    "meta": {
+      "kategorie": {
+        "ai_generated_field": true,
+        "description": "Document category (e.g., Ausschreibung, Formblatt, Skizze, Vertrag)"
+      },
+      "name": {
+        "ai_generated_field": true,
+        "description": "Descriptive name of the document"
+      },
+      "dokumenttyp": {
+        "ai_generated_field": true,
+        "description": "Type of document (e.g., Bekanntmachung, Technische Spezifikation, Formular)"
+      },
+      "thema": {
+        "ai_generated_field": true,
+        "description": "Main subject or topic of the document"
+      },
+      "sprache": {
+        "ai_generated_field": true,
+        "description": "Document language (e.g., Deutsch, English)"
+      }
+    }
+  },
+  "backup_enabled": true,
+  "validation_strict": false
+}

@@ -1,0 +1,15 @@
+{
+  "input_path": "./sample_document.md",
+  "prompt": "metadata_extraction",
+  "ai_model": "mistral-small-3.1-24b",
+  "json_inject_file": "./.pdf2md_index.json",
+  "target_filename": "Beilage 08 Unbedenklichkeitsbescheinigung_062023.pdf",
+  "injection_schema": {
+    "meta": {
+      "kategorie": "ai_generated_field",
+      "name": "ai_generated_field"
+    }
+  },
+  "backup_enabled": true,
+  "validation_strict": true
+}
