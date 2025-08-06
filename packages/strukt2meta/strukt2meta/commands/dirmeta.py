@@ -117,7 +117,8 @@ class DirmetaCommand(BaseCommand):
             
             # Load prompt and analyze
             prompt = self.load_prompt(self.args.prompt)
-            result = self.query_ai_model(prompt, input_text, verbose=self.verbose)
+            json_cleanup = getattr(self.args, 'json_cleanup', False)
+            result = self.query_ai_model(prompt, input_text, verbose=self.verbose, json_cleanup=json_cleanup)
             
             # Extract metadata from result
             metadata = self._extract_metadata_from_result(result, mapping.source_file)

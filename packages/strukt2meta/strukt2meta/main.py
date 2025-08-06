@@ -112,6 +112,11 @@ def main():
         action='store_true',
         help='Overwrite existing metadata (default: skip files with existing metadata)'
     )
+    dirmeta_parser.add_argument(
+        '--json-cleanup',
+        action='store_true',
+        help='Enable JSON cleanup to repair and clean AI-generated JSON output'
+    )
 
     args = parser.parse_args()
 
