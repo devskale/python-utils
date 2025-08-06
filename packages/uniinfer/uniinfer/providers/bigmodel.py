@@ -45,19 +45,46 @@ class BigmodelProvider(ChatProvider):
         )
 
     @classmethod
-    def list_models(cls, api_key: Optional[str] = None) -> list:
+    def list_models(cls, api_key: Optional[str] = None, base_url: str = "https://open.bigmodel.cn/api/paas/v4/") -> list:
         """
-        List available models from Bigmodel AI.
+        List available models from Bigmodel AI using the API.
+        Ensures that glm-4-flash and glm-4.5-flash are always included.
 
         Args:
             api_key (Optional[str]): The Bigmodel API key.
+            base_url (str): The base URL for the Bigmodel API.
 
         Returns:
-            list: A list of available model names.
+            list: A list of available model IDs, including guaranteed models.
+
+        Raises:
+            ValueError: If API key is not provided.
+            Exception: If the API request fails.
         """
-        # return the list of these models
-        return ['glm-4-flash']
-        # return # the models endpoint is not implem
+        if not api_key:
+            raise ValueError("API key is required to list models")
+        
+        # Define guaranteed models that should always be available
+        guaranteed_models = ["glm-4-flash", "glm-4.5-flash"]
+        
+        url = f"{base_url.rstrip('/')}/models"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        response = requests.get(url, headers=headers)
+        if response.status_code != 200:
+            raise Exception(
+                f"Bigmodel API error: {response.status_code} - {response.text}")
+
+        data = response.json()
+        api_models = [model["id"] for model in data.get("data", [])]
+        
+        # Combine API models with guaranteed models, removing duplicates while preserving order
+        all_models = list(dict.fromkeys(api_models + guaranteed_models))
+        
+        return all_models
 
     def complete(
         self,
