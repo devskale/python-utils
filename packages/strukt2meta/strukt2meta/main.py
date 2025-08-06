@@ -6,8 +6,8 @@ from strukt2meta.apicall import call_ai_model
 # Replace the placeholder function
 
 
-def query_ai_model(prompt, input_text, verbose=False):
-    return call_ai_model(prompt, input_text, verbose)
+def query_ai_model(prompt, input_text, verbose=False, json_cleanup=False):
+    return call_ai_model(prompt, input_text, verbose, json_cleanup)
 
 
 def load_prompt(prompt_name):
@@ -28,6 +28,8 @@ def main():
                         help="Prompt file name (without .md) to use from the ./prompts directory (default: zusammenfassung)")
     parser.add_argument("--o", "--outfile", required=False,
                         help="Path to the output JSON file")
+    parser.add_argument("--j", "--json-cleanup", action="store_true",
+                        help="Enable JSON cleanup to repair and clean AI-generated JSON output")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="Enable verbose mode to stream API call response.")
 
@@ -47,9 +49,9 @@ def main():
     print(f"Using prompt: {args.p}")
 
     # Query the AI model
-    result = query_ai_model(prompt, input_text, verbose=args.verbose)
+    result = query_ai_model(prompt, input_text, verbose=args.verbose, json_cleanup=args.j)
 
-    # Write the cleanified result to the output file
+    # Write the result to the output file
     with open(args.o, "w") as outfile:
         json.dump(result, outfile, indent=4)
         print(f"Output written to: {args.o}")

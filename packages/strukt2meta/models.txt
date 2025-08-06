@@ -1,0 +1,32 @@
+credgoo: Cache Hit
+Available models for arli:
+- Gemma-3-27B-ArliAI-RPMax-v3
+- Gemma-3-27B-CardProjector-v4
+- Gemma-3-27B-Glitter
+- Gemma-3-27B-it
+- Gemma-3-27B-it-Abliterated
+
+Available models for tu:
+- deepseek-r1
+- qwen-coder-32b
+- qwen-coder-3b
+- mistral-small-3.1-24b
+- mistral-large-123b
+- qwen-32b
+- e5-mistral-7b
+
+Available models for bigmodel:
+- glm-4-flash
+- glm-4.5-flash
+
+Available models for ollama:
+- gemma3:4b
+- gemma3n:e4b
+- dolphin3:latest
+- phi3:latest
+- mxbai-embed-large:latest
+- gemma3:1b
+- granite3.2:latest
+- deepseek-r1:1.5b
+- smollm2:latest
+- smollm2:135m

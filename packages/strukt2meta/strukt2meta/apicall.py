@@ -11,7 +11,7 @@ from strukt2meta.jsonclean import cleanify_json
 with open("./config.json", "r") as config_file:
     config = json.load(config_file)
 
-def call_ai_model(prompt, input_text, verbose=False):
+def call_ai_model(prompt, input_text, verbose=False, json_cleanup=False):
     # Get provider and model from config
     provider_name = config.get("provider", "tu")  # Default to TU if not specified
     model_name = config.get("model", "deepseek-r1")  # Default to deepseek-r1 if not specified
@@ -43,8 +43,14 @@ def call_ai_model(prompt, input_text, verbose=False):
             print(content, end="", flush=True)
             response_text += content
         print("\n=== End of Response ===\n")
-        return cleanify_json(response_text)  # Cleanify the streamed response
+        if json_cleanup:
+            return cleanify_json(response_text)  # Cleanify the streamed response
+        else:
+            return response_text
     else:
         # Get the completion response
         response = provider.complete(request)
-        return cleanify_json(response.message.content)  # Cleanify the response
+        if json_cleanup:
+            return cleanify_json(response.message.content)  # Cleanify the response
+        else:
+            return response.message.content
