@@ -98,20 +98,16 @@ class UnlistCommand(BaseCommand):
 
         for i, item in enumerate(items_to_process, 1):
             path = item.get('path', '')
-            prompt_name = self._determine_prompt_for_path(path)
-            self.log(
-                f"Processing {i}/{len(items_to_process)}: {path} (prompt: {prompt_name})")
 
             try:
                 if self._process_single_item(item, json_file_path):
-                    self.log(f"Success: {path}", "success")
                     successful += 1
                 else:
-                    self.handle_warning(f"Processing failed for {path}")
                     failed += 1
 
             except Exception as e:
-                self.handle_warning(f"Error processing {path}: {str(e)}")
+                if self.verbose:
+                    self.handle_warning(f"Error processing {path}: {str(e)}")
                 failed += 1
 
         # Summary
@@ -132,16 +128,60 @@ class UnlistCommand(BaseCommand):
 
         if not full_path.exists():
             self.log(f"File not found: {full_path}", "warning")
-            return False
-
-        # Try to find associated markdown or text content
-        content = self._extract_content(full_path)
-        if not content:
-            self.log(f"Could not extract content from: {path}", "warning")
+            self._print_categorization_result(path, None, "unknown", None, None, False)
             return False
 
         # Determine the appropriate prompt based on file structure
         prompt_name = self._determine_prompt_for_path(path)
+        
+        # Try to use file discovery to find the best markdown file
+        chosen_md_file = None
+        parser_used = None
+        content = None
+        
+        try:
+            from strukt2meta.file_discovery import FileDiscovery
+            # Use the file's directory for discovery, not the base directory
+            file_directory = full_path.parent
+            discovery = FileDiscovery(str(file_directory))
+            chosen_md_file = discovery.get_best_markdown_for_file(full_path.name)
+            
+            if chosen_md_file:
+                # Use the discovered markdown file
+                md_path = Path(chosen_md_file)
+                if md_path.exists():
+                    # Extract parser name from the chosen markdown file
+                    md_stem = md_path.stem
+                    # Try dot-separated format first
+                    dot_parts = md_stem.split('.')
+                    if len(dot_parts) >= 2:
+                        parser_used = dot_parts[-1]  # Last part before .md
+                    else:
+                        # Try underscore-separated format
+                        underscore_parts = md_stem.split('_')
+                        if len(underscore_parts) >= 2:
+                            parser_used = underscore_parts[-1]  # Last part before .md
+                        else:
+                            # This is a direct markdown file (no parser suffix)
+                            parser_used = "direct"
+                    
+                    with open(md_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        content = f.read()
+        except Exception as e:
+            if self.verbose:
+                self.log(f"File discovery failed for {path}: {str(e)}", "warning")
+        
+        # Fallback to direct content extraction if no markdown file found
+        if not content:
+            content = self._extract_content(full_path)
+            chosen_md_file = None
+            # Determine parser type for direct extraction
+            parser_used = self._get_direct_parser_type(full_path)
+            
+        if not content:
+            self.log(f"Could not extract content from: {path}", "warning")
+            self._print_categorization_result(path, None, prompt_name, chosen_md_file, parser_used, False)
+            return False
 
         # Generate metadata using AI
         try:
@@ -162,14 +202,13 @@ class UnlistCommand(BaseCommand):
                     result, path, self.args.target_json)
                 success = success and target_success
 
-            if success:
-                self._print_categorization_result(path, result)
-                return True
-            else:
-                return False
+            # Print simplified result
+            self._print_categorization_result(path, result, prompt_name, chosen_md_file, parser_used, success)
+            return success
 
         except Exception as e:
             self.log(f"AI processing failed for {path}: {str(e)}", "warning")
+            self._print_categorization_result(path, None, prompt_name, chosen_md_file, parser_used, False)
             return False
 
     def _determine_prompt_for_path(self, file_path: str) -> str:
@@ -221,6 +260,24 @@ class UnlistCommand(BaseCommand):
         except Exception as e:
             self.log(f"Error reading file {file_path}: {str(e)}", "warning")
             return ""
+
+    def _get_direct_parser_type(self, file_path: Path) -> str:
+        """Determine the parser type used for direct content extraction."""
+        file_extension = file_path.suffix.lower()
+        
+        # Map file extensions to likely parser types
+        if file_extension == '.pdf':
+            return 'docling'  # Default PDF parser
+        elif file_extension in {'.txt', '.md'}:
+            return 'text'
+        elif file_extension in {'.csv', '.json', '.xml', '.html'}:
+            return 'text'
+        elif file_extension == '.docx':
+            return 'docling'  # Default DOCX parser
+        elif file_extension == '.xlsx':
+            return 'docling'  # Default XLSX parser
+        else:
+            return 'basic'  # Basic file info extraction
 
     def _update_pdf2md_index(self, result: dict, file_path: str, base_directory: Path, prompt_name: str) -> bool:
         """
@@ -353,14 +410,22 @@ class UnlistCommand(BaseCommand):
             self.log(f"Injection failed: {str(e)}", "warning")
             return False
 
-    def _print_categorization_result(self, file_path: str, result) -> None:
-        """Print categorization result for a file."""
-        print(f"\n📄 {file_path}")
-        if isinstance(result, dict):
-            for key, value in result.items():
-                print(f"   {key}: {value}")
+    def _print_categorization_result(self, file_path: str, result, prompt_name: str, chosen_md_file: str = None, parser_used: str = None, success: bool = True) -> None:
+        """Print simplified categorization result for a file."""
+        # Show source file
+        print(f"📄 {file_path} (sourcefile)")
+        
+        # Show prompt and parser type
+        if chosen_md_file and parser_used:
+            print(f"     {prompt_name} @ ({parser_used})")
+        elif parser_used:
+            print(f"     {prompt_name} @ ({parser_used})")
         else:
-            print(f"   Result: {result}")
+            print(f"     {prompt_name} @ (content extracted directly)")
+        
+        # Show success status
+        status = "ok (json inserted)" if success else "not ok"
+        print(f"     {status}")
 
     def _print_summary(self, successful: int, failed: int, total: int) -> None:
         """Print processing summary."""

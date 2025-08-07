@@ -30,6 +30,52 @@ pip install -r requirements.txt
 
 ## Usage
 
+### Basic Usage
+
+```bash
+# Generate metadata from a markdown file
+python -m strukt2meta.main generate --i input.md --p zusammenfassung --o output.json
+
+# Inject metadata into existing JSON files
+python -m strukt2meta.main inject --params injection_params.json --verbose
+
+# Process uncategorized files with simplified output
+strukt2meta unlist 5 un_items.json --prompt metadata_extraction --verbose
+
+# Process files from specific directory
+strukt2meta unlist 10 .disk2/un_items.json -d .disk2
+```
+
+### Unlist Command
+
+The `unlist` command processes uncategorized files and generates metadata with simplified output:
+
+```bash
+strukt2meta unlist <num> <json_file> [options]
+```
+
+**Parameters:**
+- `num`: Number of files to process
+- `json_file`: JSON file containing `un_items` array with file paths
+
+**Options:**
+- `-p, --prompt PROMPT`: Specify prompt name (default: metadata_extraction)
+- `-d, --directory DIRECTORY`: Base directory for file paths
+- `-t, --target-json TARGET_JSON`: Target JSON file for metadata
+- `--verbose`: Enable verbose output
+
+**Output Format:**
+```
+📄 rasenmaeher/B/rasenbieter1/Gesamtpdf-24-11-2023-12-19-00.pdf (sourcefile)
+     bdok @ (content extracted directly)
+     ok (json inserted)
+```
+
+**Automatic Prompt Selection:**
+- Files in `/A/` directories use `adok` prompt
+- Files in `/B/` directories use `bdok` prompt
+- Other files use the specified `--prompt` parameter
+
 `strukt2meta` provides multiple commands for different use cases:
 
 ### Commands

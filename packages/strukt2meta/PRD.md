@@ -127,7 +127,28 @@ python -m strukt2meta.main inject --params injection_params.json --verbose
 
 # Dry run to test configuration
 python -m strukt2meta.main inject --params injection_params.json --dry-run
+
+# Process uncategorized files with simplified output
+strukt2meta unlist 5 un_items.json --prompt metadata_extraction --verbose
+
+# Process files from specific directory
+strukt2meta unlist 10 .disk2/un_items.json -d .disk2
 ```
+
+#### Simplified Output Format
+
+The unlist command now provides clean, simplified output showing only essential information:
+
+```
+📄 rasenmaeher/B/rasenbieter1/Gesamtpdf-24-11-2023-12-19-00.pdf (sourcefile)
+     bdok @ (content extracted directly)
+     ok (json inserted)
+```
+
+Format explanation:
+- **Source file**: Shows the file being processed with "(sourcefile)" indicator
+- **Prompt @ Source**: Shows the prompt used and the chosen markdown file (or "content extracted directly" if no markdown file found)
+- **Status**: Shows "ok (json inserted)" for success or "not ok" for failure
 
 #### Programmatic Usage
 
@@ -410,3 +431,42 @@ The new system was successfully tested with the Lampen project:
 - **Scalability**: Handles projects of any size with consistent performance
 
 The strukt2meta project has successfully evolved from a specialized tool to a comprehensive, intelligent document metadata extraction system.
+
+## Autor Field Enhancement
+
+### Overview
+
+The unlist command now automatically adds an "Autor" field to all generated metadata, providing complete traceability of AI-generated content.
+
+### Autor Field Format
+
+```
+"Autor": "KI-generiert {provider}@{model}@{prompt} {date}"
+```
+
+Example:
+```
+"Autor": "KI-generiert tu@mistral-small-3.1-24b@bdok 2025-08-07"
+```
+
+### Components
+
+- **KI-generiert**: Indicates AI-generated content
+- **Provider**: AI service provider (e.g., "tu")
+- **Model**: Specific AI model used (e.g., "mistral-small-3.1-24b")
+- **Prompt**: Name of the prompt used for generation (e.g., "bdok", "adok")
+- **Date**: Generation date in YYYY-MM-DD format
+
+### Automatic Prompt Selection
+
+The system uses opinionated directory structure for automatic prompt selection:
+- Files in `/A/` directories automatically use the `adok` prompt
+- Files in `/B/` directories automatically use the `bdok` prompt
+- Other files use the specified `--prompt` parameter as fallback
+
+### Benefits
+
+- **Full Traceability**: Every metadata entry can be traced back to its generation parameters
+- **Quality Assurance**: Easy identification of AI model and prompt used
+- **Audit Trail**: Complete record of when and how metadata was generated
+- **Reproducibility**: All information needed to reproduce the metadata generation
