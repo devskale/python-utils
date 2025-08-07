@@ -424,7 +424,7 @@ def process_index_file(index_path: str) -> tuple[int, int, int]:
         A tuple containing:
         - Total number of documents.
         - Number of parsed documents (with non-empty parsers.det).
-        - Number of categorized documents (with non-empty meta.kategorie).
+        - Number of categorized documents (with non-empty meta.kategorie or meta.Kategorie).
     """
     if not os.path.exists(index_path):
         return 0, 0, 0
@@ -439,7 +439,9 @@ def process_index_file(index_path: str) -> tuple[int, int, int]:
     for file_entry in index_data.get('files', []):
         if file_entry.get('parsers', {}).get('det'):
             parsed_docs += 1
-        if file_entry.get('meta', {}).get('kategorie'):
+        # Check for both "kategorie" and "Kategorie" (case variations)
+        meta = file_entry.get('meta', {})
+        if meta.get('kategorie') or meta.get('Kategorie'):
             categorized_docs += 1
 
     return total_docs, parsed_docs, categorized_docs
@@ -570,7 +572,9 @@ def generate_un_items_list(directory: str, output_file: str, recursive: bool = F
         # Identify unparsed and uncategorized items
         for file_entry in index_data.get('files', []):
             is_unparsed = not file_entry.get('parsers', {}).get('det')  # No parsers detected
-            is_unkategorized = not file_entry.get('meta', {}).get('kategorie')  # No category metadata
+            # Check for both "kategorie" and "Kategorie" (case variations)
+            meta = file_entry.get('meta', {})
+            is_unkategorized = not (meta.get('kategorie') or meta.get('Kategorie'))  # No category metadata
             if is_unparsed or is_unkategorized:
                 relative_path = os.path.relpath(os.path.join(root, file_entry['name']), directory)
                 un_items.append({

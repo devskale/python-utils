@@ -44,6 +44,10 @@ python
 [x] Test and validate metadata injection for real documents
 [x] Debug and fix prompt-schema alignment issues
 [x] Successful metadata injection into production JSON file
+[x] Autor Field Enhancement
+[x] Implement automatic "Autor" field generation with AI traceability
+[x] Include provider, model, prompt, and date information in metadata
+[x] Support for opinionated directory structure prompt selection
 
 ## JSON Injection Analysis
 
