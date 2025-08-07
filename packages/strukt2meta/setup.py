@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="strukt2meta",
-    version="0.1.0",
+    version="0.0.2",
     description="Generate metadata from structured data that needs no further postprocessing using AI.",
     author="Ha Wa",
     author_email="dev@skale.dev",
@@ -19,7 +19,7 @@ setup(
     ],
     python_requires=">=3.8",
     install_requires=[
-        "requests", # Dependency for AI model access
+        "requests",  # Dependency for AI model access
     ],
     entry_points={
         'console_scripts': [
