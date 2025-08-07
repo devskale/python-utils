@@ -7,7 +7,8 @@ from strukt2meta.commands import (
     AnalyzeCommand,
     BatchCommand,
     DirmetaCommand,
-    ClearmetaCommand
+    ClearmetaCommand,
+    UnlistCommand
 )
 
 
@@ -164,6 +165,50 @@ It offers a suite of commands for various operations:
     clearmeta_parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose output for detailed logging')
     clearmeta_parser.set_defaults(command_class=ClearmetaCommand)
 
+    # Unlist command
+    unlist_parser = subparsers.add_parser(
+        'unlist',
+        help='Process NUM uncategorized files from a JSON list for categorization.',
+        description='Processes a specified number of uncategorized files from an un_items.json file, excluding image files, to generate metadata and categorize them.'
+    )
+    unlist_parser.add_argument(
+        'num',
+        type=int,
+        help='Number of files to process from the uncategorized list'
+    )
+    unlist_parser.add_argument(
+        'json_file',
+        help='Path to the JSON file containing un_items array (e.g., un_items.json)'
+    )
+    unlist_parser.add_argument(
+        '-p', '--prompt',
+        default='metadata_extraction',
+        help='Name of the prompt to use for categorization (default: metadata_extraction)'
+    )
+    unlist_parser.add_argument(
+        '-d', '--directory',
+        help='Base directory where the files are located (if not specified, uses JSON file directory)'
+    )
+    unlist_parser.add_argument(
+        '-t', '--target-json',
+        help='Optional: Target JSON file to inject generated metadata into'
+    )
+    unlist_parser.add_argument(
+        '--dry-run',
+        action='store_true',
+        help='Show what files would be processed without actually processing them'
+    )
+    unlist_parser.add_argument(
+        '--json-cleanup',
+        action='store_true',
+        help='Enable auto-repair for AI-generated JSON output'
+    )
+    unlist_parser.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        help='Enable verbose output for detailed logging'
+    )
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -178,7 +223,8 @@ It offers a suite of commands for various operations:
         'analyze': AnalyzeCommand,
         'batch': BatchCommand,
         'dirmeta': DirmetaCommand,
-        'clearmeta': ClearmetaCommand
+        'clearmeta': ClearmetaCommand,
+        'unlist': UnlistCommand
     }
     
     # Execute the appropriate command

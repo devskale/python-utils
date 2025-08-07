@@ -9,6 +9,7 @@ from .analyze import AnalyzeCommand
 from .batch import BatchCommand
 from .dirmeta import DirmetaCommand
 from .clearmeta import ClearmetaCommand
+from .unlist import UnlistCommand
 
 __all__ = [
     'BaseCommand',
@@ -18,5 +19,6 @@ __all__ = [
     'AnalyzeCommand',
     'BatchCommand',
     'DirmetaCommand',
-    'ClearmetaCommand'
+    'ClearmetaCommand',
+    'UnlistCommand'
 ]

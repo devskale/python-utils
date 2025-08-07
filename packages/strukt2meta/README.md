@@ -30,7 +30,60 @@ pip install -r requirements.txt
 
 ## Usage
 
-`strukt2meta` can be run from the command line. Here's how to use it:
+`strukt2meta` provides multiple commands for different use cases:
+
+### Commands
+
+#### Generate Command
+Generate metadata from a single source file:
+
+```bash
+python -m strukt2meta.main generate --inpath <input_file.md> --prompt <prompt_name> --outfile <output_file.json> [--verbose]
+```
+
+#### Unlist Command
+Process uncategorized files from a JSON list for categorization:
+
+```bash
+python -m strukt2meta.main unlist <NUM> <json_file> [options]
+```
+
+**Arguments:**
+- `NUM`: Number of files to process from the uncategorized list
+- `json_file`: Path to the JSON file containing un_items array (e.g., un_items.json)
+
+**Options:**
+- `-p, --prompt`: Name of the prompt to use for categorization (default: metadata_extraction)
+- `-d, --directory`: Base directory where the files are located
+- `-t, --target-json`: Target JSON file to inject generated metadata into
+- `--dry-run`: Show what files would be processed without actually processing them
+- `--json-cleanup`: Enable auto-repair for AI-generated JSON output
+- `-v, --verbose`: Enable verbose output for detailed logging
+
+**Example:**
+```bash
+# Process 5 files from un_items.json for categorization
+python -m strukt2meta.main unlist 5 ./un_items.json --prompt metadata_extraction --verbose
+
+# Dry run to see what would be processed
+python -m strukt2meta.main unlist 10 ./un_items.json --dry-run
+```
+
+The unlist command features:
+- **Automatic Prompt Selection**: Uses opinionated file structure to select prompts:
+  - Files in `/A/` directories automatically use the `adok` prompt
+  - Files in `/B/` directories automatically use the `bdok` prompt
+  - Other files use the specified `--prompt` parameter (fallback)
+- **Automatic Index Update**: Automatically updates the `.pdf2md_index.json` file in each file's directory with generated metadata
+- Filters out image files (png, jpg, jpeg, gif, bmp, tiff, svg, webp)
+- Processes only files marked as `uncategorized: true`
+- Extracts content from various file types for AI analysis
+- Generates categorization metadata using the specified prompt
+- Optional metadata injection into additional target JSON files
+
+### Legacy Usage (Generate Command)
+
+For backward compatibility, you can still use the original syntax:
 
 ```bash
 python -m strukt2meta.main --inpath <input_file.md> --prompt <prompt_name> --outfile <output_file.json> [--verbose]
