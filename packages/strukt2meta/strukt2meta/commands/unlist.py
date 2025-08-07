@@ -194,7 +194,7 @@ class UnlistCommand(BaseCommand):
             )
 
             # Always update the .pdf2md_index.json file with the generated metadata
-            success = self._update_pdf2md_index(result, path, base_directory, prompt_name)
+            success = self._update_pdf2md_index(result, path, base_directory, prompt_name, parser_used)
 
             # If we have a target JSON file for injection, also inject there
             if hasattr(self.args, 'target_json') and self.args.target_json:
@@ -279,7 +279,7 @@ class UnlistCommand(BaseCommand):
         else:
             return 'basic'  # Basic file info extraction
 
-    def _update_pdf2md_index(self, result: dict, file_path: str, base_directory: Path, prompt_name: str) -> bool:
+    def _update_pdf2md_index(self, result: dict, file_path: str, base_directory: Path, prompt_name: str, parser_used: str = None) -> bool:
         """
         Update the .pdf2md_index.json file in the file's specific directory with the generated metadata.
         
@@ -288,6 +288,7 @@ class UnlistCommand(BaseCommand):
             file_path: The relative file path
             base_directory: The base directory for resolving relative paths
             prompt_name: The name of the prompt used for AI generation
+            parser_used: The parser type used for content extraction
             
         Returns:
             True if successful, False otherwise
@@ -344,14 +345,20 @@ class UnlistCommand(BaseCommand):
                 # Generate current date in ISO format
                 current_date = datetime.now().strftime("%Y-%m-%d")
                 
-                # Add Autor field to indicate AI generation with prompt information
-                metadata["Autor"] = f"KI-generiert {provider_name}@{model_name}@{prompt_name} {current_date}"
+                # Add Autor field to indicate AI generation with prompt and parser information
+                if parser_used:
+                    metadata["Autor"] = f"KI-generiert {provider_name}@{model_name}@{prompt_name}@{parser_used} {current_date}"
+                else:
+                    metadata["Autor"] = f"KI-generiert {provider_name}@{model_name}@{prompt_name} {current_date}"
                 
             except Exception as autor_error:
                 if self.verbose:
                     self.log(f"Failed to add Autor field for {file_path}: {str(autor_error)}", "warning")
                 # Add fallback Autor field
-                metadata["Autor"] = f"KI-generiert unknown@unknown@{prompt_name} {datetime.now().strftime('%Y-%m-%d')}"
+                if parser_used:
+                    metadata["Autor"] = f"KI-generiert unknown@unknown@{prompt_name}@{parser_used} {datetime.now().strftime('%Y-%m-%d')}"
+                else:
+                    metadata["Autor"] = f"KI-generiert unknown@unknown@{prompt_name} {datetime.now().strftime('%Y-%m-%d')}"
             
             # Inject metadata into the .pdf2md_index.json file
             success = inject_metadata_to_json(

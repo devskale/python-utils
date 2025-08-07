@@ -28,12 +28,6 @@ Gib dein Ergebnis ausschließlich im folgenden JSON-Format aus:
 
 ---
 
-### Input:
-
-→ Füge hier einfach den reinen Dokumenteninhalt (Textauszug, OCR, etc.) ein.
-
----
-
 ### Output-Beispiele:
 
 {
@@ -52,4 +46,4 @@ Gib dein Ergebnis ausschließlich im folgenden JSON-Format aus:
 
 ---
 
-START KONTEXT:
+START DOKUMENT KONTEXT:

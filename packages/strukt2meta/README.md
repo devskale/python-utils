@@ -121,6 +121,8 @@ The unlist command features:
   - Files in `/B/` directories automatically use the `bdok` prompt
   - Other files use the specified `--prompt` parameter (fallback)
 - **Automatic Index Update**: Automatically updates the `.pdf2md_index.json` file in each file's directory with generated metadata
+- **Parser Type Detection**: Automatically detects and includes the parser type used for content extraction in the "Autor" field
+- **AI Traceability**: Generates comprehensive "Autor" field with format: `"KI-generiert {provider}@{model}@{prompt}@{parser} {date}"`
 - Filters out image files (png, jpg, jpeg, gif, bmp, tiff, svg, webp)
 - Processes only files marked as `uncategorized: true`
 - Extracts content from various file types for AI analysis

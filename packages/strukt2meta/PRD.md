@@ -441,12 +441,12 @@ The unlist command now automatically adds an "Autor" field to all generated meta
 ### Autor Field Format
 
 ```
-"Autor": "KI-generiert {provider}@{model}@{prompt} {date}"
+"Autor": "KI-generiert {provider}@{model}@{prompt}@{parser} {date}"
 ```
 
 Example:
 ```
-"Autor": "KI-generiert tu@mistral-small-3.1-24b@bdok 2025-08-07"
+"Autor": "KI-generiert tu@mistral-small-3.1-24b@bdok@llamaparse 2025-08-07"
 ```
 
 ### Components
@@ -455,6 +455,7 @@ Example:
 - **Provider**: AI service provider (e.g., "tu")
 - **Model**: Specific AI model used (e.g., "mistral-small-3.1-24b")
 - **Prompt**: Name of the prompt used for generation (e.g., "bdok", "adok")
+- **Parser**: Parser type used for content extraction (e.g., "llamaparse", "docling", "pdfplumber")
 - **Date**: Generation date in YYYY-MM-DD format
 
 ### Automatic Prompt Selection
