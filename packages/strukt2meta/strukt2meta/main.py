@@ -13,87 +13,117 @@ from strukt2meta.commands import (
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Process a strukt file and generate JSON metadata.")
+        description="""strukt2meta: AI-powered metadata generation and management.
+
+This tool analyzes structured and unstructured text files (like Markdown)
+to generate metadata using AI models. It can then inject this metadata
+back into a structured JSON file system.
+
+It offers a suite of commands for various operations:
+""",
+        formatter_class=argparse.RawTextHelpFormatter
+    )
 
     # Add subcommands for different operations
     subparsers = parser.add_subparsers(
-        dest='command', help='Available commands')
+        dest='command',
+        title='Available Commands',
+        help='Run `strukt2meta <command> --help` for more information on a specific command.'
+    )
 
-    # Generate command (original functionality)
+    # Generate command
     generate_parser = subparsers.add_parser(
-        'generate', help='Generate metadata from strukt file')
+        'generate',
+        help='Generate metadata from a single source file.',
+        description='Reads a source file, applies an AI prompt, and saves the generated metadata to an output file.'
+    )
     generate_parser.add_argument("--i", "--inpath", required=False, default="./default_input.md",
-                                 help="Path to the input markdown strukt file (default: ./default_input.md)")
+                                 help="Path to the input markdown source file (default: ./default_input.md)")
     generate_parser.add_argument("--p", "--prompt", default="zusammenfassung",
-                                 help="Prompt file name (without .md) to use from the ./prompts directory (default: zusammenfassung)")
+                                 help="Name of the prompt file (without .md) from the ./prompts directory (default: zusammenfassung)")
     generate_parser.add_argument("--o", "--outfile", required=True,
-                                 help="Path to the output JSON file")
+                                 help="Path to the output JSON file for the generated metadata")
     generate_parser.add_argument("--j", "--json-cleanup", action="store_true",
-                                 help="Enable JSON cleanup to repair and clean AI-generated JSON output")
+                                 help="Enable auto-repair for AI-generated JSON output")
     generate_parser.add_argument("-v", "--verbose", action="store_true",
-                                 help="Enable verbose mode to stream API call response.")
+                                 help="Enable verbose mode to stream the AI model's response")
 
-    # Inject command (new functionality)
+    # Inject command
     inject_parser = subparsers.add_parser(
-        'inject', help='Inject metadata into JSON file')
+        'inject',
+        help='Inject pre-generated metadata into a target JSON file.',
+        description='Injects metadata from a source into a target JSON file based on a parameter configuration.'
+    )
     inject_parser.add_argument("--params", "-p", required=True,
-                               help="Path to the parameter configuration JSON file")
+                               help="Path to the JSON file containing injection parameters")
     inject_parser.add_argument("--dry-run", "-d", action="store_true",
-                               help="Perform a dry run without actually modifying files")
+                               help="Perform a dry run without modifying any files")
     inject_parser.add_argument("-v", "--verbose", action="store_true",
-                               help="Enable verbose output")
+                               help="Enable verbose output for detailed logging")
 
-    # Discover command (file discovery)
+    # Discover command
     discover_parser = subparsers.add_parser(
-        'discover', help='Discover files and show parser rankings')
+        'discover',
+        help='Discover and rank relevant source files in a directory.',
+        description='Scans a directory to find and rank files based on their suitability as a data source for metadata generation.'
+    )
     discover_parser.add_argument("--directory", "-d", required=True,
-                                 help="Base directory to search for files")
+                                 help="Base directory to search for source files")
     discover_parser.add_argument("--config", "-c",
-                                 help="Optional configuration file for custom parser rankings")
+                                 help="Optional path to a custom parser ranking configuration file")
     discover_parser.add_argument("-v", "--verbose", action="store_true",
-                                 help="Enable verbose output")
+                                 help="Enable verbose output for detailed logging")
 
-    # Analyze command (intelligent analysis)
+    # Analyze command
     analyze_parser = subparsers.add_parser(
-        'analyze', help='Auto-discover and analyze best markdown files')
+        'analyze',
+        help='Analyze a directory to find the best source file for metadata generation.',
+        description='Automatically discovers and analyzes files to determine the best candidate for metadata extraction.'
+    )
     analyze_parser.add_argument("--directory", "-d", required=True,
-                                help="Base directory containing source files")
+                                help="Base directory containing source files to analyze")
     analyze_parser.add_argument("--file", "-f",
-                                help="Specific source file to analyze (optional)")
+                                help="Optional: Path to a specific source file to analyze directly")
     analyze_parser.add_argument("--prompt", "-p", default="metadata_extraction",
-                                help="Prompt to use for analysis")
+                                help="Prompt to use for the analysis (default: metadata_extraction)")
     analyze_parser.add_argument("--output", "-o",
-                                help="Output file for results (optional)")
+                                help="Optional: Path to an output file to save the analysis results")
     analyze_parser.add_argument("--json-file", "-j",
-                                help="JSON index file to check for existing metadata (optional)")
+                                help="Optional: Path to a JSON index file to check for existing metadata")
     analyze_parser.add_argument("--config", "-c",
-                                help="Configuration file for parser rankings")
+                                help="Optional: Path to a custom parser ranking configuration file")
     analyze_parser.add_argument("-v", "--verbose", action="store_true",
-                                help="Enable verbose output")
+                                help="Enable verbose output for detailed logging")
 
-    # Batch command (intelligent batch processing)
+    # Batch command
     batch_parser = subparsers.add_parser(
-        'batch', help='Process multiple files with intelligent selection')
+        'batch',
+        help='Batch process multiple source files and inject metadata into a JSON file.',
+        description='Intelligently discovers, analyzes, and processes multiple files to generate and inject metadata in a single run.'
+    )
     batch_parser.add_argument("--directory", "-d", required=True,
-                              help="Base directory containing source files")
+                              help="Base directory containing the source files for batch processing")
     batch_parser.add_argument("--json-file", "-j", required=True,
-                              help="Target JSON file for metadata injection")
+                              help="Path to the target JSON file for metadata injection")
     batch_parser.add_argument("--prompt", "-p", default="metadata_extraction",
-                              help="Prompt to use for analysis")
+                              help="Prompt to use for metadata generation (default: metadata_extraction)")
     batch_parser.add_argument("--config", "-c",
-                              help="Configuration file for parser rankings")
+                              help="Optional: Path to a custom parser ranking configuration file")
     batch_parser.add_argument("--dry-run", action="store_true",
-                              help="Perform a dry run without modifying files")
+                              help="Perform a dry run without modifying any files")
     batch_parser.add_argument("-v", "--verbose", action="store_true",
-                              help="Enable verbose output")
+                              help="Enable verbose output for detailed logging")
 
-    # Dirmeta command (directory metadata processor - consolidated from dirmeta.py)
+    # Dirmeta command
     dirmeta_parser = subparsers.add_parser(
-        'dirmeta', help='Directory Metadata Processor - Automatically analyze and inject metadata for files in a directory')
+        'dirmeta',
+        help='Automatically generate and inject metadata for all supported files in a directory.',
+        description='Processes a directory to automatically analyze files, generate metadata, and inject it into a central JSON index file.'
+    )
     dirmeta_parser.add_argument(
         '-d', '--directory',
         required=True,
-        help='Path to the directory to process'
+        help='Path to the target directory to process'
     )
     dirmeta_parser.add_argument(
         '-p', '--prompt',
@@ -107,27 +137,31 @@ def main():
     dirmeta_parser.add_argument(
         '-v', '--verbose',
         action='store_true',
-        help='Enable verbose output'
+        help='Enable verbose output for detailed logging'
     )
     dirmeta_parser.add_argument(
         '--overwrite',
         action='store_true',
-        help='Overwrite existing metadata (default: skip files with existing metadata)'
+        help='Overwrite existing metadata (by default, skips files with existing metadata)'
     )
     dirmeta_parser.add_argument(
         '--json-cleanup',
         action='store_true',
-        help='Enable JSON cleanup to repair and clean AI-generated JSON output'
+        help='Enable auto-repair for AI-generated JSON output'
     )
 
     # Clearmeta command
-    clearmeta_parser = subparsers.add_parser('clearmeta', help='Clear metadata fields from JSON file')
-    clearmeta_parser.add_argument('json_file', help='JSON file to process')
+    clearmeta_parser = subparsers.add_parser(
+        'clearmeta',
+        help='Clear or remove specific metadata fields from a JSON file.',
+        description='Removes specified metadata fields from a JSON file, either individually or all at once.'
+    )
+    clearmeta_parser.add_argument('json_file', help='Path to the JSON file to process')
     clearmeta_group = clearmeta_parser.add_mutually_exclusive_group(required=True)
-    clearmeta_group.add_argument('--clean', dest='fields', help='Comma-separated list of metadata fields to clear (e.g., "name,dokumententyp")')
-    clearmeta_group.add_argument('--all', action='store_true', help='Clear all metadata fields')
+    clearmeta_group.add_argument('--clean', dest='fields', help='Comma-separated list of top-level metadata fields to clear (e.g., "name,type")')
+    clearmeta_group.add_argument('--all', action='store_true', help='Clear all top-level metadata fields')
     clearmeta_parser.add_argument('--dry-run', action='store_true', help='Show what would be cleared without making changes')
-    clearmeta_parser.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
+    clearmeta_parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose output for detailed logging')
     clearmeta_parser.set_defaults(command_class=ClearmetaCommand)
 
     args = parser.parse_args()

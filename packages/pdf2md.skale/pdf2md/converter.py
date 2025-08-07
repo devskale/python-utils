@@ -42,7 +42,7 @@ class PDFtoMarkdown:
         self.extractors = ExtractorFactory.create_extractors(parsers)
 
     def convert(self, pdf_path: str, output_dir: str, filename: str,
-                extractor: str = 'pdfplumber', overwrite: bool = False) -> Optional[str]:
+                extractor: str = 'pdfplumber', overwrite: bool = False) -> tuple[Optional[str], str]:
         """Convert a PDF file to Markdown.
 
         Args:
@@ -53,7 +53,9 @@ class PDFtoMarkdown:
             overwrite: Whether to overwrite existing files.
 
         Returns:
-            Path to the created Markdown file, or None if conversion failed.
+            Tuple of (path_to_created_file, status) where:
+            - path_to_created_file: Path to the created Markdown file, or None if not created
+            - status: 'success', 'skipped', or 'failed'
         """
         try:
             if not filename.endswith('.md'):
@@ -71,11 +73,11 @@ class PDFtoMarkdown:
 
             if (os.path.exists(old_format_file) or os.path.exists(new_format_file)) and not overwrite:
                 print("Skipping: Existing file")
-                return None
+                return None, 'skipped'
 
             if extractor not in self.extractors:
                 print(f"Unknown extractor: {extractor}")
-                return None
+                return None, 'failed'
 
             start_time = time.time()
 
@@ -90,7 +92,7 @@ class PDFtoMarkdown:
 
                 # The metadata is now added directly in the MarkerExtractor.extract_text method
                 # Return the path to the markdown file that was created by the marker extractor
-                return self.extractors[extractor].output_md_path
+                return self.extractors[extractor].output_md_path, 'success'
             else:
                 # Normal flow for other extractors
                 full_text, num_pages = self.extractors[extractor].extract_text(
@@ -109,10 +111,10 @@ class PDFtoMarkdown:
                 # Write the markdown content to the output file
                 with open(output_file, 'w', encoding='utf-8') as f:
                     f.write(full_markdown)
-                return output_file
+                return output_file, 'success'
         except Exception as e:
             print(f"Error converting {os.path.basename(pdf_path)}: {str(e)}")
-            return None
+            return None, 'failed'
 
     def update_ocr_extractor(self, lang: str) -> None:
         """Update the OCR extractor with a new language.

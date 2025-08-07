@@ -193,13 +193,13 @@ def process_directory(input_dir: str, converter: PDFtoMarkdown, args) -> tuple[i
                         f"  Marker output directory already exists. Skipping conversion.")
                     continue
 
-                result = converter.convert(
+                result_path, status = converter.convert(
                     file_path, marker_output_dir, output_filename, parser, args.overwrite)
             else:
-                result = converter.convert(
+                result_path, status = converter.convert(
                     file_path, os.path.join(input_dir, 'md'), output_filename, parser, args.overwrite)
 
-            if result:
+            if status == 'success':
                 processed_files += 1
                 print(f"  ✓ Converted to {output_filename} using {parser}")
 
@@ -222,8 +222,11 @@ def process_directory(input_dir: str, converter: PDFtoMarkdown, args) -> tuple[i
 
                 with open(index_file_path, 'w') as index_file:
                     json.dump(index_data, index_file, indent=4)
-
-            else:
+            elif status == 'skipped':
+                print(f"  ⊘ Skipped: Existing file")
+                skipped_files += 1
+            else:  # status == 'failed'
+                print(f"  ✗ Failed to convert using {parser}")
                 skipped_files += 1
 
     print(
@@ -388,6 +391,185 @@ def show_parsing_status(directory: str, recursive: bool, parser_name: Optional[s
                 print(f"  - {file_name}")
 
 
+def process_unfile(json_file_path: str, num_files: int, converter: PDFtoMarkdown, args) -> tuple[int, int]:
+    """Process a specified number of unparsed files from un_items.json.
+    
+    Args:
+        json_file_path: Path to the un_items.json file
+        num_files: Number of unparsed files to process
+        converter: PDFtoMarkdown converter instance
+        args: Command line arguments
+        
+    Returns:
+        Tuple of (processed_files_count, skipped_files_count)
+    """
+    if not os.path.exists(json_file_path):
+        print(f"Error: JSON file {json_file_path} does not exist.")
+        return (0, 0)
+    
+    # Load the JSON file
+    try:
+        with open(json_file_path, 'r') as f:
+            data = json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON file {json_file_path}: {e}")
+        return (0, 0)
+    except Exception as e:
+        print(f"Error: Could not read JSON file {json_file_path}: {e}")
+        return (0, 0)
+    
+    if 'un_items' not in data:
+        print(f"Error: JSON file {json_file_path} does not contain 'un_items' key.")
+        return (0, 0)
+    
+    # Get the base directory (where the JSON file is located)
+    base_dir = os.path.dirname(json_file_path)
+    
+    # Filter for unparsed files only
+    unparsed_items = [item for item in data['un_items'] if item.get('unparsed', False)]
+    
+    if not unparsed_items:
+        print("No unparsed files found in the JSON file.")
+        return (0, 0)
+    
+    # Filter files that are supported by at least one of the chosen parsers
+    supported_items = []
+    for item in unparsed_items:
+        file_path = os.path.join(base_dir, item['path'])
+        
+        # Check if any parser supports this file
+        has_compatible_parser = False
+        for parser in args.parsers:
+            if ExtractorFactory.validate_file_extension(parser, file_path):
+                has_compatible_parser = True
+                break
+        
+        if has_compatible_parser:
+            supported_items.append(item)
+    
+    if not supported_items:
+        print("No unparsed files found that are supported by the chosen parsers.")
+        print(f"Chosen parsers: {', '.join(args.parsers)}")
+        
+        # Show what file types were found
+        file_extensions = set()
+        for item in unparsed_items:
+            ext = os.path.splitext(item['path'])[1].lower()
+            if ext:
+                file_extensions.add(ext)
+        
+        if file_extensions:
+            print(f"File types found in un_items.json: {', '.join(sorted(file_extensions))}")
+            
+            # Show what each parser supports
+            print("\nParser compatibility:")
+            for parser in args.parsers:
+                supported_exts = ExtractorFactory.get_supported_extensions(parser)
+                print(f"  {parser}: {', '.join(supported_exts)}")
+        
+        return (0, 0)
+    
+    # Limit to the requested number of files
+    files_to_process = supported_items[:num_files]
+    
+    print(f"Processing {len(files_to_process)} unparsed files from {json_file_path}")
+    print(f"Total unparsed files available: {len(unparsed_items)}")
+    print(f"Files supported by chosen parsers: {len(supported_items)}")
+    if len(supported_items) < len(unparsed_items):
+        print(f"Files skipped (unsupported): {len(unparsed_items) - len(supported_items)}")
+    print()
+    
+    processed_files = 0
+    skipped_files = 0
+    
+    for idx, item in enumerate(files_to_process, 1):
+        file_path = os.path.join(base_dir, item['path'])
+        
+        print(f"[File {idx}/{len(files_to_process)}] Processing: {item['path']}")
+        
+        # Check if file exists
+        if not os.path.exists(file_path):
+            print(f"  Warning: File does not exist. Skipping.")
+            skipped_files += 1
+            continue
+        
+        # Get compatible parsers (we know at least one exists since we pre-filtered)
+        compatible_parsers = []
+        for parser in args.parsers:
+            if ExtractorFactory.validate_file_extension(parser, file_path):
+                compatible_parsers.append(parser)
+        
+        # Process the file with compatible parsers
+        file_dir = os.path.dirname(file_path)
+        file_name = os.path.basename(file_path)
+        base_name = os.path.splitext(file_name)[0]
+        
+        file_processed = False
+        for parser in compatible_parsers:
+            if parser not in converter.extractors:
+                print(f"    Warning: Unknown parser '{parser}'. Skipping.")
+                continue
+            
+            output_filename = f"{base_name}.{parser}.md"
+            
+            # For marker extractor, create a dedicated subdirectory structure
+            if parser == 'marker':
+                if not file_name.lower().endswith('.pdf'):
+                    print(f"    Warning: Marker extractor can only process PDF files. Skipping.")
+                    continue
+                
+                marker_output_dir = os.path.join(file_dir, 'md', base_name)
+                if os.path.exists(marker_output_dir) and not args.overwrite:
+                    print(f"    Marker output directory already exists. Skipping conversion.")
+                    continue
+                
+                result_path, status = converter.convert(file_path, marker_output_dir, output_filename, parser, args.overwrite)
+            else:
+                result_path, status = converter.convert(file_path, os.path.join(file_dir, 'md'), output_filename, parser, args.overwrite)
+            
+            if status == 'success':
+                file_processed = True
+                print(f"    ✓ Converted to {output_filename} using {parser}")
+                
+                # Update index file after successful conversion
+                index_file_path = os.path.join(file_dir, '.pdf2md_index.json')
+                if not os.path.exists(index_file_path):
+                    index_data = {"files": []}
+                else:
+                    with open(index_file_path, 'r') as index_file:
+                        index_data = json.load(index_file)
+                
+                # Update or add file entry in the index
+                file_entry = next((entry for entry in index_data["files"] if entry["name"] == file_name), None)
+                if not file_entry:
+                    file_entry = {"name": file_name, "parsers": {"det": []}}
+                    index_data["files"].append(file_entry)
+                
+                if parser not in file_entry["parsers"]["det"]:
+                    file_entry["parsers"]["det"].append(parser)
+                
+                with open(index_file_path, 'w') as index_file:
+                    json.dump(index_data, index_file, indent=4)
+            elif status == 'skipped':
+                print(f"    ⊘ Skipped: Existing file")
+            else:  # status == 'failed'
+                print(f"    ✗ Failed to convert using {parser}")
+        
+        if file_processed:
+            processed_files += 1
+        else:
+            skipped_files += 1
+        
+        print()  # Add blank line between files
+    
+    print(f"=== UNFILE PROCESSING SUMMARY ===")
+    print(f"Files processed: {processed_files}")
+    print(f"Files skipped: {skipped_files}")
+    print(f"Total files attempted: {len(files_to_process)}")
+    
+    return processed_files, skipped_files
+
+
 def process_single_file(file_path: str, converter: PDFtoMarkdown, args) -> tuple[int, int]:
     """Process a single file with the given converter and arguments.
 
@@ -430,11 +612,11 @@ def process_single_file(file_path: str, converter: PDFtoMarkdown, args) -> tuple
                 print(f"  Marker output directory already exists. Skipping conversion.")
                 continue
 
-            result = converter.convert(file_path, marker_output_dir, output_filename, parser, args.overwrite)
+            result_path, status = converter.convert(file_path, marker_output_dir, output_filename, parser, args.overwrite)
         else:
-            result = converter.convert(file_path, os.path.join(file_dir, 'md'), output_filename, parser, args.overwrite)
+            result_path, status = converter.convert(file_path, os.path.join(file_dir, 'md'), output_filename, parser, args.overwrite)
 
-        if result:
+        if status == 'success':
             processed_files += 1
             print(f"  ✓ Converted to {output_filename} using {parser}")
 
@@ -457,8 +639,11 @@ def process_single_file(file_path: str, converter: PDFtoMarkdown, args) -> tuple
 
             with open(index_file_path, 'w') as index_file:
                 json.dump(index_data, index_file, indent=4)
-
-        else:
+        elif status == 'skipped':
+            print(f"  ⊘ Skipped: Existing file")
+            skipped_files += 1
+        else:  # status == 'failed'
+            print(f"  ✗ Failed to convert using {parser}")
             skipped_files += 1
 
     print(f"\n[Single File: {file_name}] Processed: {processed_files}, Skipped: {skipped_files}")
@@ -508,6 +693,8 @@ def main():
                         help="Maximum age (in seconds) for index files before they're considered stale (default: 30)")
     parser.add_argument("--status", nargs='?', const='all', default=None,
                         help="Show parsing status. Provide a parser name to see files not yet parsed by it. Without a name, it shows completely unparsed files.")
+    parser.add_argument("--unfile", type=int, metavar='NUM',
+                        help="Process NUM unparsed files from un_items.json file. Requires input_path to be the JSON file or directory containing it.")
     args = parser.parse_args()
 
     if args.version:
@@ -591,18 +778,20 @@ def main():
         end_time = time.time()
         processing_time = end_time - start_time
 
-        # Ensure the file exists before opening it in 'r+' mode
-        if not os.path.exists(output_file):
-            with open(output_file, 'w') as f:
-                json.dump({}, f)  # Initialize with an empty JSON object
+        # Only add metadata to JSON files
+        if args.json:
+            # Ensure the file exists before opening it in 'r+' mode
+            if not os.path.exists(output_file):
+                with open(output_file, 'w') as f:
+                    json.dump({"un_items": []}, f)  # Initialize with proper structure
 
-        with open(output_file, 'r+') as f:
-            data = json.load(f)
-            data['processing_time'] = processing_time
-            data['date'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            f.seek(0)
-            json.dump(data, f, indent=4)
-            f.truncate()
+            with open(output_file, 'r+') as f:
+                data = json.load(f)
+                data['processing_time'] = processing_time
+                data['date'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                f.seek(0)
+                json.dump(data, f, indent=4)
+                f.truncate()
 
         print(f"Unparsed and uncategorized items list saved to: {output_file}")
         return
@@ -628,6 +817,43 @@ def main():
         except subprocess.CalledProcessError as e:
             print(f"Update failed: {e}")
             return
+
+    # Handle --unfile option
+    if args.unfile is not None:
+        # Default to looking for un_items.json in the input path directory
+        input_path = args.input_path
+        if os.path.isfile(input_path):
+            json_file_path = os.path.join(os.path.dirname(input_path), "un_items.json")
+        else:
+            json_file_path = os.path.join(input_path, "un_items.json")
+        
+        print(f"Processing {args.unfile} unparsed files from {json_file_path}")
+        print(f"Using parsers: {', '.join(args.parsers)}")
+        print(f"Overwrite existing files: {'Yes' if args.overwrite else 'No'}")
+        print(f"OCR enabled: {'Yes' if args.ocr else 'No'}")
+        if args.ocr:
+            print(f"OCR language: {args.ocr_lang}")
+        print()
+
+        # Check for PaddleOCR on macOS before initializing converter
+        if 'paddleocr' in args.parsers and platform.system() == 'Darwin':
+            print("Error: PaddleOCR is not supported on macOS. Please use one of these alternatives:")
+            print("- OCRExtractor (pytesseract based): '--parsers ocr'")
+            print("- EasyOCRExtractor (easyocr based): '--parsers easyocr'")
+            return
+
+        # Initialize converter with specified parsers
+        converter = PDFtoMarkdown(args.parsers)
+
+        # If OCR is requested, update the OCR extractor with the specified language
+        if args.ocr and 'ocr' in converter.extractors:
+            converter.update_ocr_extractor(args.ocr_lang)
+
+        # Process files from un_items.json
+        processed_files, skipped_files = process_unfile(json_file_path, args.unfile, converter, args)
+        
+        print(f"\n✓ Unfile processing complete!")
+        return
 
     input_path = args.input_path
 
