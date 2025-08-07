@@ -53,3 +53,5 @@ packages/strukt2meta/out.json
 packages/strukt2meta/out.md
 .gitignore
 packages/strukt2meta/output_example.json
+packages/strukt2meta/prompts/adok.1.md
+packages/strukt2meta/prompts/bdok.1.md

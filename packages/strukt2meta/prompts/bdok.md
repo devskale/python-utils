@@ -4,7 +4,7 @@ Deine Aufgabe:
 Analysiere den Inhalt des folgenden Dokuments und bestimme präzise:
 
 1. Zu welcher Hauptkategorie das Dokument gehört (aus einer vorgegebenen Liste).
-2. Bestimme zusätzlich einen genauen Dokumententyp (ähnlich den Beispielen).
+2. Bestimme zusätzlich einen genauen namen (ähnlich den Beispielen).
 3. Begründe kurz deine Entscheidung anhand von Begriffen, Inhalt oder typischen Merkmalen des Dokuments.
 
 Gib dein Ergebnis ausschließlich im folgenden JSON-Format aus:
@@ -12,7 +12,7 @@ Gib dein Ergebnis ausschließlich im folgenden JSON-Format aus:
 {
 "kategorie": "EXAKTE Auswahl aus: Angebot | Eignungsnachweise | Nachweis Leistungsfähigkeit | Berufliche Zuverlässigkeit | Befugnisse | Nachweis Bewertung Zuschlagskriterien pro Los | Weitere Prüfungen",
 "aussteller": "Welche Organisation, Firma oder Person hat das Dokument ausgestellt? Falls kein Name vorhanden ist, ist der Bieter selbst der Aussteller",
-"dokumententyp": "Kurzbeschreibung oder genaue Dokumententypbezeichnung, dient als Dateiname — oder 'Unklar', falls nicht erkennbar",
+"name": "Kurzbeschreibung oder genaue Dokumententypbezeichnung, dient als Dateiname — oder 'Unklar', falls nicht erkennbar",
 "begründung": "Kurze Begründung für die Klassifizierung (z.B. enthaltene Begriffe, typische Merkmale, Aussagen im Text)"
 }
 
@@ -20,7 +20,7 @@ Gib dein Ergebnis ausschließlich im folgenden JSON-Format aus:
 
 ### Mögliche Kategorien und Hinweise:
 
-| Kategorie                                     | dokumententyp                                                                                                                                                 |
+| kategorie                                     | Typische Dokumente                                                                                                                                            |
 | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Angebot                                       | Angebotsschreiben, Preisblatt, Produktdatenblätter, Datenblätter, Sicherheitsdatenblätter, technische Beschreibungen, Einbauskizzen, Zertifikate zu Produkten |
 | Eignungsnachweise                             | Firmenbuch, ANKÖ, WK-Auszug, Strafregister, Steuerkonto, SV-Nachweis, Eigenerklärungen                                                                        |
@@ -33,18 +33,12 @@ Gib dein Ergebnis ausschließlich im folgenden JSON-Format aus:
 
 ---
 
-### Input:
-
-→ Füge hier einfach den reinen Dokumenteninhalt (Textauszug, OCR, etc.) ein.
-
----
-
 ### Output-Beispiel:
 
 {
 "kategorie": "Nachweis Leistungsfähigkeit",
 "aussteller": "Generali Versicherung AG",
-"dokumententyp": "Produkthaftpflichtversicherung",
+"name": "Produkthaftpflichtversicherung",
 "begründung": "Enthält explizit Versicherungsnachweis Produkthaftpflicht inkl. Prämienzahlung — typisch für Nachweis Leistungsfähigkeit."
 }
 
