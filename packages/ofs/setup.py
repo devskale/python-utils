@@ -31,7 +31,7 @@ setup(
     ],
     python_requires=">=3.12",
     install_requires=[
-        # Add dependencies here as needed
+        "pdfplumber>=0.9.0",  # For PDF text extraction in read_doc functionality
     ],
     extras_require={
         "dev": [

@@ -74,9 +74,13 @@ markdown ```
 .
 ├── ofs/
 │ ├── __init__.py
+│ ├── __main__.py
 │ ├── cli.py
 │ ├── config.py
-│ ├── core.py
+│ ├── core.py        # Aggregator module for backward compatibility
+│ ├── paths.py       # Path resolution and OFS navigation
+│ ├── docs.py        # Document listing and reading functionality
+│ ├── tree.py        # Directory tree structure generation
 ├── tests/
 ├── docs/
 │ ├── opinionatedFilesystem.md
@@ -88,3 +92,39 @@ markdown ```
 ├── setup.py
 ├── PRD.md
 ```
+
+# Code Architecture
+
+## Module Decomposition (December 2024)
+
+The OFS package has been decomposed from a single large `core.py` file (~1,500 lines) into smaller, maintainable modules:
+
+### `ofs/paths.py` - Path Resolution
+- Path finding and navigation functions
+- OFS structure traversal
+- Project and bidder discovery
+- Index file parsing utilities
+- Functions: `get_path`, `find_bidder_in_project`, `list_projects`, `list_bidders`, etc.
+
+### `ofs/docs.py` - Document Management
+- Document listing and metadata handling
+- Document reading with parser selection
+- Content extraction for various file formats
+- Functions: `read_doc`, `list_bidder_docs_json`, `list_project_docs_json`, etc.
+
+### `ofs/tree.py` - Tree Structure
+- Directory tree generation and formatting
+- Visual structure representation
+- Functions: `generate_tree_structure`, `print_tree_structure`
+
+### `ofs/core.py` - Backward Compatibility Aggregator
+- Imports and re-exports all functions from decomposed modules
+- Maintains full backward compatibility for existing code
+- No breaking changes to existing APIs
+
+### Benefits of Decomposition
+- **Maintainability**: Smaller, focused modules (300-500 lines each)
+- **Testability**: Easier to unit test individual components
+- **Code Organization**: Clear separation of concerns
+- **Development**: Faster development with focused modules
+- **Backward Compatibility**: Zero breaking changes for existing users
