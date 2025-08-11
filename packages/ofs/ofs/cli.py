@@ -22,7 +22,8 @@ from .core import (
     list_project_docs_json,
     get_bidder_document_json,
     print_tree_structure,
-    generate_tree_structure
+    generate_tree_structure,
+    read_doc
 )
 
 
@@ -123,6 +124,27 @@ def create_parser() -> argparse.ArgumentParser:
         "-d", "--directories",
         action="store_true",
         help="Show only directory tree (no documents)"
+    )
+
+    # read-doc command
+    read_doc_parser = subparsers.add_parser(
+        "read-doc",
+        help="Read a document by identifier 'Project@Bidder@Filename'"
+    )
+    read_doc_parser.add_argument(
+        "identifier",
+        help="Identifier in the form 'Project@Bidder@Filename' or 'Project@A@Filename'"
+    )
+    read_doc_parser.add_argument(
+        "--parser",
+        dest="parser",
+        default=None,
+        help="Optional parser to use (docling, marker, llamaparse, pdfplumber). If omitted, uses ranked selection"
+    )
+    read_doc_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Output full JSON result instead of just content"
     )
     
     return parser
@@ -272,6 +294,31 @@ def handle_tree(directories_only: bool = False) -> None:
     print(tree_output)
 
 
+def handle_read_doc(identifier: str, parser_name: Optional[str] = None, as_json: bool = False) -> None:
+    """
+    Handle the read-doc command.
+    
+    Args:
+        identifier (str): Identifier in the form 'Project@Bidder@Filename' or 'Project@A@Filename'
+        parser_name (Optional[str]): Optional parser to use
+        as_json (bool): Whether to output the full JSON result
+    """
+    result = read_doc(identifier, parser=parser_name)
+
+    if as_json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        if not result.get("success", False):
+            sys.exit(1)
+        return
+
+    if not result.get("success", False):
+        print(f"Error: {result.get('error', 'Unknown error')}\nPath: {result.get('file_path', '')}", file=sys.stderr)
+        sys.exit(1)
+
+    content = result.get("content", "")
+    print(content)
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     """
     Main entry point for the OFS CLI.
@@ -306,6 +353,8 @@ def main(argv: Optional[list[str]] = None) -> int:
             handle_root()
         elif args.command == "tree":
             handle_tree(args.directories)
+        elif args.command == "read-doc":
+            handle_read_doc(args.identifier, args.parser, args.json)
         else:
             print(f"Unknown command: {args.command}", file=sys.stderr)
             return 1

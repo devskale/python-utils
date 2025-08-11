@@ -1315,3 +1315,224 @@ def print_tree_structure(directories_only: bool = False) -> str:
                     output_lines.append(f"{doc_prefix}{doc}")
     
     return "\n".join(output_lines)
+
+
+def _select_parser(requested_parser: Optional[str], available_parsers: Dict[str, Any], default_ranking: List[str] = None) -> str:
+    """
+    Select the best parser for document reading based on a ranking system.
+    
+    Args:
+        requested_parser: Optional specific parser requested by user
+        available_parsers: Parser metadata from .pdf2md_index.json
+        default_ranking: List of parsers in order of preference (default: docling > marker > llamaparse > pdfplumber)
+    
+    Returns:
+        str: Selected parser name
+    """
+    if default_ranking is None:
+        default_ranking = ["docling", "marker", "llamaparse", "pdfplumber"]
+    
+    # If a specific parser was requested, use it if available
+    if requested_parser:
+        available = available_parsers.get("det", [])
+        if requested_parser in available:
+            return requested_parser
+        else:
+            # Fall through to default selection
+            pass
+    
+    # Try default from metadata first
+    default_parser = available_parsers.get("default", "")
+    if default_parser:
+        return default_parser
+    
+    # Fall back to ranking-based selection
+    available = available_parsers.get("det", [])
+    for parser in default_ranking:
+        if parser in available:
+            return parser
+    
+    # If none from ranking available, return first available or pdfplumber as ultimate fallback
+    if available:
+        return available[0]
+    
+    return "pdfplumber"
+
+
+def read_doc(identifier: str, parser: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Read document content based on OFS identifier and parser selection.
+    
+    Args:
+        identifier (str): Document identifier in format "Project@Bidder@Filename" 
+                         or "Project@A@Filename" for project documents
+        parser (Optional[str]): Specific parser to use (optional)
+                               If not specified, uses default ranking: docling > marker > llamaparse > pdfplumber
+    
+    Returns:
+        Dict[str, Any]: Dictionary containing:
+            - success: bool indicating if reading was successful
+            - content: str with document content (if successful)
+            - parser_used: str name of parser actually used
+            - file_path: str path to the document
+            - error: str error message (if unsuccessful)
+            - warnings: List[str] any warnings during processing
+    """
+    # Parse the identifier
+    parts = identifier.split("@")
+    if len(parts) != 3:
+        return {
+            "success": False,
+            "error": f"Invalid identifier format. Expected 'Project@Bidder@Filename', got '{identifier}'"
+        }
+    
+    project_name, bidder_name, filename = parts
+    
+    # Validate required components
+    if not project_name or not bidder_name or not filename:
+        return {
+            "success": False,
+            "error": f"All parts of identifier must be non-empty: '{identifier}'"
+        }
+    
+    # Check file extension
+    file_extension = Path(filename).suffix.lower()
+    if not file_extension:
+        return {
+            "success": False,
+            "error": f"Filename must have an extension: '{filename}'"
+        }
+    
+    # Find the document path
+    base_dir = get_base_dir()
+    base_path = Path(base_dir)
+    
+    # Find project
+    project_path = _search_in_directory(base_path, project_name)
+    if not project_path:
+        return {
+            "success": False,
+            "error": f"Project not found: '{project_name}'"
+        }
+    
+    project_dir = Path(project_path)
+    
+    # Determine if this is a bidder document (B/) or project document (A/)
+    if bidder_name.upper() == "A":
+        # Project document in A/ folder
+        doc_dir = project_dir / "A"
+        if not doc_dir.exists():
+            return {
+                "success": False,
+                "error": f"No A directory found in project '{project_name}'"
+            }
+    else:
+        # Bidder document in B/ folder
+        b_dir = project_dir / "B"
+        if not b_dir.exists():
+            return {
+                "success": False,
+                "error": f"No B directory found in project '{project_name}'"
+            }
+        
+        # Find the bidder directory
+        bidder_path = _search_in_directory(b_dir, bidder_name, search_depth=2)
+        if not bidder_path:
+            return {
+                "success": False,
+                "error": f"Bidder not found: '{bidder_name}' in project '{project_name}'"
+            }
+        doc_dir = Path(bidder_path)
+    
+    # Check if the file exists
+    file_path = doc_dir / filename
+    if not file_path.exists():
+        return {
+            "success": False,
+            "error": f"Document not found: '{filename}' in {doc_dir}"
+        }
+    
+    # Load parser metadata
+    index_data = _load_pdf2md_index(doc_dir)
+    file_parsers = {}
+    if index_data:
+        for file_info in index_data.get("files", []):
+            if file_info.get("name") == filename:
+                file_parsers = file_info.get("parsers", {})
+                break
+    
+    # Select parser
+    selected_parser = _select_parser(parser, file_parsers)
+    warnings = []
+    
+    # Read content based on file type and selected parser
+    try:
+        if file_extension in ['.txt', '.md']:
+            # Plain text files - read directly
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            if parser and parser != "text":
+                warnings.append(f"Requested parser '{parser}' not applicable to text files, read as plain text")
+            selected_parser = "text"
+            
+        elif file_extension == '.pdf':
+            # PDF files - use parser if available
+            if selected_parser == "pdfplumber":
+                try:
+                    import pdfplumber
+                    with pdfplumber.open(file_path) as pdf:
+                        content = ""
+                        for page in pdf.pages:
+                            page_text = page.extract_text()
+                            if page_text:
+                                content += page_text + "\n"
+                    if not content.strip():
+                        content = "[No text content extracted]"
+                except ImportError:
+                    warnings.append("pdfplumber not available, returning file path instead")
+                    content = f"[PDF file at: {file_path}]"
+                    selected_parser = "unavailable"
+                except Exception as e:
+                    warnings.append(f"Error extracting PDF with pdfplumber: {str(e)}")
+                    content = f"[PDF file at: {file_path}]"
+                    selected_parser = "error"
+            else:
+                # For other parsers, check if parsed content exists
+                md_dir = doc_dir / "md"
+                if md_dir.exists():
+                    # Look for parsed content
+                    base_filename = Path(filename).stem
+                    parsed_file = md_dir / f"{base_filename}.{selected_parser}.md"
+                    if parsed_file.exists():
+                        with open(parsed_file, 'r', encoding='utf-8') as f:
+                            content = f.read()
+                    else:
+                        warnings.append(f"Parsed content not found for parser '{selected_parser}', returning file path")
+                        content = f"[PDF file at: {file_path}]"
+                        selected_parser = "unavailable"
+                else:
+                    warnings.append(f"No md directory found, returning file path")
+                    content = f"[PDF file at: {file_path}]"
+                    selected_parser = "unavailable"
+                    
+        else:
+            # Other file types - return file path info
+            content = f"[{file_extension.upper()} file at: {file_path}]"
+            warnings.append(f"File type {file_extension} not supported for content extraction")
+            selected_parser = "unsupported"
+    
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Error reading file: {str(e)}",
+            "file_path": str(file_path),
+            "parser_used": selected_parser
+        }
+    
+    return {
+        "success": True,
+        "content": content,
+        "parser_used": selected_parser,
+        "file_path": str(file_path),
+        "warnings": warnings
+    }

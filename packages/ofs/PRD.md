@@ -49,6 +49,12 @@ Create a python library to access, edit and navigate the opinionated filesystem 
   - Support for directories-only mode
   - **Reserved directory filtering** - Excludes 'md/' and 'archive/' directories from tree output
   - **Reserved file filtering** - Excludes '.json' and '.md' files from tree output
+- [x] **Document reading functionality** (`read_doc`):
+  - `read_doc(identifier, parser)` - Read document content using `Project@Bidder@Filename` format
+  - **Intelligent parser selection** with ranking: docling > marker > llamaparse > pdfplumber
+  - **Multi-format support**: .txt, .md (plain text), .pdf (with parser selection)
+  - **Metadata-aware**: Uses `.pdf2md_index.json` for parser information
+  - **Fallback mechanisms**: Graceful handling of missing parsers or content
 
 ### In Progress 🚧
 - [ ] Performance optimization for large directory structures
