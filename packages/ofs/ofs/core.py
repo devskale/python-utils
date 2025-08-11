@@ -570,25 +570,30 @@ def _collect_bidders_structured(b_dir: Path) -> Dict[str, Any]:
 
 def list_bidder_docs_json(project_name: str, bidder_name: str, include_metadata: bool = False) -> Dict[str, Any]:
     """
-    List all documents for a specific bidder within a project in JSON format.
-    Only includes allowed document formats: PDF, images, and office documents.
-    Excludes JSON files and markdown files.
-
-    Optionally includes metadata from .pdf2md_index.json files when available, containing:
-    - Document categorization (kategorie)
-    - Document issuer (aussteller) 
-    - Document name/title
-    - Reasoning for categorization (begründung)
-    - Parser information
-    - File size and other metadata (excluding hash values)
+    List all documents for a specific bidder in a project in JSON format.
+    
+    By default, returns a minimal view with document name and basic metadata fields
+    (kategorie, meta_name) from .pdf2md_index.json files when available.
+    
+    With include_metadata=True, provides full document details including:
+    - Complete file information (path, size, type)
+    - Full metadata from .pdf2md_index.json files:
+      - Document categorization (kategorie)
+      - Document issuer (aussteller)
+      - Document name (name)
+      - Reasoning for categorization (begründung)
+      - Parser information
+      - File size and other metadata (excluding hash values)
 
     Args:
         project_name (str): Name of the project (AUSSCHREIBUNGNAME)
         bidder_name (str): Name of the bidder (BIETERNAME)
-        include_metadata (bool): Whether to include detailed metadata (default: False)
+        include_metadata (bool): Whether to include full metadata and file details (default: False)
 
     Returns:
-        Dict[str, Any]: JSON structure with documents for the bidder, optionally with metadata
+        Dict[str, Any]: JSON structure with documents for the bidder
+        - Default: minimal view with name, kategorie, meta_name
+        - With metadata: full document details and metadata
     """
     # Define allowed file extensions for documents
     allowed_extensions = {
@@ -660,71 +665,76 @@ def list_bidder_docs_json(project_name: str, bidder_name: str, include_metadata:
                 not item.name.endswith('.meta.json') and
                     is_allowed_document(item.name)):
                 normalized_name = unicodedata.normalize('NFC', item.name)
-                documents.append({
+                doc_entry = {
                     "name": normalized_name,
-                    "path": str(item),
-                    "size": item.stat().st_size if item.exists() else 0,
-                    "type": "file"
-                })
+                }
+                if include_metadata:
+                    doc_entry.update({
+                        "path": str(item),
+                        "size": item.stat().st_size if item.exists() else 0,
+                        "type": "file"
+                    })
+                documents.append(doc_entry)
     except PermissionError:
         pass
 
-    # Load metadata from .pdf2md_index.json if it exists and metadata is requested
+    # Load metadata from .pdf2md_index.json - always load for basic metadata fields
     pdf2md_metadata = {}
-    if include_metadata:
-        index_data = _load_pdf2md_index(bidder_dir)
-        if index_data:
-            # Create a mapping of filename to metadata
-            for file_info in index_data.get("files", []):
-                file_name = file_info.get("name", "")
-                if file_name and is_allowed_document(file_name):
-                    # Extract metadata excluding hash
+    index_data = _load_pdf2md_index(bidder_dir)
+    if index_data:
+        # Create a mapping of filename to metadata
+        for file_info in index_data.get("files", []):
+            file_name = file_info.get("name", "")
+            if file_name and is_allowed_document(file_name):
+                # Extract metadata excluding hash
+                if include_metadata:
+                    # Full metadata when requested
                     metadata = {
                         "size": file_info.get("size", 0),
                         "parsers": file_info.get("parsers", {}),
                         "meta": file_info.get("meta", {})
                     }
-                    pdf2md_metadata[file_name] = metadata
+                else:
+                    # Basic metadata by default (only kategorie and name from meta)
+                    meta_info = file_info.get("meta", {})
+                    metadata = {}
+                    if "kategorie" in meta_info:
+                        metadata["kategorie"] = meta_info["kategorie"]
+                    if "name" in meta_info:
+                        metadata["meta_name"] = meta_info["name"]
+                
+                pdf2md_metadata[file_name] = metadata
 
-                    # Add files from the index that aren't already in our list
-                    if (not file_name.endswith('.meta.json')):
-                        normalized_name = unicodedata.normalize(
-                            'NFC', file_name)
-                        # Check if we already have this file from filesystem scan
-                        if not any(doc["name"] == normalized_name for doc in documents):
-                            file_path = bidder_dir / file_name
-                            documents.append({
-                                "name": normalized_name,
+                # Add files from the index that aren't already in our list
+                if (not file_name.endswith('.meta.json')):
+                    normalized_name = unicodedata.normalize(
+                        'NFC', file_name)
+                    # Check if we already have this file from filesystem scan
+                    if not any(doc["name"] == normalized_name for doc in documents):
+                        file_path = bidder_dir / file_name
+                        doc_entry = {
+                            "name": normalized_name,
+                        }
+                        if include_metadata:
+                            doc_entry.update({
                                 "path": str(file_path),
                                 "size": file_info.get("size", 0),
                                 "type": "file",
                                 "metadata": metadata
                             })
+                        else:
+                            # Add basic metadata fields directly to document
+                            doc_entry.update(metadata)
+                        documents.append(doc_entry)
 
-        # Enhance existing documents with metadata from .pdf2md_index.json
-        for doc in documents:
-            if doc["name"] in pdf2md_metadata and "metadata" not in doc:
+    # Enhance existing documents with metadata
+    for doc in documents:
+        if doc["name"] in pdf2md_metadata:
+            if include_metadata and "metadata" not in doc:
                 doc["metadata"] = pdf2md_metadata[doc["name"]]
-    else:
-        # When metadata is not requested, still need to check .pdf2md_index.json for additional files
-        # but don't include the metadata
-        index_data = _load_pdf2md_index(bidder_dir)
-        if index_data:
-            for file_info in index_data.get("files", []):
-                file_name = file_info.get("name", "")
-                if file_name and is_allowed_document(file_name):
-                    if (not file_name.endswith('.meta.json')):
-                        normalized_name = unicodedata.normalize(
-                            'NFC', file_name)
-                        # Check if we already have this file from filesystem scan
-                        if not any(doc["name"] == normalized_name for doc in documents):
-                            file_path = bidder_dir / file_name
-                            documents.append({
-                                "name": normalized_name,
-                                "path": str(file_path),
-                                "size": file_info.get("size", 0),
-                                "type": "file"
-                            })
+            elif not include_metadata:
+                # Add basic metadata fields directly to document
+                doc.update(pdf2md_metadata[doc["name"]])
 
     # Sort documents by name
     documents.sort(key=lambda x: x["name"])
@@ -778,4 +788,167 @@ def list_bidders_json(project_name: str) -> Dict[str, Any]:
         "project": project_name,
         "bidders": bidder_data["bidder_directories"],
         "total_bidders": bidder_data["total_bidders"]
+    }
+
+
+def list_project_docs_json(project_name: str, include_metadata: bool = False) -> Dict[str, Any]:
+    """
+    List all documents for a project from the A/ folder in JSON format.
+    
+    By default, returns a minimal view with document name and basic metadata fields
+    (kategorie, meta_name) from .pdf2md_index.json files when available.
+    
+    With include_metadata=True, provides full document details including:
+    - Complete file information (path, size, type)
+    - Full metadata from .pdf2md_index.json files:
+      - Document categorization (kategorie)
+      - Document issuer (aussteller)
+      - Document name (name)
+      - Reasoning for categorization (begründung)
+      - Parser information
+      - File size and other metadata (excluding hash values)
+
+    Args:
+        project_name (str): Name of the project (AUSSCHREIBUNGNAME)
+        include_metadata (bool): Whether to include full metadata and file details (default: False)
+
+    Returns:
+        Dict[str, Any]: JSON structure with documents for the project
+        - Default: minimal view with name, kategorie, meta_name
+        - With metadata: full document details and metadata
+    """
+    # Define allowed file extensions for documents
+    allowed_extensions = {
+        # PDF files
+        '.pdf',
+        # Image files
+        '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.tif', '.svg', '.webp',
+        # Office documents
+        '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.odt', '.ods', '.odp',
+        # Other document formats
+        '.rtf', '.txt'
+    }
+
+    # Extensions to exclude
+    excluded_extensions = {
+        '.json', '.md', '.markdown'
+    }
+
+    def is_allowed_document(filename):
+        """Check if a file is an allowed document type."""
+        _, ext = os.path.splitext(filename.lower())
+        return ext in allowed_extensions and ext not in excluded_extensions
+
+    base_dir = get_base_dir()
+    base_path = Path(base_dir)
+
+    # Find the project
+    project_path = _search_in_directory(base_path, project_name)
+    if not project_path:
+        return {
+            "project": project_name,
+            "documents": [],
+            "total_documents": 0,
+            "error": "Project not found"
+        }
+
+    project_dir = Path(project_path)
+    a_dir = project_dir / "A"
+
+    if not a_dir.exists():
+        return {
+            "project": project_name,
+            "documents": [],
+            "total_documents": 0,
+            "error": "No A directory found in project"
+        }
+
+    documents = []
+
+    # Collect documents from filesystem
+    try:
+        for item in a_dir.iterdir():
+            if (item.is_file() and
+                not item.name.startswith('.') and
+                not item.name.endswith('.meta.json') and
+                    is_allowed_document(item.name)):
+                normalized_name = unicodedata.normalize('NFC', item.name)
+                doc_entry = {
+                    "name": normalized_name,
+                }
+                if include_metadata:
+                    doc_entry.update({
+                        "path": str(item),
+                        "size": item.stat().st_size if item.exists() else 0,
+                        "type": "file"
+                    })
+                documents.append(doc_entry)
+    except PermissionError:
+        pass
+
+    # Load metadata from .pdf2md_index.json - always load for basic metadata fields
+    pdf2md_metadata = {}
+    index_data = _load_pdf2md_index(a_dir)
+    if index_data:
+        # Create a mapping of filename to metadata
+        for file_info in index_data.get("files", []):
+            file_name = file_info.get("name", "")
+            if file_name and is_allowed_document(file_name):
+                # Extract metadata excluding hash
+                if include_metadata:
+                    # Full metadata when requested
+                    metadata = {
+                        "size": file_info.get("size", 0),
+                        "parsers": file_info.get("parsers", {}),
+                        "meta": file_info.get("meta", {})
+                    }
+                else:
+                    # Basic metadata by default (only kategorie and name from meta)
+                    meta_info = file_info.get("meta", {})
+                    metadata = {}
+                    if "kategorie" in meta_info:
+                        metadata["kategorie"] = meta_info["kategorie"]
+                    if "name" in meta_info:
+                        metadata["meta_name"] = meta_info["name"]
+                
+                pdf2md_metadata[file_name] = metadata
+
+                # Add files from the index that aren't already in our list
+                if (not file_name.endswith('.meta.json')):
+                    normalized_name = unicodedata.normalize(
+                        'NFC', file_name)
+                    # Check if we already have this file from filesystem scan
+                    if not any(doc["name"] == normalized_name for doc in documents):
+                        file_path = a_dir / file_name
+                        doc_entry = {
+                            "name": normalized_name,
+                        }
+                        if include_metadata:
+                            doc_entry.update({
+                                "path": str(file_path),
+                                "size": file_info.get("size", 0),
+                                "type": "file",
+                                "metadata": metadata
+                            })
+                        else:
+                            # Add basic metadata fields directly to document
+                            doc_entry.update(metadata)
+                        documents.append(doc_entry)
+
+    # Enhance existing documents with metadata
+    for doc in documents:
+        if doc["name"] in pdf2md_metadata:
+            if include_metadata and "metadata" not in doc:
+                doc["metadata"] = pdf2md_metadata[doc["name"]]
+            elif not include_metadata:
+                # Add basic metadata fields directly to document
+                doc.update(pdf2md_metadata[doc["name"]])
+
+    # Sort documents by name
+    documents.sort(key=lambda x: x["name"])
+
+    return {
+        "project": project_name,
+        "documents": documents,
+        "total_documents": len(documents)
     }

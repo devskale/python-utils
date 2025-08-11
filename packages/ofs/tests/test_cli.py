@@ -117,7 +117,7 @@ def test_main_find_bidder():
 
 
 def test_main_list_docs():
-    """Test main function with list-docs command (default behavior - without metadata)."""
+    """Test main function with list-docs command (default behavior - minimal view with basic metadata)."""
     with patch('sys.argv', ['ofs', 'list-docs', 'Demoprojekt1@Demo2']):
         with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
             try:
@@ -133,9 +133,14 @@ def test_main_list_docs():
                 assert result['bidder'] == 'Demo2'
                 assert isinstance(result['documents'], list)
                 assert isinstance(result['total_documents'], int)
-                # By default, metadata should NOT be included
+                # By default, full metadata should NOT be included, but basic fields might be
                 for doc in result['documents']:
-                    assert 'metadata' not in doc
+                    assert 'metadata' not in doc  # No nested metadata object
+                    assert 'name' in doc  # Name is always present
+                    # Full file details should not be present by default
+                    assert 'path' not in doc
+                    assert 'size' not in doc
+                    assert 'type' not in doc
             except SystemExit as e:
                 # Might exit with error if project/bidder not found
                 pass
@@ -158,8 +163,12 @@ def test_main_list_docs_with_meta():
                 assert result['bidder'] == 'Demo2'
                 assert isinstance(result['documents'], list)
                 assert isinstance(result['total_documents'], int)
-                # With --meta flag, metadata should be included
+                # With --meta flag, full document details should be included
                 for doc in result['documents']:
+                    assert 'name' in doc
+                    assert 'path' in doc  # Full file details should be present
+                    assert 'size' in doc
+                    assert 'type' in doc
                     if 'metadata' in doc:
                         # If metadata exists, verify its structure
                         metadata = doc['metadata']
@@ -188,18 +197,83 @@ def test_main_list_docs_without_meta():
                 assert result['bidder'] == 'Demo2'
                 assert isinstance(result['documents'], list)
                 assert isinstance(result['total_documents'], int)
-                # Without --meta flag, metadata should NOT be included
+                # Without --meta flag, full metadata and file details should NOT be included
                 for doc in result['documents']:
-                    assert 'metadata' not in doc
+                    assert 'metadata' not in doc  # No nested metadata object
+                    assert 'name' in doc  # Name is always present
+                    # Full file details should not be present by default
+                    assert 'path' not in doc
+                    assert 'size' not in doc
+                    assert 'type' not in doc
             except SystemExit as e:
                 # Might exit with error if project/bidder not found
                 pass
 
 
-def test_main_list_docs_invalid_format():
-    """Test main function with list-docs command and invalid format."""
-    with patch('sys.argv', ['ofs', 'list-docs', 'InvalidFormat']):
-        with patch('sys.stderr', new_callable=StringIO) as mock_stderr:
+def test_main_list_docs_project_only():
+    """Test main function with list-docs command for project only (default behavior)."""
+    with patch('sys.argv', ['ofs', 'list-docs', 'Entrümpelung']):
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            try:
+                main()
+                # Should return valid JSON
+                output = mock_stdout.getvalue().strip()
+                result = json.loads(output)
+                assert 'project' in result
+                assert 'documents' in result
+                assert 'total_documents' in result
+                assert result['project'] == 'Entrümpelung'
+                assert isinstance(result['documents'], list)
+                assert isinstance(result['total_documents'], int)
+                # By default, full metadata should NOT be included, but basic fields might be
+                for doc in result['documents']:
+                    assert 'metadata' not in doc  # No nested metadata object
+                    assert 'name' in doc  # Name is always present
+                    # Full file details should not be present by default
+                    assert 'path' not in doc
+                    assert 'size' not in doc
+                    assert 'type' not in doc
+            except SystemExit as e:
+                # Might exit with error if project not found
+                pass
+
+
+def test_main_list_docs_project_with_meta():
+    """Test main function with list-docs command for project with --meta flag."""
+    with patch('sys.argv', ['ofs', 'list-docs', '--meta', 'Entrümpelung']):
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            try:
+                main()
+                # Should return valid JSON
+                output = mock_stdout.getvalue().strip()
+                result = json.loads(output)
+                assert 'project' in result
+                assert 'documents' in result
+                assert 'total_documents' in result
+                assert result['project'] == 'Entrümpelung'
+                assert isinstance(result['documents'], list)
+                assert isinstance(result['total_documents'], int)
+                # With --meta flag, full document details should be included
+                for doc in result['documents']:
+                    assert 'name' in doc
+                    assert 'path' in doc  # Full file details should be present
+                    assert 'size' in doc
+                    assert 'type' in doc
+                    if 'metadata' in doc:
+                        # If metadata exists, verify its structure
+                        metadata = doc['metadata']
+                        assert 'size' in metadata
+                        assert 'parsers' in metadata
+                        assert 'meta' in metadata
+            except SystemExit as e:
+                # Might exit with error if project not found
+                pass
+
+
+def test_main_list_docs_nonexistent_project():
+    """Test main function with list-docs command and non-existent project."""
+    with patch('sys.argv', ['ofs', 'list-docs', 'NonExistentProject']):
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
             try:
                 main()
                 # Should not reach here
@@ -207,8 +281,10 @@ def test_main_list_docs_invalid_format():
             except SystemExit as e:
                 # Should exit with error
                 assert e.code == 1
-                error_output = mock_stderr.getvalue()
-                assert "Invalid format" in error_output
+                output = mock_stdout.getvalue()
+                result = json.loads(output)
+                assert 'error' in result
+                assert result['error'] == "Project not found"
 
 
 def test_main_root():

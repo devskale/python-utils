@@ -35,6 +35,10 @@ Create a python library to access, edit and navigate the opinionated filesystem 
   - `ofs list-projects` - List all projects
   - `ofs list-bidders <project>` - List bidders in project
   - `ofs find-bidder <project> <bidder>` - Find specific bidder
+  - `ofs list-docs <project@bidder>` - List bidder documents with minimal view (name + basic metadata)
+  - `ofs list-docs <project@bidder> --meta` - List bidder documents with full metadata and details
+  - `ofs list-docs <project>` - List project documents from A/ folder with minimal view (name + basic metadata)
+  - `ofs list-docs <project> --meta` - List project documents from A/ folder with full metadata and details
 - [x] **Module execution support** (`ofs/__main__.py`)
 
 ### In Progress 🚧
