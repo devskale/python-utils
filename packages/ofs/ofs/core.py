@@ -952,3 +952,141 @@ def list_project_docs_json(project_name: str, include_metadata: bool = False) ->
         "documents": documents,
         "total_documents": len(documents)
     }
+
+
+def get_bidder_document_json(project_name: str, bidder_name: str, filename: str) -> Dict[str, Any]:
+    """
+    Get detailed information for a specific document in a bidder's directory.
+    
+    This function provides comprehensive information about a specific document including:
+    - Complete file information (path, size, type, modification time)
+    - Full metadata from .pdf2md_index.json files:
+      - Document categorization (kategorie)
+      - Document issuer (aussteller)
+      - Document name (name)
+      - Reasoning for categorization (begründung)
+      - Parser information
+      - File size and other metadata (excluding hash values)
+
+    Args:
+        project_name (str): Name of the project (AUSSCHREIBUNGNAME)
+        bidder_name (str): Name of the bidder (BIETERNAME)
+        filename (str): Name of the specific document file
+
+    Returns:
+        Dict[str, Any]: JSON structure with detailed document information
+    """
+    # Define allowed file extensions for documents
+    allowed_extensions = {
+        # PDF files
+        '.pdf',
+        # Image files
+        '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.tif', '.svg', '.webp',
+        # Office documents
+        '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.odt', '.ods', '.odp',
+        # Other document formats
+        '.rtf', '.txt'
+    }
+
+    # Extensions to exclude
+    excluded_extensions = {
+        '.json', '.md', '.markdown'
+    }
+
+    def is_allowed_document(filename):
+        """Check if a file is an allowed document type."""
+        _, ext = os.path.splitext(filename.lower())
+        return ext in allowed_extensions and ext not in excluded_extensions
+
+    # Check if the filename is an allowed document type
+    if not is_allowed_document(filename):
+        return {
+            "project": project_name,
+            "bidder": bidder_name,
+            "filename": filename,
+            "error": "File type not allowed or not a document"
+        }
+
+    base_dir = get_base_dir()
+    base_path = Path(base_dir)
+
+    # Find the project
+    project_path = _search_in_directory(base_path, project_name)
+    if not project_path:
+        return {
+            "project": project_name,
+            "bidder": bidder_name,
+            "filename": filename,
+            "error": "Project not found"
+        }
+
+    # Find the bidder within the project
+    bidder_path = find_bidder_in_project(project_name, bidder_name)
+    if not bidder_path:
+        return {
+            "project": project_name,
+            "bidder": bidder_name,
+            "filename": filename,
+            "error": "Bidder not found in project"
+        }
+
+    bidder_dir = Path(bidder_path)
+    file_path = bidder_dir / filename
+
+    # Check if the file exists
+    if not file_path.exists():
+        return {
+            "project": project_name,
+            "bidder": bidder_name,
+            "filename": filename,
+            "error": "Document not found"
+        }
+
+    # Get basic file information
+    try:
+        file_stat = file_path.stat()
+        normalized_name = unicodedata.normalize('NFC', filename)
+        
+        document_info = {
+            "project": project_name,
+            "bidder": bidder_name,
+            "filename": normalized_name,
+            "path": str(file_path),
+            "size": file_stat.st_size,
+            "type": "file",
+            "modified": file_stat.st_mtime,
+            "exists": True
+        }
+    except (OSError, PermissionError) as e:
+        return {
+            "project": project_name,
+            "bidder": bidder_name,
+            "filename": filename,
+            "error": f"Cannot access file: {str(e)}"
+        }
+
+    # Load metadata from .pdf2md_index.json
+    index_data = _load_pdf2md_index(bidder_dir)
+    if index_data:
+        # Find metadata for this specific file
+        for file_info in index_data.get("files", []):
+            if file_info.get("name", "") == filename:
+                # Extract metadata excluding hash
+                metadata = {
+                    "size": file_info.get("size", 0),
+                    "parsers": file_info.get("parsers", {}),
+                    "meta": file_info.get("meta", {})
+                }
+                document_info["metadata"] = metadata
+                
+                # Also add basic metadata fields directly to document for convenience
+                meta_info = file_info.get("meta", {})
+                if "kategorie" in meta_info:
+                    document_info["kategorie"] = meta_info["kategorie"]
+                if "name" in meta_info:
+                    document_info["meta_name"] = meta_info["name"]
+                if "aussteller" in meta_info:
+                    document_info["aussteller"] = meta_info["aussteller"]
+                break
+
+    return document_info

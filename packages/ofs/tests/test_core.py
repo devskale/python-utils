@@ -269,6 +269,66 @@ def test_list_project_docs_json():
         assert 'type' not in doc
 
 
+def test_get_bidder_document_json():
+    """Test the get_bidder_document_json function."""
+    from ofs.core import get_bidder_document_json
+    
+    # Test with existing project, bidder, and document
+    result = get_bidder_document_json("Entrümpelung", "Alpenglanz", "10formblatt-leistungsfaehigkeit.pdf")
+    assert isinstance(result, dict)
+    assert 'project' in result
+    assert 'bidder' in result
+    assert 'filename' in result
+    assert result['project'] == "Entrümpelung"
+    assert result['bidder'] == "Alpenglanz"
+    assert result['filename'] == "10formblatt-leistungsfaehigkeit.pdf"
+    
+    # Should have file information
+    assert 'path' in result
+    assert 'size' in result
+    assert 'type' in result
+    assert 'exists' in result
+    assert result['exists'] is True
+    assert result['type'] == "file"
+    
+    # Should have metadata if available
+    if 'metadata' in result:
+        metadata = result['metadata']
+        assert 'size' in metadata
+        assert 'parsers' in metadata
+        assert 'meta' in metadata
+        # Verify that hash is not included
+        assert 'hash' not in metadata
+    
+    # Should have basic metadata fields if available
+    possible_fields = ['kategorie', 'meta_name', 'aussteller']
+    # At least one of these fields might be present
+    
+    # Test with non-existent project
+    result_no_project = get_bidder_document_json("NonExistentProject", "Alpenglanz", "10formblatt-leistungsfaehigkeit.pdf")
+    assert isinstance(result_no_project, dict)
+    assert 'error' in result_no_project
+    assert result_no_project['error'] == "Project not found"
+    
+    # Test with non-existent bidder
+    result_no_bidder = get_bidder_document_json("Entrümpelung", "NonExistentBidder", "10formblatt-leistungsfaehigkeit.pdf")
+    assert isinstance(result_no_bidder, dict)
+    assert 'error' in result_no_bidder
+    assert result_no_bidder['error'] == "Bidder not found in project"
+    
+    # Test with non-existent document
+    result_no_doc = get_bidder_document_json("Entrümpelung", "Alpenglanz", "nonexistent.pdf")
+    assert isinstance(result_no_doc, dict)
+    assert 'error' in result_no_doc
+    assert result_no_doc['error'] == "Document not found"
+    
+    # Test with disallowed file type (JSON file)
+    result_disallowed = get_bidder_document_json("Entrümpelung", "Alpenglanz", ".pdf2md_index.json")
+    assert isinstance(result_disallowed, dict)
+    assert 'error' in result_disallowed
+    assert result_disallowed['error'] == "File type not allowed or not a document"
+
+
 def test_config_integration():
     """Test that core functions work with config."""
     # This test ensures that the core functions can access configuration

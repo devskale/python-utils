@@ -19,7 +19,8 @@ from .core import (
     list_projects_json,
     list_bidders_json,
     list_bidder_docs_json,
-    list_project_docs_json
+    list_project_docs_json,
+    get_bidder_document_json
 )
 
 
@@ -97,7 +98,7 @@ def create_parser() -> argparse.ArgumentParser:
     )
     list_docs_parser.add_argument(
         "project_bidder",
-        help="Project name or 'project@bidder' format"
+        help="Project name, 'project@bidder', or 'project@bidder@filename' format"
     )
     list_docs_parser.add_argument(
         "--meta",
@@ -174,14 +175,16 @@ def handle_list_docs(project_bidder: str, meta: bool = False) -> None:
     Handle the list-docs command.
     
     Args:
-        project_bidder (str): Project name or 'project@bidder' format
-        meta (bool): Whether to include detailed metadata for each document
+        project_bidder (str): Project name, 'project@bidder', or 'project@bidder@filename' format
+        meta (bool): Whether to include detailed metadata for each document (ignored for specific document lookup)
     """
-    # Check if it's project@bidder format or just project name
+    # Check the format based on number of @ symbols
     if '@' in project_bidder:
-        # Handle project@bidder format (existing functionality)
-        try:
-            project, bidder = project_bidder.split('@', 1)
+        parts = project_bidder.split('@')
+        
+        if len(parts) == 2:
+            # Handle project@bidder format (existing functionality)
+            project, bidder = parts
             project = project.strip()
             bidder = bidder.strip()
             
@@ -196,11 +199,29 @@ def handle_list_docs(project_bidder: str, meta: bool = False) -> None:
             if "error" in result:
                 sys.exit(1)
                 
-        except ValueError:
-            print("Error: Invalid format. Use 'project@bidder' format.", file=sys.stderr)
+        elif len(parts) == 3:
+            # Handle project@bidder@filename format (new functionality)
+            project, bidder, filename = parts
+            project = project.strip()
+            bidder = bidder.strip()
+            filename = filename.strip()
+            
+            if not project or not bidder or not filename:
+                print("Error: Project, bidder, and filename must all be provided.", file=sys.stderr)
+                sys.exit(1)
+            
+            result = get_bidder_document_json(project, bidder, filename)
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+            
+            # Exit with error code if there was an error in the result
+            if "error" in result:
+                sys.exit(1)
+                
+        else:
+            print("Error: Invalid format. Use 'project', 'project@bidder', or 'project@bidder@filename' format.", file=sys.stderr)
             sys.exit(1)
     else:
-        # Handle project-only format (new functionality)
+        # Handle project-only format (existing functionality)
         project = project_bidder.strip()
         
         if not project:

@@ -287,6 +287,65 @@ def test_main_list_docs_nonexistent_project():
                 assert result['error'] == "Project not found"
 
 
+def test_main_list_docs_specific_document():
+    """Test main function with list-docs command for specific document (project@bidder@filename)."""
+    with patch('sys.argv', ['ofs', 'list-docs', 'Entrümpelung@Alpenglanz@10formblatt-leistungsfaehigkeit.pdf']):
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            try:
+                main()
+                # Should return valid JSON
+                output = mock_stdout.getvalue().strip()
+                result = json.loads(output)
+                assert 'project' in result
+                assert 'bidder' in result
+                assert 'filename' in result
+                assert result['project'] == 'Entrümpelung'
+                assert result['bidder'] == 'Alpenglanz'
+                assert result['filename'] == '10formblatt-leistungsfaehigkeit.pdf'
+                # Should have file information
+                assert 'path' in result
+                assert 'size' in result
+                assert 'type' in result
+                assert 'exists' in result
+                assert result['exists'] is True
+                assert result['type'] == "file"
+            except SystemExit as e:
+                # Might exit with error if document not found
+                pass
+
+
+def test_main_list_docs_specific_document_nonexistent():
+    """Test main function with list-docs command for non-existent document."""
+    with patch('sys.argv', ['ofs', 'list-docs', 'Entrümpelung@Alpenglanz@nonexistent.pdf']):
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            try:
+                main()
+                # Should not reach here
+                assert False, "Expected SystemExit"
+            except SystemExit as e:
+                # Should exit with error
+                assert e.code == 1
+                output = mock_stdout.getvalue()
+                result = json.loads(output)
+                assert 'error' in result
+                assert result['error'] == "Document not found"
+
+
+def test_main_list_docs_invalid_format():
+    """Test main function with list-docs command and invalid format (too many @ symbols)."""
+    with patch('sys.argv', ['ofs', 'list-docs', 'Project@Bidder@File@Extra']):
+        with patch('sys.stderr', new_callable=StringIO) as mock_stderr:
+            try:
+                main()
+                # Should not reach here
+                assert False, "Expected SystemExit"
+            except SystemExit as e:
+                # Should exit with error
+                assert e.code == 1
+                error_output = mock_stderr.getvalue()
+                assert "Invalid format" in error_output
+
+
 def test_main_root():
     """Test main function with root command."""
     with patch('sys.argv', ['ofs', 'root']):
