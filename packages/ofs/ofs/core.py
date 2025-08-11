@@ -81,8 +81,8 @@ def _search_in_directory(base_path: Path, name: str, search_depth: int = 3) -> O
                 result = _search_in_directory(item, name, search_depth - 1)
                 if result:
                     return result
-    except PermissionError:
-        # Skip directories we can't read
+    except (PermissionError, OSError, UnicodeDecodeError):
+        # Skip directories we can't read or have encoding issues
         pass
 
     return None
@@ -272,12 +272,14 @@ def list_projects() -> list[str]:
     if not base_path.exists():
         return []
 
+    # Reserved directories to exclude
+    reserved_dirs = {"md", "archive"}
     projects = set()
 
     # Get projects from filesystem
     try:
         for item in base_path.iterdir():
-            if item.is_dir() and not item.name.startswith('.'):
+            if item.is_dir() and not item.name.startswith('.') and item.name not in reserved_dirs:
                 # Normalize Unicode to handle different encodings of the same characters
                 normalized_name = unicodedata.normalize('NFC', item.name)
                 projects.add(normalized_name)
@@ -289,7 +291,7 @@ def list_projects() -> list[str]:
     if index_data:
         for directory in index_data.get("directories", []):
             dir_name = directory.get("name", "")
-            if dir_name:
+            if dir_name and dir_name not in reserved_dirs:
                 # Normalize Unicode to handle different encodings of the same characters
                 normalized_name = unicodedata.normalize('NFC', dir_name)
                 projects.add(normalized_name)
@@ -321,8 +323,31 @@ def list_bidders(project_name: str) -> list[str]:
     if not b_dir.exists():
         return []
 
+    # Reserved directories and file extensions to exclude
+    reserved_dirs = {"md", "archive"}
+    reserved_file_extensions = {".json", ".md"}
+    
     bidders = set()
-    _collect_items_recursive(b_dir, bidders, search_depth=2)
+    
+    # Only collect directories, not files
+    try:
+        for item in b_dir.iterdir():
+            if item.is_dir() and not item.name.startswith('.') and item.name not in reserved_dirs:
+                # Normalize Unicode to handle different encodings of the same characters
+                normalized_name = unicodedata.normalize('NFC', item.name)
+                bidders.add(normalized_name)
+    except PermissionError:
+        pass
+    
+    # Add bidders from index file
+    index_data = _load_pdf2md_index(b_dir)
+    if index_data:
+        for directory in index_data.get("directories", []):
+            dir_name = directory.get("name", "")
+            if dir_name and dir_name not in reserved_dirs:
+                # Normalize Unicode to handle different encodings of the same characters
+                normalized_name = unicodedata.normalize('NFC', dir_name)
+                bidders.add(normalized_name)
 
     return sorted(list(bidders))
 
@@ -1090,3 +1115,203 @@ def get_bidder_document_json(project_name: str, bidder_name: str, filename: str)
                 break
 
     return document_info
+
+
+def generate_tree_structure(directories_only: bool = False) -> Dict[str, Any]:
+    """
+    Generate a tree structure of the OFS filesystem.
+    
+    Args:
+        directories_only (bool): If True, only show directories (no documents)
+        
+    Returns:
+        Dict[str, Any]: Tree structure with projects, bidders, and optionally documents
+    """
+    base_dir = Path(get_base_dir())
+    if not base_dir.exists():
+        return {
+            "error": f"Base directory not found: {base_dir}",
+            "tree": {}
+        }
+    
+    # Reserved directories to exclude from tree
+    reserved_dirs = {"md", "archive"}
+    
+    tree = {}
+    projects = list_projects()
+    
+    for project in projects:
+        # Skip reserved directories
+        if project in reserved_dirs:
+            continue
+            
+        project_path = base_dir / project
+        if not project_path.exists():
+            continue
+            
+        tree[project] = {
+            "type": "project",
+            "bidders": {},
+            "documents": [] if not directories_only else None
+        }
+        
+        # Add project documents from A/ folder if not directories_only
+        if not directories_only:
+            a_folder = project_path / "A"
+            if a_folder.exists():
+                project_docs = _get_documents_from_directory(a_folder, reserved_dirs)
+                tree[project]["documents"] = [doc["name"] for doc in project_docs]
+        
+        # Also add any files directly in the project directory if not directories_only
+        if not directories_only:
+            project_docs = _get_documents_from_directory(project_path, reserved_dirs)
+            if project_docs:
+                if tree[project]["documents"] is None:
+                    tree[project]["documents"] = []
+                tree[project]["documents"].extend([doc["name"] for doc in project_docs])
+        
+        # Add bidders
+        bidders = list_bidders(project)
+        for bidder in bidders:
+            # Skip reserved directories
+            if bidder in reserved_dirs:
+                continue
+                
+            bidder_path = find_bidder_in_project(project, bidder)
+            if bidder_path:
+                tree[project]["bidders"][bidder] = {
+                    "type": "bidder",
+                    "documents": [] if not directories_only else None
+                }
+                
+                # Add bidder documents if not directories_only
+                if not directories_only:
+                    bidder_docs = _get_documents_from_directory(Path(bidder_path), reserved_dirs)
+                    tree[project]["bidders"][bidder]["documents"] = [doc["name"] for doc in bidder_docs]
+    
+    return {
+        "success": True,
+        "tree": tree,
+        "directories_only": directories_only
+    }
+
+
+def _get_documents_from_directory(directory: Path, reserved_dirs: set = None) -> List[Dict[str, Any]]:
+    """
+    Get documents from a directory using index files or filesystem scan.
+    
+    Args:
+        directory (Path): Directory to scan for documents
+        reserved_dirs (set): Set of directory names to exclude from scanning
+        
+    Returns:
+        List[Dict[str, Any]]: List of document information
+    """
+    if reserved_dirs is None:
+        reserved_dirs = set()
+        
+    # Reserved file extensions to exclude
+    reserved_file_extensions = {".json", ".md"}
+        
+    documents = []
+    
+    if not directory.exists():
+        return documents
+    
+    # Try to load from index file first
+    index_data = _load_pdf2md_index(directory)
+    if index_data and "files" in index_data:
+        for file_info in index_data["files"]:
+            if file_info.get("name"):
+                # Skip reserved file types
+                file_path = Path(file_info["name"])
+                if file_path.suffix.lower() in reserved_file_extensions:
+                    continue
+                documents.append({
+                    "name": file_info["name"],
+                    "type": "document"
+                })
+    else:
+        # Fallback to filesystem scan
+        try:
+            for item in directory.iterdir():
+                # Skip reserved directories
+                if item.is_dir() and item.name in reserved_dirs:
+                    continue
+                    
+                if item.is_file() and not item.name.startswith('.'):
+                    # Skip reserved file types
+                    if item.suffix.lower() in reserved_file_extensions:
+                        continue
+                    documents.append({
+                        "name": item.name,
+                        "type": "document"
+                    })
+        except (PermissionError, OSError, UnicodeDecodeError) as e:
+            # Skip directories/files we can't read or have encoding issues
+            pass
+    
+    return documents
+
+
+def print_tree_structure(directories_only: bool = False) -> str:
+    """
+    Generate a formatted tree structure string for display.
+    
+    Args:
+        directories_only (bool): If True, only show directories (no documents)
+        
+    Returns:
+        str: Formatted tree structure
+    """
+    tree_data = generate_tree_structure(directories_only)
+    
+    if "error" in tree_data:
+        return f"Error: {tree_data['error']}"
+    
+    tree = tree_data["tree"]
+    output_lines = []
+    
+    if not tree:
+        return "No projects found in OFS structure."
+    
+    for i, (project_name, project_data) in enumerate(tree.items()):
+        is_last_project = i == len(tree) - 1
+        project_prefix = "└── " if is_last_project else "├── "
+        output_lines.append(f"{project_prefix}{project_name}")
+        
+        # Add project documents if not directories_only
+        if not directories_only and project_data.get("documents"):
+            for j, doc in enumerate(project_data["documents"]):
+                is_last_doc = j == len(project_data["documents"]) - 1
+                has_bidders = bool(project_data["bidders"])
+                
+                if is_last_project:
+                    doc_prefix = "    └── " if is_last_doc and not has_bidders else "    ├── "
+                else:
+                    doc_prefix = "│   └── " if is_last_doc and not has_bidders else "│   ├── "
+                
+                output_lines.append(f"{doc_prefix}{doc}")
+        
+        # Add bidders
+        bidders = list(project_data["bidders"].items())
+        for j, (bidder_name, bidder_data) in enumerate(bidders):
+            is_last_bidder = j == len(bidders) - 1
+            
+            if is_last_project:
+                bidder_prefix = "    └── " if is_last_bidder else "    ├── "
+                doc_prefix_base = "        "
+            else:
+                bidder_prefix = "│   └── " if is_last_bidder else "│   ├── "
+                doc_prefix_base = "│       " if not is_last_bidder else "    "
+            
+            output_lines.append(f"{bidder_prefix}{bidder_name}")
+            
+            # Add bidder documents if not directories_only
+            if not directories_only and bidder_data.get("documents"):
+                for k, doc in enumerate(bidder_data["documents"]):
+                    is_last_doc = k == len(bidder_data["documents"]) - 1
+                    doc_prefix = f"{doc_prefix_base}└── " if is_last_doc else f"{doc_prefix_base}├── "
+                    output_lines.append(f"{doc_prefix}{doc}")
+    
+    return "\n".join(output_lines)

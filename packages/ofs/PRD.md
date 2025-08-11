@@ -40,7 +40,15 @@ Create a python library to access, edit and navigate the opinionated filesystem 
   - `ofs list-docs <project>` - List project documents from A/ folder with minimal view (name + basic metadata)
   - `ofs list-docs <project> --meta` - List project documents from A/ folder with full metadata and details
   - `ofs list-docs <project@bidder@filename>` - Get detailed information for a specific document
+  - `ofs tree` - Show tree structure of projects, bidders, and documents
+  - `ofs tree -d` - Show only directory tree (no documents)
 - [x] **Module execution support** (`ofs/__main__.py`)
+- [x] **Tree structure visualization**:
+  - `generate_tree_structure()` - Generate structured tree data
+  - `print_tree_structure()` - Format tree for display
+  - Support for directories-only mode
+  - **Reserved directory filtering** - Excludes 'md/' and 'archive/' directories from tree output
+  - **Reserved file filtering** - Excludes '.json' and '.md' files from tree output
 
 ### In Progress 🚧
 - [ ] Performance optimization for large directory structures
@@ -56,10 +64,13 @@ Create a python library to access, edit and navigate the opinionated filesystem 
 
 # Project structure
 
-markdown ´´´
+markdown ```
 .
 ├── ofs/
-│ ├── **init**.py
+│ ├── __init__.py
+│ ├── cli.py
+│ ├── config.py
+│ ├── core.py
 ├── tests/
 ├── docs/
 │ ├── opinionatedFilesystem.md
@@ -70,4 +81,4 @@ markdown ´´´
 │ │ ├── project_rules.md
 ├── setup.py
 ├── PRD.md
-´´´
+```

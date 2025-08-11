@@ -20,7 +20,9 @@ from .core import (
     list_bidders_json,
     list_bidder_docs_json,
     list_project_docs_json,
-    get_bidder_document_json
+    get_bidder_document_json,
+    print_tree_structure,
+    generate_tree_structure
 )
 
 
@@ -110,6 +112,17 @@ def create_parser() -> argparse.ArgumentParser:
     root_parser = subparsers.add_parser(
         "root",
         help="Show the OFS root directory"
+    )
+    
+    # tree command
+    tree_parser = subparsers.add_parser(
+        "tree",
+        help="Show tree structure of projects, bidders, and documents"
+    )
+    tree_parser.add_argument(
+        "-d", "--directories",
+        action="store_true",
+        help="Show only directory tree (no documents)"
     )
     
     return parser
@@ -248,6 +261,17 @@ def handle_root() -> None:
         sys.exit(1)
 
 
+def handle_tree(directories_only: bool = False) -> None:
+    """
+    Handle the tree command.
+    
+    Args:
+        directories_only (bool): Whether to show only directories (no documents)
+    """
+    tree_output = print_tree_structure(directories_only)
+    print(tree_output)
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     """
     Main entry point for the OFS CLI.
@@ -280,6 +304,8 @@ def main(argv: Optional[list[str]] = None) -> int:
             handle_list_docs(args.project_bidder, args.meta)
         elif args.command == "root":
             handle_root()
+        elif args.command == "tree":
+            handle_tree(args.directories)
         else:
             print(f"Unknown command: {args.command}", file=sys.stderr)
             return 1
