@@ -7,12 +7,14 @@ A Python package for accessing, editing, and navigating opinionated filesystem s
 ### Development Installation
 
 1. Create a virtual environment:
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # On macOS/Linux
 ```
 
 2. Install in development mode:
+
 ```bash
 pip install -e .
 ```
@@ -165,4 +167,25 @@ ofs/
 ├── setup.py
 ├── README.md
 └── PRD.md
+```
+
+## legacy code
+
+we are trying to rebuild and replicate certain functions from strukt2meta and from pdf2md library
+
+`pdf --index un` stores unparsed and unkategorized items into a file called un_items.json
+
+````shell
+pdf2md .disk --index un --recursive --json```
+````
+
+```
+Found 119 unparsed or uncategorized item(s).
+Unparsed and uncategorized items list saved to: .disk/un_items.json
+```
+
+strukt2umeta unlist kategorizes 119 items from the list and updates the ofs index.
+
+```bash
+strukt2meta unlist 119 .disk2/un_items.json
 ```

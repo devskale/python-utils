@@ -1,6 +1,7 @@
 """Tests for OFS CLI functionality."""
 
 import pytest
+import json
 from unittest.mock import patch
 from io import StringIO
 import sys
@@ -39,9 +40,11 @@ def test_main_get_path():
         with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
             main()
             output = mock_stdout.getvalue().strip()
-            # Should contain both the document name and .dir
-            assert 'test_doc' in output
-            assert '.dir' in output
+            # Should return valid JSON
+            result = json.loads(output)
+            assert result['name'] == 'test_doc'
+            assert 'paths' in result
+            assert 'count' in result
 
 
 def test_main_get_path_project():
@@ -50,8 +53,11 @@ def test_main_get_path_project():
         with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
             main()
             output = mock_stdout.getvalue().strip()
-            assert 'Demoprojekt1' in output
-            assert '.dir' in output
+            # Should return valid JSON
+            result = json.loads(output)
+            assert result['name'] == 'Demoprojekt1'
+            assert 'paths' in result
+            assert 'count' in result
 
 
 def test_main_list():
@@ -68,9 +74,12 @@ def test_main_list_projects():
     with patch('sys.argv', ['ofs', 'list-projects']):
         with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
             main()
-            # Should run successfully
-            output = mock_stdout.getvalue()
-            # Output might contain project names or be empty
+            # Should return valid JSON
+            output = mock_stdout.getvalue().strip()
+            result = json.loads(output)
+            assert 'projects' in result
+            assert 'count' in result
+            assert isinstance(result['projects'], list)
 
 
 def test_main_list_bidders():
@@ -78,9 +87,17 @@ def test_main_list_bidders():
     with patch('sys.argv', ['ofs', 'list-bidders', 'Demoprojekt1']):
         with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
             main()
-            # Should run successfully
-            output = mock_stdout.getvalue()
-            # Output might contain bidder names or be empty
+            # Should return valid JSON
+            output = mock_stdout.getvalue().strip()
+            result = json.loads(output)
+            assert 'project' in result
+            assert 'bidders' in result
+            assert 'total_bidders' in result
+            assert result['project'] == 'Demoprojekt1'
+            assert isinstance(result['bidders'], list)
+            # Should not include files anymore
+            assert 'all_files' not in result
+            assert 'total_files' not in result
 
 
 def test_main_find_bidder():

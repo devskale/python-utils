@@ -3,8 +3,9 @@
 Provides command-line access to OFS functionality.
 """
 
-import argparse
 import sys
+import json
+import argparse
 from typing import Optional
 
 from .core import (
@@ -13,7 +14,10 @@ from .core import (
     list_ofs_items,
     find_bidder_in_project,
     list_projects,
-    list_bidders
+    list_bidders,
+    get_paths_json,
+    list_projects_json,
+    list_bidders_json
 )
 
 
@@ -100,8 +104,8 @@ def handle_get_path(name: str) -> None:
     Args:
         name (str): Name to resolve to a path
     """
-    path = get_path(name)
-    print(path)
+    result = get_paths_json(name)
+    print(json.dumps(result, indent=2, ensure_ascii=False))
 
 
 def handle_list() -> None:
@@ -117,9 +121,8 @@ def handle_list_projects() -> None:
     """
     Handle the list-projects command.
     """
-    projects = list_projects()
-    for project in projects:
-        print(project)
+    result = list_projects_json()
+    print(json.dumps(result, indent=2, ensure_ascii=False))
 
 
 def handle_list_bidders(project: str) -> None:
@@ -129,13 +132,8 @@ def handle_list_bidders(project: str) -> None:
     Args:
         project (str): Project name to list bidders for
     """
-    bidders = list_bidders(project)
-    if not bidders:
-        print(f"No bidders found in project '{project}'")
-        return
-    
-    for bidder in bidders:
-        print(bidder)
+    result = list_bidders_json(project)
+    print(json.dumps(result, indent=2, ensure_ascii=False))
 
 
 def handle_find_bidder(project: str, bidder: str) -> None:

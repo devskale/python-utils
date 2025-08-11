@@ -12,7 +12,10 @@ from .core import (
     list_ofs_items,
     find_bidder_in_project,
     list_projects,
-    list_bidders
+    list_bidders,
+    get_paths_json,
+    list_projects_json,
+    list_bidders_json
 )
 from .config import get_config, get_base_dir
 
@@ -24,6 +27,9 @@ __all__ = [
     "find_bidder_in_project",
     "list_projects",
     "list_bidders",
+    "get_paths_json",
+    "list_projects_json", 
+    "list_bidders_json",
     "get_config", 
     "get_base_dir"
 ]
