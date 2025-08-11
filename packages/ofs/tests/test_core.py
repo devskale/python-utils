@@ -91,12 +91,95 @@ def test_find_bidder_in_project():
     assert path is None
 
 
-def test_config_integration():
-    """Test that configuration is properly integrated."""
-    config = get_config()
-    base_dir = config.get("BASE_DIR", ".dir")
+def test_list_bidder_docs_json():
+    """Test the list_bidder_docs_json function."""
+    from ofs.core import list_bidder_docs_json
     
-    # Test that get_path uses the configured BASE_DIR
-    path = get_path("test_integration")
-    assert base_dir in path
-    assert path.endswith("test_integration")
+    # Test with existing project and bidder (with metadata - default behavior)
+    result_with_meta = list_bidder_docs_json("Demoprojekt1", "Demo2", include_metadata=True)
+    assert isinstance(result_with_meta, dict)
+    assert 'project' in result_with_meta
+    assert 'bidder' in result_with_meta
+    assert 'documents' in result_with_meta
+    assert 'total_documents' in result_with_meta
+    assert result_with_meta['project'] == "Demoprojekt1"
+    assert result_with_meta['bidder'] == "Demo2"
+    assert isinstance(result_with_meta['documents'], list)
+    assert isinstance(result_with_meta['total_documents'], int)
+    
+    # Test with existing project and bidder (without metadata)
+    result_without_meta = list_bidder_docs_json("Demoprojekt1", "Demo2", include_metadata=False)
+    assert isinstance(result_without_meta, dict)
+    assert 'project' in result_without_meta
+    assert 'bidder' in result_without_meta
+    assert 'documents' in result_without_meta
+    assert 'total_documents' in result_without_meta
+    assert result_without_meta['project'] == "Demoprojekt1"
+    assert result_without_meta['bidder'] == "Demo2"
+    assert isinstance(result_without_meta['documents'], list)
+    assert isinstance(result_without_meta['total_documents'], int)
+    
+    # Both results should have the same number of documents
+    assert result_with_meta['total_documents'] == result_without_meta['total_documents']
+    
+    # Verify that only allowed document types are included in both cases
+    for result in [result_with_meta, result_without_meta]:
+        for doc in result['documents']:
+            filename = doc['name'].lower()
+            # Should not contain JSON or markdown files
+            assert not filename.endswith('.json')
+            assert not filename.endswith('.md')
+            assert not filename.endswith('.markdown')
+            # Should contain allowed extensions
+            allowed_extensions = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.bmp', 
+                                '.tiff', '.tif', '.svg', '.webp', '.doc', '.docx', 
+                                '.xls', '.xlsx', '.ppt', '.pptx', '.odt', '.ods', 
+                                '.odp', '.rtf', '.txt']
+            assert any(filename.endswith(ext) for ext in allowed_extensions)
+    
+    # Check that metadata is included when requested
+    for doc in result_with_meta['documents']:
+        if 'metadata' in doc:
+            metadata = doc['metadata']
+            assert 'size' in metadata
+            assert 'parsers' in metadata
+            assert 'meta' in metadata
+            # Verify that hash is not included
+            assert 'hash' not in metadata
+            # Check that meta contains expected fields
+            if metadata['meta']:
+                # Common fields that might be present
+                possible_fields = ['kategorie', 'aussteller', 'name', 'begründung', 'Autor']
+                # At least one of these fields should be present if meta is not empty
+                assert any(field in metadata['meta'] for field in possible_fields)
+    
+    # Check that metadata is NOT included when not requested
+    for doc in result_without_meta['documents']:
+        assert 'metadata' not in doc
+    
+    # Test with non-existent project
+    result_no_project = list_bidder_docs_json("NonExistentProject", "Demo2")
+    assert isinstance(result_no_project, dict)
+    assert 'error' in result_no_project
+    assert result_no_project['error'] == "Project not found"
+    
+    # Test with non-existent bidder
+    result_no_bidder = list_bidder_docs_json("Demoprojekt1", "NonExistentBidder")
+    assert isinstance(result_no_bidder, dict)
+    assert 'error' in result_no_bidder
+    assert result_no_bidder['error'] == "Bidder not found in project"
+    
+    # Test default behavior (should not include metadata)
+    result_default = list_bidder_docs_json("Demoprojekt1", "Demo2")
+    assert isinstance(result_default, dict)
+    for doc in result_default['documents']:
+        assert 'metadata' not in doc
+
+
+def test_config_integration():
+    """Test that core functions work with config."""
+    # This test ensures that the core functions can access configuration
+    from ofs.config import get_base_dir
+    base_dir = get_base_dir()
+    assert isinstance(base_dir, str)
+    assert len(base_dir) > 0

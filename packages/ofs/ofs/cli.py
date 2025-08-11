@@ -17,7 +17,8 @@ from .core import (
     list_bidders,
     get_paths_json,
     list_projects_json,
-    list_bidders_json
+    list_bidders_json,
+    list_bidder_docs_json
 )
 
 
@@ -88,6 +89,21 @@ def create_parser() -> argparse.ArgumentParser:
         help="Bidder name (BIETERNAME)"
     )
     
+    # list-docs command
+    list_docs_parser = subparsers.add_parser(
+        "list-docs",
+        help="List all documents for a specific bidder within a project"
+    )
+    list_docs_parser.add_argument(
+        "project_bidder",
+        help="Project and bidder in format 'project@bidder'"
+    )
+    list_docs_parser.add_argument(
+        "--meta",
+        action="store_true",
+        help="Include detailed metadata for each document"
+    )
+    
     # root command
     root_parser = subparsers.add_parser(
         "root",
@@ -152,6 +168,39 @@ def handle_find_bidder(project: str, bidder: str) -> None:
         sys.exit(1)
 
 
+def handle_list_docs(project_bidder: str, meta: bool = False) -> None:
+    """
+    Handle the list-docs command.
+    
+    Args:
+        project_bidder (str): Project and bidder in format 'project@bidder'
+        meta (bool): Whether to include detailed metadata for each document
+    """
+    if '@' not in project_bidder:
+        print("Error: Invalid format. Use 'project@bidder' format.", file=sys.stderr)
+        sys.exit(1)
+    
+    try:
+        project, bidder = project_bidder.split('@', 1)
+        project = project.strip()
+        bidder = bidder.strip()
+        
+        if not project or not bidder:
+            print("Error: Both project and bidder names must be provided.", file=sys.stderr)
+            sys.exit(1)
+        
+        result = list_bidder_docs_json(project, bidder, include_metadata=meta)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        
+        # Exit with error code if there was an error in the result
+        if "error" in result:
+            sys.exit(1)
+            
+    except ValueError:
+        print("Error: Invalid format. Use 'project@bidder' format.", file=sys.stderr)
+        sys.exit(1)
+
+
 def handle_root() -> None:
     """
     Handle the root command.
@@ -192,6 +241,8 @@ def main(argv: Optional[list[str]] = None) -> int:
             handle_list_bidders(args.project)
         elif args.command == "find-bidder":
             handle_find_bidder(args.project, args.bidder)
+        elif args.command == "list-docs":
+            handle_list_docs(args.project_bidder, args.meta)
         elif args.command == "root":
             handle_root()
         else:

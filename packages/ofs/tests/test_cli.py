@@ -116,6 +116,101 @@ def test_main_find_bidder():
                 pass
 
 
+def test_main_list_docs():
+    """Test main function with list-docs command (default behavior - without metadata)."""
+    with patch('sys.argv', ['ofs', 'list-docs', 'Demoprojekt1@Demo2']):
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            try:
+                main()
+                # Should return valid JSON
+                output = mock_stdout.getvalue().strip()
+                result = json.loads(output)
+                assert 'project' in result
+                assert 'bidder' in result
+                assert 'documents' in result
+                assert 'total_documents' in result
+                assert result['project'] == 'Demoprojekt1'
+                assert result['bidder'] == 'Demo2'
+                assert isinstance(result['documents'], list)
+                assert isinstance(result['total_documents'], int)
+                # By default, metadata should NOT be included
+                for doc in result['documents']:
+                    assert 'metadata' not in doc
+            except SystemExit as e:
+                # Might exit with error if project/bidder not found
+                pass
+
+
+def test_main_list_docs_with_meta():
+    """Test main function with list-docs command with --meta flag."""
+    with patch('sys.argv', ['ofs', 'list-docs', '--meta', 'Demoprojekt1@Demo2']):
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            try:
+                main()
+                # Should return valid JSON
+                output = mock_stdout.getvalue().strip()
+                result = json.loads(output)
+                assert 'project' in result
+                assert 'bidder' in result
+                assert 'documents' in result
+                assert 'total_documents' in result
+                assert result['project'] == 'Demoprojekt1'
+                assert result['bidder'] == 'Demo2'
+                assert isinstance(result['documents'], list)
+                assert isinstance(result['total_documents'], int)
+                # With --meta flag, metadata should be included
+                for doc in result['documents']:
+                    if 'metadata' in doc:
+                        # If metadata exists, verify its structure
+                        metadata = doc['metadata']
+                        assert 'size' in metadata
+                        assert 'parsers' in metadata
+                        assert 'meta' in metadata
+            except SystemExit as e:
+                # Might exit with error if project/bidder not found
+                pass
+
+
+def test_main_list_docs_without_meta():
+    """Test main function with list-docs command without --meta flag (minimal output)."""
+    with patch('sys.argv', ['ofs', 'list-docs', 'Demoprojekt1@Demo2']):
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            try:
+                main()
+                # Should return valid JSON
+                output = mock_stdout.getvalue().strip()
+                result = json.loads(output)
+                assert 'project' in result
+                assert 'bidder' in result
+                assert 'documents' in result
+                assert 'total_documents' in result
+                assert result['project'] == 'Demoprojekt1'
+                assert result['bidder'] == 'Demo2'
+                assert isinstance(result['documents'], list)
+                assert isinstance(result['total_documents'], int)
+                # Without --meta flag, metadata should NOT be included
+                for doc in result['documents']:
+                    assert 'metadata' not in doc
+            except SystemExit as e:
+                # Might exit with error if project/bidder not found
+                pass
+
+
+def test_main_list_docs_invalid_format():
+    """Test main function with list-docs command and invalid format."""
+    with patch('sys.argv', ['ofs', 'list-docs', 'InvalidFormat']):
+        with patch('sys.stderr', new_callable=StringIO) as mock_stderr:
+            try:
+                main()
+                # Should not reach here
+                assert False, "Expected SystemExit"
+            except SystemExit as e:
+                # Should exit with error
+                assert e.code == 1
+                error_output = mock_stderr.getvalue()
+                assert "Invalid format" in error_output
+
+
 def test_main_root():
     """Test main function with root command."""
     with patch('sys.argv', ['ofs', 'root']):
