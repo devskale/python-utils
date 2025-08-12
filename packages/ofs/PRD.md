@@ -49,12 +49,28 @@ Create a python library to access, edit and navigate the opinionated filesystem 
   - Support for directories-only mode
   - **Reserved directory filtering** - Excludes 'md/' and 'archive/' directories from tree output
   - **Reserved file filtering** - Excludes '.json' and '.md' files from tree output
-- [x] **Document reading functionality** (`read_doc`):
-  - `read_doc(identifier, parser)` - Read document content using `Project@Bidder@Filename` format
-  - **Intelligent parser selection** with ranking: docling > marker > llamaparse > pdfplumber
-  - **Multi-format support**: .txt, .md (plain text), .pdf (with parser selection)
-  - **Metadata-aware**: Uses `.pdf2md_index.json` for parser information
-  - **Fallback mechanisms**: Graceful handling of missing parsers or content
+### `read_doc(doc_id, parser=None)`
+
+This function is the core of the document reading capability. It intelligently selects the appropriate parser based on the document type and available parsers, and extracts content from pre-parsed Markdown files located in `md/` subfolders.
+
+**Features:**
+- **Intelligent Parser Selection:** Uses `_select_parser` to choose the best parser based on the `.pdf2md_index.json` metadata.
+- **Pre-parsed Markdown Reading:** Prioritizes reading from `md/` subfolders, supporting various naming conventions (e.g., `filename.parser.md`, `filename_parser.md`, and `md/<base_name>/` subfolders).
+- **Multi-format Support:** Handles `.txt`, `.md` (pre-parsed), and `.pdf` (original, for fallback/initial processing if no pre-parsed markdown is found) extensions.
+- **Fallback Mechanism:** If a specified parser's Markdown file is not found, it attempts to find other available Markdown versions or falls back to original PDF processing if necessary.
+- **Metadata Inclusion:** Returns extracted content along with parser details and original file path.
+
+**Usage:**
+```python
+# Read a document, letting the system select the best parser (will read from pre-parsed Markdown)
+content = ofs.read_doc('Aufsitzrasenmäher@Bieter1@LSD-BG.pdf')
+
+# Read a document, forcing a specific parser (will read the corresponding pre-parsed Markdown)
+content = ofs.read_doc('Aufsitzrasenmäher@Bieter1@LSD-BG.pdf', parser='pdfplumber')
+
+# Read a tender document (example for tender-specific parsing)
+content = ofs.read_doc('2023_02002_AAB_EV.pdf', parser='docling')
+```
 
 ### In Progress 🚧
 - [ ] Performance optimization for large directory structures
