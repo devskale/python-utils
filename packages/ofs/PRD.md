@@ -33,7 +33,7 @@ Create a python library to access, edit and navigate the opinionated filesystem 
 - [x] **Extended CLI commands**:
   - `ofs get-path <name>` - Find projects or bidders
   - `ofs list-projects` - List all projects
-  - `ofs list-bidders <project>` - List bidders in project
+  - `ofs list-bidders <project>` - List bidders in project (FIXED: now returns only bidder names, not files)
   - `ofs find-bidder <project> <bidder>` - Find specific bidder
   - `ofs list-docs <project@bidder>` - List bidder documents with minimal view (name + basic metadata)
   - `ofs list-docs <project@bidder> --meta` - List bidder documents with full metadata and details

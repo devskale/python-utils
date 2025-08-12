@@ -185,7 +185,12 @@ def handle_list_bidders(project: str) -> None:
     Args:
         project (str): Project name to list bidders for
     """
-    result = list_bidders_json(project)
+    bidders = list_bidders(project)
+    result = {
+        "project": project,
+        "bidders": bidders,
+        "count": len(bidders)
+    }
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
 
