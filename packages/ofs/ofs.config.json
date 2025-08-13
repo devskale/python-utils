@@ -1,5 +1,5 @@
 {
-  "BASE_DIR": "klark0",
+  "BASE_DIR": ".dir",
   "INDEX_FILE": "index.json",
   "METADATA_SUFFIX": ".meta.json"
 }

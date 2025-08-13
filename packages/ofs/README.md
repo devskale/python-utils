@@ -42,6 +42,12 @@ ofs find-bidder "Demoprojekt1" "Demo2"
 
 # Get OFS root directory
 ofs root
+
+# Get paths in JSON format
+ofs get-paths-json "Demoprojekt1"
+
+# List projects in JSON format
+ofs list-projects-json
 ```
 
 ### Python API
@@ -75,6 +81,14 @@ print(bidder_path)  # Output: .dir/Demoprojekt1/B/Demo2
 # Get OFS root
 root = ofs.get_ofs_root()
 print(root)
+
+# Access paths in JSON format
+paths_json = ofs.get_paths_json("Demoprojekt1")
+print(paths_json)
+
+# List projects in JSON format
+projects_json = ofs.list_projects_json()
+print(projects_json)
 
 # Access configuration
 config = ofs.get_config()
@@ -146,7 +160,9 @@ export OFS_METADATA_SUFFIX=".custom.meta.json"
 This package is currently in early development. The main functionality includes:
 
 - `get_path(name)`: Returns a path for a given name using configured BASE_DIR
-- Configuration system with file and environment variable support
+- `get_paths_json(name)`: Retrieves paths for a name in JSON format.
+- `list_projects_json()`: Retrieves all projects in JSON format.
+- Configuration system with file and environment variable support.
 - CLI interface for basic operations
 - Extensible structure for future OFS features
 

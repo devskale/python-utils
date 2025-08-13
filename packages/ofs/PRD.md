@@ -13,6 +13,7 @@ Create a python library to access, edit and navigate the opinionated filesystem 
 ## Implementation Status
 
 ### Completed ✅
+
 - [x] Basic package structure (`ofs/`)
 - [x] Core module (`ofs/core.py`) with enhanced `get_path` function
 - [x] CLI interface (`ofs/cli.py`) with comprehensive command set
@@ -42,6 +43,14 @@ Create a python library to access, edit and navigate the opinionated filesystem 
   - `ofs list-docs <project@bidder@filename>` - Get detailed information for a specific document
   - `ofs tree` - Show tree structure of projects, bidders, and documents
   - `ofs tree -d` - Show only directory tree (no documents)
+- [x] **Kriterien (Criteria) Management System** (`ofs/kriterien.py`):
+  - `ofs kriterien <project> pop` - Show next unproven criterion
+  - `ofs kriterien <project> tree` - Display criteria organized by category and type
+  - `ofs kriterien <project> tag <id>` - Retrieve specific criterion by ID
+  - Support for both new flat `kriterien` array format and legacy `extractedCriteria` nested format
+  - Intelligent file discovery (searches for `kriterien.json`, `kriterien.meta.json`, etc.)
+  - Status tracking (proven/unproven criteria)
+  - Hierarchical categorization and subcategorization
 - [x] **Module execution support** (`ofs/__main__.py`)
 - [x] **Tree structure visualization**:
   - `generate_tree_structure()` - Generate structured tree data
@@ -49,11 +58,13 @@ Create a python library to access, edit and navigate the opinionated filesystem 
   - Support for directories-only mode
   - **Reserved directory filtering** - Excludes 'md/' and 'archive/' directories from tree output
   - **Reserved file filtering** - Excludes '.json' and '.md' files from tree output
+
 ### `read_doc(doc_id, parser=None)`
 
 This function is the core of the document reading capability. It intelligently selects the appropriate parser based on the document type and available parsers, and extracts content from pre-parsed Markdown files located in `md/` subfolders.
 
 **Features:**
+
 - **Intelligent Parser Selection:** Uses `_select_parser` to choose the best parser based on the `.pdf2md_index.json` metadata.
 - **Pre-parsed Markdown Reading:** Prioritizes reading from `md/` subfolders, supporting various naming conventions (e.g., `filename.parser.md`, `filename_parser.md`, and `md/<base_name>/` subfolders).
 - **Multi-format Support:** Handles `.txt`, `.md` (pre-parsed), and `.pdf` (original, for fallback/initial processing if no pre-parsed markdown is found) extensions.
@@ -61,6 +72,7 @@ This function is the core of the document reading capability. It intelligently s
 - **Metadata Inclusion:** Returns extracted content along with parser details and original file path.
 
 **Usage:**
+
 ```python
 # Read a document, letting the system select the best parser (will read from pre-parsed Markdown)
 content = ofs.read_doc('Aufsitzrasenmäher@Bieter1@LSD-BG.pdf')
@@ -73,10 +85,12 @@ content = ofs.read_doc('2023_02002_AAB_EV.pdf', parser='docling')
 ```
 
 ### In Progress 🚧
+
 - [ ] Performance optimization for large directory structures
 - [ ] Caching mechanism for index file parsing
 
 ### Planned 📋
+
 - [ ] Metadata sidecar file handling and editing
 - [ ] Index file management and updates
 - [ ] File editing capabilities with metadata preservation
@@ -89,14 +103,15 @@ content = ofs.read_doc('2023_02002_AAB_EV.pdf', parser='docling')
 markdown ```
 .
 ├── ofs/
-│ ├── __init__.py
-│ ├── __main__.py
+│ ├── **init**.py
+│ ├── **main**.py
 │ ├── cli.py
 │ ├── config.py
-│ ├── core.py        # Aggregator module for backward compatibility
-│ ├── paths.py       # Path resolution and OFS navigation
-│ ├── docs.py        # Document listing and reading functionality
-│ ├── tree.py        # Directory tree structure generation
+│ ├── core.py # Aggregator module for backward compatibility
+│ ├── paths.py # Path resolution and OFS navigation
+│ ├── docs.py # Document listing and reading functionality
+│ ├── tree.py # Directory tree structure generation
+│ ├── kriterien.py # Criteria management and evaluation system
 ├── tests/
 ├── docs/
 │ ├── opinionatedFilesystem.md
@@ -107,6 +122,7 @@ markdown ```
 │ │ ├── project_rules.md
 ├── setup.py
 ├── PRD.md
+
 ```
 
 # Code Architecture
@@ -133,6 +149,13 @@ The OFS package has been decomposed from a single large `core.py` file (~1,500 l
 - Visual structure representation
 - Functions: `generate_tree_structure`, `print_tree_structure`
 
+### `ofs/kriterien.py` - Criteria Management
+- Tender criteria loading and evaluation
+- Support for multiple JSON formats (flat `kriterien` array and nested `extractedCriteria`)
+- Status tracking and filtering (proven/unproven criteria)
+- Hierarchical organization by category and type
+- Functions: `load_kriterien`, `get_unproven_kriterien`, `build_kriterien_tree`, `get_kriterien_by_tag`
+
 ### `ofs/core.py` - Backward Compatibility Aggregator
 - Imports and re-exports all functions from decomposed modules
 - Maintains full backward compatibility for existing code
@@ -144,3 +167,4 @@ The OFS package has been decomposed from a single large `core.py` file (~1,500 l
 - **Code Organization**: Clear separation of concerns
 - **Development**: Faster development with focused modules
 - **Backward Compatibility**: Zero breaking changes for existing users
+```
