@@ -12,6 +12,8 @@
 - **AI Model Integration**: Queries AI models with the provided context and prompt.
 - **JSON Output**: Typically returns AI-generated responses in JSON format.
 - **JSON Injection**: Injects the generated JSON metadata into specified JSON files.
+- **Criteria Extraction**: Automated extraction of qualification criteria from German tender documents with structured JSON output.
+- **Insert Mode**: Targeted updates of specific JSON sections without overwriting entire files.
 
 ## Architecture
 
@@ -129,6 +131,66 @@ The unlist command features:
 - Generates categorization metadata using the specified prompt
 - Optional metadata injection into additional target JSON files
 
+#### Kriterien Command
+Extract qualification criteria from German tender documents:
+
+```bash
+python -m strukt2meta kriterien -p <prompt_file> -f <tender_document> -o <output.json> [options]
+```
+
+**Arguments:**
+- `-p, --prompt`: Path to the prompt file (e.g., `./prompts/kriterien.md`)
+- `-f, --file`: Path to the tender document file (PDF, DOCX, MD, etc.)
+- `-o, --output`: Path to the output JSON file where criteria will be saved
+
+**Options:**
+- `-i, --insert`: Insert key for partial JSON updates (e.g., `eignungskriterien`)
+- `-v, --verbose`: Enable verbose output for detailed processing information
+
+**Examples:**
+```bash
+# Extract criteria from tender document
+python -m strukt2meta kriterien -p ./prompts/kriterien.md -f ./tender_document.pdf -o ./criteria.json
+
+# Update only specific section of existing JSON
+python -m strukt2meta kriterien -p ./prompts/kriterien.md -f ./tender_document.pdf -o ./existing_criteria.json -i eignungskriterien
+
+# Enable verbose logging
+python -m strukt2meta kriterien -p ./prompts/kriterien.md -f ./tender_document.pdf -o ./criteria.json -v
+```
+
+**Features:**
+- **Automated Criteria Extraction**: Identifies and structures qualification criteria from German tender documents
+- **Structured JSON Output**: Generates consistent JSON format with categories like `eignungskriterien`, `befugnis`, etc.
+- **Insert Mode**: Allows targeted updates of specific JSON sections without overwriting entire files
+- **Visual Feedback**: Shows spinner animation during AI processing
+- **Error Handling**: Comprehensive error handling with detailed logging
+- **Statistics**: Reports number of extracted criteria and file size information
+
+**Output Format:**
+The kriterien command generates structured JSON with the following format:
+```json
+{
+    "eignungskriterien": {
+        "befugnis": [
+            {
+                "kriterium": "Description of qualification criterion",
+                "nachweise": [
+                    {
+                        "typ": "PFLICHT|OPTIONAL",
+                        "dokument": "Required document name",
+                        "gueltigkeit": "Validity period if specified",
+                        "hinweis": "Additional notes"
+                    }
+                ]
+            }
+        ],
+        "berufliche_zuverlaessigkeit": [...],
+        "technische_leistungsfaehigkeit": [...]
+    }
+}
+```
+
 ### Legacy Usage (Generate Command)
 
 For backward compatibility, you can still use the original syntax:
@@ -158,6 +220,12 @@ python -m strukt2meta.main --inpath ./my_document.md --prompt adok --outfile ./m
 - [x] `uniinfer` and `credgoo` installation
 - [x] Configuration for AI provider, model, and tokens
 - [x] Prompts file handling
-- [ ] JSON output schema definition
-- [ ] API calling with `uniinfer`
-- [ ] JSON cleanify routine for AI-generated JSON
+- [x] JSON output schema definition
+- [x] API calling with `uniinfer`
+- [x] JSON cleanify routine for AI-generated JSON
+- [x] JSON injection functionality
+- [x] Unlist command for batch processing
+- [x] Kriterien extraction for tender documents
+- [x] Insert mode for targeted JSON updates
+- [x] Visual feedback and error handling
+- [x] Comprehensive CLI interface

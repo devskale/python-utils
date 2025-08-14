@@ -48,6 +48,12 @@ python
 [x] Implement automatic "Autor" field generation with AI traceability
 [x] Include provider, model, prompt, and date information in metadata
 [x] Support for opinionated directory structure prompt selection
+[x] Kriterien Extraction Feature
+[x] Create KriterienCommand for extracting criteria from tender documents
+[x] Integrate kriterien command into main CLI interface
+[x] Support for both overwrite and insert modes for JSON output
+[x] Disable streaming response for consistent output behavior
+[x] Test and validate criteria extraction functionality
 
 ## JSON Injection Analysis
 
@@ -431,6 +437,116 @@ The new system was successfully tested with the Lampen project:
 - **Scalability**: Handles projects of any size with consistent performance
 
 The strukt2meta project has successfully evolved from a specialized tool to a comprehensive, intelligent document metadata extraction system.
+
+## Kriterien Extraction Feature
+
+### Overview
+
+The Kriterien (Criteria) Extraction feature enables automated extraction of qualification criteria from German tender documents (Ausschreibungsunterlagen). This functionality is essential for procurement processes where specific criteria must be identified and structured.
+
+### Implementation
+
+#### KriterienCommand Class
+
+Created `strukt2meta/commands/kriterien.py` with:
+
+- **KriterienCommand**: Main command class inheriting from BaseCommand
+- **Spinner Class**: Visual feedback during AI processing
+- **JSON Merging**: Support for both overwrite and insert modes
+- **Non-streaming Response**: Consistent output without streaming for reliable processing
+
+#### CLI Integration
+
+Added new `kriterien` command to main CLI interface:
+
+```bash
+python -m strukt2meta kriterien -p <prompt_file> -f <tender_document> -o <output.json> [-i <insert_key>] [-v]
+```
+
+#### Key Features
+
+- **Criteria Extraction**: Automatically identifies and structures qualification criteria from tender documents
+- **JSON Output**: Generates structured JSON with criteria categories (eignungskriterien, befugnis, etc.)
+- **Insert Mode**: Allows targeted updates of specific JSON sections without overwriting entire files
+- **Visual Feedback**: Spinner animations during AI processing for better user experience
+- **Error Handling**: Comprehensive error handling with rollback capabilities
+- **Statistics Reporting**: Shows extracted criteria count and file size information
+
+#### Technical Implementation
+
+- **Direct API Calls**: Uses `call_ai_model` directly to avoid streaming responses
+- **JSON Cleaning**: Automatic JSON cleanup and validation using `cleanify_json`
+- **File Validation**: Input file validation using BaseCommand methods
+- **Directory Creation**: Automatic output directory creation if needed
+
+### Usage Examples
+
+#### Basic Criteria Extraction
+
+```bash
+# Extract criteria from tender document
+python -m strukt2meta kriterien -p ./prompts/kriterien.md -f ./tender_document.pdf -o ./criteria.json
+```
+
+#### Insert Mode for Targeted Updates
+
+```bash
+# Update only the 'eignungskriterien' section
+python -m strukt2meta kriterien -p ./prompts/kriterien.md -f ./tender_document.pdf -o ./existing_criteria.json -i eignungskriterien
+```
+
+#### Verbose Output
+
+```bash
+# Enable verbose logging for detailed processing information
+python -m strukt2meta kriterien -p ./prompts/kriterien.md -f ./tender_document.pdf -o ./criteria.json -v
+```
+
+### Output Format
+
+The kriterien command generates structured JSON output with the following format:
+
+```json
+{
+    "eignungskriterien": {
+        "befugnis": [
+            {
+                "kriterium": "Description of qualification criterion",
+                "nachweise": [
+                    {
+                        "typ": "PFLICHT|OPTIONAL",
+                        "dokument": "Required document name",
+                        "gueltigkeit": "Validity period if specified",
+                        "hinweis": "Additional notes"
+                    }
+                ]
+            }
+        ],
+        "berufliche_zuverlaessigkeit": [...],
+        "technische_leistungsfaehigkeit": [...]
+    }
+}
+```
+
+### Benefits
+
+- **Automated Processing**: Eliminates manual criteria extraction from tender documents
+- **Structured Output**: Consistent JSON format for easy integration with other systems
+- **Flexible Updates**: Insert mode allows partial updates without data loss
+- **Quality Assurance**: Built-in validation and error handling
+- **User-Friendly**: Clear progress indicators and comprehensive logging
+- **Integration Ready**: Seamlessly integrated into existing strukt2meta workflow
+
+### Validation Results
+
+Successfully tested with:
+- German tender documents
+- Various document formats (PDF, DOCX, MD)
+- Both overwrite and insert modes
+- Error scenarios and recovery
+- Large document processing
+
+The Kriterien Extraction feature represents a significant enhancement to strukt2meta's capabilities, enabling automated processing of complex procurement documents with high accuracy and reliability.
 
 ## Autor Field Enhancement
 
