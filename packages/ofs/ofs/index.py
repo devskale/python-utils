@@ -480,6 +480,7 @@ def print_index_stats(root_dir: str) -> None:
         a_dir_path = os.path.join(entry_path, 'A')
         a_docs, a_parsers, a_categories = 0, 0, 0
         if os.path.exists(a_dir_path):
+            index_file_name = get_config().get('index_file_name', '.ofs.index.json')
             index_path = os.path.join(a_dir_path, index_file_name)
             a_docs, a_parsers, a_categories = process_index_file(index_path)
         
