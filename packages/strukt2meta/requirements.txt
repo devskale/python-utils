@@ -2,3 +2,4 @@
 -r https://skale.dev/uniinfer
 -r https://skale.dev/pdf2md
 requests
+json-repair

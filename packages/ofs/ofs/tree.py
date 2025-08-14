@@ -25,6 +25,12 @@ def _get_documents_from_directory(directory: Path, reserved_dirs: set = None) ->
 
     documents: List[Dict[str, Any]] = []
     try:
+        if not directory.exists():
+            return documents
+        
+        if not directory.is_dir():
+            return documents
+            
         for item in directory.iterdir():
             # Skip hidden files and reserved file types
             if item.name.startswith('.'):
@@ -32,13 +38,17 @@ def _get_documents_from_directory(directory: Path, reserved_dirs: set = None) ->
             if item.is_file() and item.suffix.lower() in RESERVED_FILE_EXTENSIONS:
                 continue
             if item.is_file():
-                documents.append({
-                    "name": item.name,
-                    "path": str(item),
-                    "type": item.suffix.lower(),
-                    "size": item.stat().st_size
-                })
-    except PermissionError:
+                try:
+                    documents.append({
+                        "name": item.name,
+                        "path": str(item),
+                        "type": item.suffix.lower(),
+                        "size": item.stat().st_size
+                    })
+                except (OSError, PermissionError):
+                    # Skip files that can't be accessed
+                    continue
+    except (OSError, PermissionError):
         pass
 
     return documents
@@ -66,7 +76,12 @@ def generate_tree_structure(directories_only: bool = False) -> Dict[str, Any]:
         return tree
 
     try:
-        for project_dir in base_path.iterdir():
+        items = list(base_path.iterdir())
+    except (OSError, PermissionError):
+        return tree
+        
+    try:
+        for project_dir in items:
             if not project_dir.is_dir() or project_dir.name.startswith('.') or project_dir.name in RESERVED_DIRS:
                 continue
 

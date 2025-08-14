@@ -42,8 +42,12 @@ def _generate_index_data_for_path(
     # Load existing index data if available
     existing_data = None
     if existing_index_path and os.path.exists(existing_index_path):
-        with open(existing_index_path, 'r', encoding='utf-8') as f:
-            existing_data = json.load(f)
+        try:
+            with open(existing_index_path, 'r', encoding='utf-8') as f:
+                existing_data = json.load(f)
+        except (IOError, json.JSONDecodeError, PermissionError) as e:
+            print(f"Warning: Could not load existing index from {existing_index_path}: {e}")
+            existing_data = {}
     
     # Create index data structure
     index_data = {
@@ -232,10 +236,13 @@ def write_index_file(path: str, data: Dict) -> None:
         data: Index data dictionary
     """
     try:
+        # Ensure directory exists before writing
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
-    except (IOError, OSError) as e:
+    except (IOError, OSError, PermissionError) as e:
         print(f"Error writing index file {path}: {e}")
+        raise
 
 
 def traverse_directories(directory: str, recursive: bool = False):
@@ -586,6 +593,9 @@ def generate_un_items_list(input_path: str, output_file: str = None, json_output
             try:
                 with open(kriterien_file, 'r', encoding='utf-8') as f:
                     kriterien_data = json.load(f)
+            except (IOError, json.JSONDecodeError, PermissionError) as e:
+                print(f"Warning: Could not load kriterien file {kriterien_file}: {e}")
+                return categorized_files
                     
                 # Extract filenames from kriterien structure
                 for category, items in kriterien_data.get('kriterien', {}).items():
@@ -786,14 +796,30 @@ def generate_un_items_list(input_path: str, output_file: str = None, json_output
     
     # Write output
     if output_file:
-        with open(output_file, 'w', encoding='utf-8') as f:
-            f.write(output_content)
+        try:
+            os.makedirs(os.path.dirname(output_file), exist_ok=True)
+            with open(output_file, 'w', encoding='utf-8') as f:
+                if json_output:
+                    json.dump(output_data, f, indent=4, ensure_ascii=False)
+                else:
+                    f.write(output_content)
+        except (IOError, OSError, PermissionError) as e:
+            print(f"Error writing output file {output_file}: {e}")
+            raise
     else:
         # Auto-save output to the target directory when no output file specified
         if json_output:
             default_output_file = input_path_obj / 'un_items.json'
         else:
             default_output_file = input_path_obj / 'un_items.txt'
-        with open(default_output_file, 'w', encoding='utf-8') as f:
-            f.write(output_content)
+        try:
+            os.makedirs(os.path.dirname(default_output_file), exist_ok=True)
+            with open(default_output_file, 'w', encoding='utf-8') as f:
+                if json_output:
+                    json.dump(output_data, f, indent=4, ensure_ascii=False)
+                else:
+                    f.write(output_content)
+        except (IOError, OSError, PermissionError) as e:
+            print(f"Error writing default output file {default_output_file}: {e}")
+            raise
     # Suppress all stdout output - no printing to console

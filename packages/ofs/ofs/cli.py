@@ -545,14 +545,18 @@ def handle_index(action: str, directory: str, recursive: bool = False, force: bo
     import os
     
     # Convert relative path to absolute path
-    directory = os.path.abspath(directory)
-    
-    if not os.path.exists(directory):
-        print(f"Error: Directory does not exist: {directory}", file=sys.stderr)
-        sys.exit(1)
-    
-    if not os.path.isdir(directory):
-        print(f"Error: Path is not a directory: {directory}", file=sys.stderr)
+    try:
+        directory = os.path.abspath(directory)
+        
+        if not os.path.exists(directory):
+            print(f"Error: Directory '{directory}' does not exist.", file=sys.stderr)
+            sys.exit(1)
+        
+        if not os.path.isdir(directory):
+            print(f"Error: '{directory}' is not a directory.", file=sys.stderr)
+            sys.exit(1)
+    except (OSError, PermissionError) as e:
+        print(f"Error accessing directory '{directory}': {e}", file=sys.stderr)
         sys.exit(1)
     
     try:

@@ -59,10 +59,11 @@ class OFSConfig:
             config_path (Path): Path to the configuration file
         """
         try:
-            with open(config_path, 'r') as f:
+            with open(config_path, 'r', encoding='utf-8') as f:
                 file_config = json.load(f)
                 self._config.update(file_config)
-        except (json.JSONDecodeError, IOError) as e:
+        except (json.JSONDecodeError, IOError, PermissionError) as e:
+            print(f"Warning: Could not load config from {config_path}: {e}")
             # Silently ignore config file errors and use defaults
             pass
     
@@ -141,9 +142,10 @@ class OFSConfig:
         
         try:
             config_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(config_path, 'w') as f:
-                json.dump(self._config, f, indent=2)
-        except IOError as e:
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(self._config, f, indent=4, ensure_ascii=False)
+        except (IOError, OSError, PermissionError) as e:
+            print(f"Error saving config to {config_path}: {e}")
             raise RuntimeError(f"Failed to save config file: {e}")
 
 

@@ -57,16 +57,19 @@ strukt2meta unlist <num> <json_file> [options]
 ```
 
 **Parameters:**
+
 - `num`: Number of files to process
 - `json_file`: JSON file containing `un_items` array with file paths
 
 **Options:**
+
 - `-p, --prompt PROMPT`: Specify prompt name (default: metadata_extraction)
 - `-d, --directory DIRECTORY`: Base directory for file paths
 - `-t, --target-json TARGET_JSON`: Target JSON file for metadata
 - `--verbose`: Enable verbose output
 
 **Output Format:**
+
 ```
 📄 rasenmaeher/B/rasenbieter1/Gesamtpdf-24-11-2023-12-19-00.pdf (sourcefile)
      bdok @ (content extracted directly)
@@ -74,6 +77,7 @@ strukt2meta unlist <num> <json_file> [options]
 ```
 
 **Automatic Prompt Selection:**
+
 - Files in `/A/` directories use `adok` prompt
 - Files in `/B/` directories use `bdok` prompt
 - Other files use the specified `--prompt` parameter
@@ -83,6 +87,7 @@ strukt2meta unlist <num> <json_file> [options]
 ### Commands
 
 #### Generate Command
+
 Generate metadata from a single source file:
 
 ```bash
@@ -90,6 +95,7 @@ python -m strukt2meta.main generate --inpath <input_file.md> --prompt <prompt_na
 ```
 
 #### Unlist Command
+
 Process uncategorized files from a JSON list for categorization:
 
 ```bash
@@ -97,10 +103,12 @@ python -m strukt2meta.main unlist <NUM> <json_file> [options]
 ```
 
 **Arguments:**
+
 - `NUM`: Number of files to process from the uncategorized list
 - `json_file`: Path to the JSON file containing un_items array (e.g., un_items.json)
 
 **Options:**
+
 - `-p, --prompt`: Name of the prompt to use for categorization (default: metadata_extraction)
 - `-d, --directory`: Base directory where the files are located
 - `-t, --target-json`: Target JSON file to inject generated metadata into
@@ -109,6 +117,7 @@ python -m strukt2meta.main unlist <NUM> <json_file> [options]
 - `-v, --verbose`: Enable verbose output for detailed logging
 
 **Example:**
+
 ```bash
 # Process 5 files from un_items.json for categorization
 python -m strukt2meta.main unlist 5 ./un_items.json --prompt metadata_extraction --verbose
@@ -118,6 +127,7 @@ python -m strukt2meta.main unlist 10 ./un_items.json --dry-run
 ```
 
 The unlist command features:
+
 - **Automatic Prompt Selection**: Uses opinionated file structure to select prompts:
   - Files in `/A/` directories automatically use the `adok` prompt
   - Files in `/B/` directories automatically use the `bdok` prompt
@@ -132,6 +142,7 @@ The unlist command features:
 - Optional metadata injection into additional target JSON files
 
 #### Kriterien Command
+
 Extract qualification criteria from German tender documents:
 
 ```bash
@@ -139,15 +150,18 @@ python -m strukt2meta kriterien -p <prompt_file> -f <tender_document> -o <output
 ```
 
 **Arguments:**
+
 - `-p, --prompt`: Path to the prompt file (e.g., `./prompts/kriterien.md`)
 - `-f, --file`: Path to the tender document file (PDF, DOCX, MD, etc.)
 - `-o, --output`: Path to the output JSON file where criteria will be saved
 
 **Options:**
+
 - `-i, --insert`: Insert key for partial JSON updates (e.g., `eignungskriterien`)
 - `-v, --verbose`: Enable verbose output for detailed processing information
 
 **Examples:**
+
 ```bash
 # Extract criteria from tender document
 python -m strukt2meta kriterien -p ./prompts/kriterien.md -f ./tender_document.pdf -o ./criteria.json
@@ -160,6 +174,7 @@ python -m strukt2meta kriterien -p ./prompts/kriterien.md -f ./tender_document.p
 ```
 
 **Features:**
+
 - **Automated Criteria Extraction**: Identifies and structures qualification criteria from German tender documents
 - **Structured JSON Output**: Generates consistent JSON format with categories like `eignungskriterien`, `befugnis`, etc.
 - **Insert Mode**: Allows targeted updates of specific JSON sections without overwriting entire files
@@ -169,6 +184,7 @@ python -m strukt2meta kriterien -p ./prompts/kriterien.md -f ./tender_document.p
 
 **Output Format:**
 The kriterien command generates structured JSON with the following format:
+
 ```json
 {
     "eignungskriterien": {
@@ -213,6 +229,55 @@ To process `my_document.md` using the `adok` prompt and save the output to `meta
 ```bash
 python -m strukt2meta.main --inpath ./my_document.md --prompt adok --outfile ./metadata.json
 ```
+
+#### Analyze Command
+
+Analyze a directory for candidate source files (pdf/docx/xlsx + standalone md) and optionally run AI analysis on a single file’s best markdown variant.
+
+Listing mode (no file specified):
+
+```bash
+python -m strukt2meta.main analyze -d ./mydir
+```
+
+Example output:
+
+```
+📁 Found 3 files available for analysis:
+    ✅ sample.pdf (pdf) 🏷️ meta: exists
+        → sample.marker.md (confidence: 0.78)
+    ❌ other.pdf (pdf) 📝 meta: none
+        → other.docling.md (confidence: 0.61)
+    ✅ notes.md (md) 🏷️ meta: none
+        → notes.md (confidence: 1.00)
+```
+
+Single-file analysis (invokes AI with prompt, augments result with meta_status):
+
+```bash
+python -m strukt2meta.main analyze -d ./mydir -f sample.pdf -p metadata_extraction -j ./mydir/.ofs.index.json -v
+```
+
+Options:
+
+- `-d, --directory` (required): Base directory containing source + md/ subfolder
+- `-f, --file`: Specific source filename to analyze (e.g. `document.pdf`)
+- `-p, --prompt` (default `metadata_extraction`): Prompt name (file in `./prompts` without .md)
+- `-o, --output`: Write AI analysis result to a file instead of stdout
+- `-j, --json-file`: Explicit index JSON for existing metadata detection (defaults to `.ofs.index.json` with legacy fallback)
+- `-c, --config`: Custom parser ranking config (overrides default rankings)
+- `-v, --verbose`: Extra logging (chosen markdown, metadata status, etc.)
+
+Behavior:
+
+1. Discovers source files and ranks available `md/<basename>.<parser>.md` (or `basename_parser.md` / direct `basename.md`) using parser preference, size, age.
+2. In listing mode prints availability, chosen best markdown, confidence, and existing metadata status.
+3. In single-file mode: selects best markdown, loads prompt, queries AI, adds `meta_status` field, prints or saves JSON.
+
+Notes:
+
+- Requires dependencies from `requirements.txt` plus valid AI credentials (handled via `credgoo` / `uniinfer`).
+- If you only want to inspect candidates without invoking AI, omit `-f`.
 
 ## Project Status
 

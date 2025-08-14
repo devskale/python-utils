@@ -33,7 +33,7 @@ def _load_pdf2md_index(directory_path: Path) -> Optional[Dict[str, Any]]:
         try:
             with open(index_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
-        except (json.JSONDecodeError, IOError):
+        except (json.JSONDecodeError, IOError, PermissionError) as e:
             # Silently ignore malformed or unreadable index files
             pass
     return None

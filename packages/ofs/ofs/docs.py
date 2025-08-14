@@ -147,15 +147,25 @@ def list_bidder_docs_json(project_name: str, bidder_name: str, include_metadata:
         "count": 0
     }
 
-    base_dir = get_base_dir()
-    base_path = Path(base_dir)
+    try:
+        base_dir = get_base_dir()
+        base_path = Path(base_dir)
+        if not base_path.exists():
+            return {"error": f"Base directory not found: {base_dir}"}
+    except (OSError, PermissionError) as e:
+        return {"error": f"Cannot access base directory {base_dir}: {e}"}
 
     # Find the project directory
     project_path = _search_in_directory(base_path, project_name)
     if not project_path:
         return result
 
-    project_dir = Path(project_path)
+    try:
+        project_dir = Path(project_path)
+        if not project_dir.exists():
+            return {"error": f"Project directory not found: {project_path}"}
+    except (OSError, PermissionError) as e:
+        return {"error": f"Cannot access project directory {project_path}: {e}"}
 
     # Find the bidder directory within B/
     b_dir = project_dir / "B" / bidder_name
@@ -252,8 +262,13 @@ def list_bidders_json(project_name: str) -> Dict[str, Any]:
     """
     Provide a structured view of bidders and files within the B directory of a project.
     """
-    base_dir = get_base_dir()
-    base_path = Path(base_dir)
+    try:
+        base_dir = get_base_dir()
+        base_path = Path(base_dir)
+        if not base_path.exists():
+            return {"error": f"Base directory not found: {base_dir}"}
+    except (OSError, PermissionError) as e:
+        return {"error": f"Cannot access base directory {base_dir}: {e}"}
 
     # Find the project directory
     project_path = _search_in_directory(base_path, project_name)
@@ -266,7 +281,12 @@ def list_bidders_json(project_name: str) -> Dict[str, Any]:
             "total_files": 0
         }
 
-    project_dir = Path(project_path)
+    try:
+        project_dir = Path(project_path)
+        if not project_dir.exists():
+            return {"error": f"Project directory not found: {project_path}"}
+    except (OSError, PermissionError) as e:
+        return {"error": f"Cannot access project directory {project_path}: {e}"}
     b_dir = project_dir / "B"
 
     return _collect_bidders_structured(b_dir)
@@ -296,15 +316,25 @@ def list_project_docs_json(project_name: str, include_metadata: bool = False) ->
         "count": 0
     }
 
-    base_dir = get_base_dir()
-    base_path = Path(base_dir)
+    try:
+        base_dir = get_base_dir()
+        base_path = Path(base_dir)
+        if not base_path.exists():
+            return {"error": f"Base directory not found: {base_dir}"}
+    except (OSError, PermissionError) as e:
+        return {"error": f"Cannot access base directory {base_dir}: {e}"}
 
     # Find the project directory
     project_path = _search_in_directory(base_path, project_name)
     if not project_path:
         return result
 
-    project_dir = Path(project_path)
+    try:
+        project_dir = Path(project_path)
+        if not project_dir.exists():
+            return {"error": f"Project directory not found: {project_path}"}
+    except (OSError, PermissionError) as e:
+        return {"error": f"Cannot access project directory {project_path}: {e}"}
 
     a_dir = project_dir / "A"
     if not a_dir.exists():
@@ -390,15 +420,25 @@ def get_bidder_document_json(project_name: str, bidder_name: str, filename: str)
     Returns:
         Dict[str, Any]: Document info including metadata from index files when available
     """
-    base_dir = get_base_dir()
-    base_path = Path(base_dir)
+    try:
+        base_dir = get_base_dir()
+        base_path = Path(base_dir)
+        if not base_path.exists():
+            return {"error": f"Base directory not found: {base_dir}"}
+    except (OSError, PermissionError) as e:
+        return {"error": f"Cannot access base directory {base_dir}: {e}"}
 
     # Find the project directory
     project_path = _search_in_directory(base_path, project_name)
     if not project_path:
         return {"error": f"Project '{project_name}' not found"}
 
-    project_dir = Path(project_path)
+    try:
+        project_dir = Path(project_path)
+        if not project_dir.exists():
+            return {"error": f"Project directory not found: {project_path}"}
+    except (OSError, PermissionError) as e:
+        return {"error": f"Cannot access project directory {project_path}: {e}"}
     b_dir = project_dir / "B" / bidder_name
 
     if not b_dir.exists():
@@ -505,14 +545,25 @@ def read_doc(identifier: str, parser: Optional[str] = None) -> Dict[str, Any]:
     project, bidder, filename = parts
 
     # Locate project
-    base_dir = get_base_dir()
-    base_path = Path(base_dir)
+    try:
+        base_dir = get_base_dir()
+        base_path = Path(base_dir)
+        if not base_path.exists():
+            return {"success": False, "error": f"Base directory not found: {base_dir}"}
+    except (OSError, PermissionError) as e:
+        return {"success": False, "error": f"Cannot access base directory {base_dir}: {e}"}
+    
     project_path = _search_in_directory(base_path, project)
     if not project_path:
         return {"success": False, "error": f"Project '{project}' not found"}
 
     # Determine directory structure: B/bidder for bidder docs, A for tender docs
-    project_dir = Path(project_path)
+    try:
+        project_dir = Path(project_path)
+        if not project_dir.exists():
+            return {"success": False, "error": f"Project directory not found: {project_path}"}
+    except (OSError, PermissionError) as e:
+        return {"success": False, "error": f"Cannot access project directory {project_path}: {e}"}
     if bidder.upper() == "A":
         # Special case: reading from tender documents (A directory)
         doc_dir = project_dir / "A"
