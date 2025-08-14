@@ -517,3 +517,276 @@ def print_index_stats(root_dir: str) -> None:
                     print(f"{prefix} {bieter['name']} ({bieter['docs']} docs, {bieter['parsers']} pars, {bieter['categories']} kat)")
     else:
         print("No indexed projects found.")
+
+
+def generate_un_items_list(input_path: str, output_file: str = None, json_output: bool = False, recursive: bool = True) -> None:
+    """
+    Generate a list of unparsed and uncategorized files in OFS structure.
+    
+    This function identifies files that lack corresponding Markdown files or category metadata
+    within the OFS (Opinionated File System) structure. It looks for:
+    - Files without corresponding .md files in the md/ directory
+    - Files without category metadata in kriterien.meta.json
+    
+    Args:
+        input_path: Path to the OFS directory or file to analyze
+        output_file: Optional output file path. If None, prints to stdout
+        json_output: Whether to output in JSON format (default: False for plain text)
+        recursive: Whether to process subdirectories recursively (default: True)
+    """
+    import json
+    import unicodedata
+    from pathlib import Path
+    from typing import List, Dict, Any
+    
+    def is_ofs_directory(path: Path) -> bool:
+        """Check if a directory follows OFS structure."""
+        return (path / 'projekt.meta.json').exists() or (path / 'md').exists()
+    
+    def get_markdown_files(md_dir: Path) -> set:
+        """Get set of base filenames that have corresponding markdown files."""
+        markdown_files = set()
+        if md_dir.exists():
+            for md_file in md_dir.rglob('*.md'):
+                # Extract original filename from markdown filename
+                # Handle patterns like: filename.processor.md, filename/filename.processor.md
+                md_name = md_file.stem
+                
+                # Check if this is a processor-specific markdown file
+                # Common processors: docling, llamaparse, marker, pdfplumber
+                processors = ['docling', 'llamaparse', 'marker', 'pdfplumber']
+                
+                base_name = None
+                for processor in processors:
+                    if md_name.endswith(f'.{processor}'):
+                        # Remove .processor suffix to get base filename
+                        base_name = md_name[:-len(f'.{processor}')]
+                        break
+                
+                if base_name is None:
+                    # Fallback: if no processor suffix found, use the whole stem
+                    # This handles cases like filename.md or other patterns
+                    base_name = md_name
+                
+                if base_name:
+                    markdown_files.add(base_name)
+        return markdown_files
+    
+    def get_categorized_files(kriterien_file: Path) -> set:
+        """Get set of filenames that have category metadata."""
+        categorized_files = set()
+        if kriterien_file.exists():
+            try:
+                with open(kriterien_file, 'r', encoding='utf-8') as f:
+                    kriterien_data = json.load(f)
+                    
+                # Extract filenames from kriterien structure
+                for category, items in kriterien_data.get('kriterien', {}).items():
+                    if isinstance(items, dict):
+                        for filename in items.keys():
+                            # Remove file extension for comparison
+                            base_name = Path(filename).stem
+                            categorized_files.add(base_name)
+            except (json.JSONDecodeError, FileNotFoundError):
+                pass
+        return categorized_files
+    
+    def find_unparsed_files(directory: Path, base_path: Path = None) -> List[Dict[str, Any]]:
+        """Find files that are unparsed or uncategorized in an OFS directory.
+        
+        Args:
+            directory: The OFS project directory to scan
+            base_path: The base path for calculating relative paths (defaults to directory)
+        """
+        unparsed_files = []
+        
+        if not is_ofs_directory(directory):
+            return unparsed_files
+        
+        # Use directory as base_path if not provided (for single directory scans)
+        if base_path is None:
+            base_path = directory
+        
+        # Get global categorized files from project root
+        kriterien_file = directory / 'kriterien.meta.json'
+        categorized_files = get_categorized_files(kriterien_file)
+        
+        # Check A and B directories for unparsed files
+        for subdir_name in ['A', 'B']:
+            subdir = directory / subdir_name
+            if subdir.exists() and subdir.is_dir():
+                # For B directory, check each bieter subdirectory
+                if subdir_name == 'B':
+                    for bieter_dir in subdir.iterdir():
+                        if bieter_dir.is_dir():
+                            # Get markdown files specific to this bieter directory
+                            bieter_md_dir = bieter_dir / 'md'
+                            markdown_files = get_markdown_files(bieter_md_dir)
+                            
+                            for file_path in bieter_dir.rglob('*'):
+                                if file_path.is_file() and not file_path.name.startswith('.'):
+                                    # Skip md directory files
+                                    if 'md' in file_path.parts:
+                                        continue
+                                        
+                                    # Only process files with relevant extensions
+                                    if file_path.suffix.lower() not in RELEVANT_EXTENSIONS:
+                                        continue
+                                        
+                                    base_name = file_path.stem
+                                    relative_path = file_path.relative_to(base_path)
+                                    
+                                    # Check if file is unparsed or uncategorized
+                                    is_unparsed = base_name not in markdown_files
+                                    is_uncategorized = base_name not in categorized_files
+                                    
+                                    if is_unparsed or is_uncategorized:
+                                        # Handle filesystem encoding issues by normalizing Unicode
+                                        file_path_str = unicodedata.normalize('NFC', str(relative_path)).replace('\\', '/')
+                                        bieter_name = unicodedata.normalize('NFC', bieter_dir.name)
+                                        
+                                        unparsed_files.append({
+                                            'file': file_path_str,
+                                            'size': file_path.stat().st_size,
+                                            'unparsed': is_unparsed,
+                                            'uncategorized': is_uncategorized,
+                                            'directory': subdir_name,
+                                            'bieter': bieter_name
+                                        })
+                else:
+                    # For A directory, get markdown files from A/md/
+                    a_md_dir = subdir / 'md'
+                    markdown_files = get_markdown_files(a_md_dir)
+                    
+                    # Check files directly in A directory
+                    for file_path in subdir.rglob('*'):
+                        if file_path.is_file() and not file_path.name.startswith('.'):
+                            # Skip md directory files
+                            if 'md' in file_path.parts:
+                                continue
+                                
+                            # Only process files with relevant extensions
+                            if file_path.suffix.lower() not in RELEVANT_EXTENSIONS:
+                                continue
+                                
+                            base_name = file_path.stem
+                            relative_path = file_path.relative_to(base_path)
+                            
+                            # Check if file is unparsed or uncategorized
+                            is_unparsed = base_name not in markdown_files
+                            is_uncategorized = base_name not in categorized_files
+                            
+                            if is_unparsed or is_uncategorized:
+                                # Handle filesystem encoding issues by normalizing Unicode
+                                file_path_str = unicodedata.normalize('NFC', str(relative_path)).replace('\\', '/')
+                                
+                                unparsed_files.append({
+                                    'file': file_path_str,
+                                    'size': file_path.stat().st_size,
+                                    'unparsed': is_unparsed,
+                                    'uncategorized': is_uncategorized,
+                                    'directory': subdir_name,
+                                    'bieter': None
+                                })
+        
+        return unparsed_files
+    
+    # Main processing logic
+    input_path_obj = Path(input_path)
+    all_unparsed_files = []
+    
+    if input_path_obj.is_file():
+        # Handle single file case
+        parent_dir = input_path_obj.parent
+        if is_ofs_directory(parent_dir):
+            # Check if this specific file is unparsed/uncategorized
+            md_dir = parent_dir / 'md'
+            kriterien_file = parent_dir / 'kriterien.meta.json'
+            
+            markdown_files = get_markdown_files(md_dir)
+            categorized_files = get_categorized_files(kriterien_file)
+            
+            base_name = input_path_obj.stem
+            is_unparsed = base_name not in markdown_files
+            is_uncategorized = base_name not in categorized_files
+            
+            if is_unparsed or is_uncategorized:
+                # Only process files with relevant extensions
+                if input_path_obj.suffix.lower() not in RELEVANT_EXTENSIONS:
+                    return
+                    
+                relative_path = input_path_obj.relative_to(parent_dir)
+                # Handle filesystem encoding issues by normalizing Unicode
+                file_path_str = unicodedata.normalize('NFC', str(relative_path))
+                
+                all_unparsed_files.append({
+                    'file': file_path_str,
+                    'size': input_path_obj.stat().st_size,
+                    'unparsed': is_unparsed,
+                    'uncategorized': is_uncategorized,
+                    'directory': relative_path.parts[0] if len(relative_path.parts) > 1 else 'root',
+                    'bieter': relative_path.parts[1] if len(relative_path.parts) > 2 and relative_path.parts[0] == 'B' else None
+                })
+    elif input_path_obj.is_dir():
+        # Handle directory case
+        if recursive:
+            # Find all OFS directories recursively
+            for root, dirs, files in os.walk(input_path_obj):
+                root_path = Path(root)
+                if is_ofs_directory(root_path):
+                    unparsed_files = find_unparsed_files(root_path, input_path_obj)
+                    all_unparsed_files.extend(unparsed_files)
+        else:
+            # Process only the specified directory
+            if is_ofs_directory(input_path_obj):
+                all_unparsed_files = find_unparsed_files(input_path_obj)
+    
+    # Generate output
+    if json_output:
+        # Count only files that are actually unparsed (not just uncategorized)
+        unparsed_count = sum(1 for f in all_unparsed_files if f['unparsed'])
+        uncategorized_count = sum(1 for f in all_unparsed_files if f['uncategorized'])
+        
+        output_data = {
+            'summary': {
+                'total_unparsed': unparsed_count,
+                'total_uncategorized': uncategorized_count,
+                'total_size': sum(f['size'] for f in all_unparsed_files),
+                'scan_path': str(input_path_obj.relative_to(Path.cwd()) if input_path_obj.is_absolute() else input_path_obj),
+                'recursive': recursive
+            },
+            'files': all_unparsed_files
+        }
+        output_content = json.dumps(output_data, indent=2, ensure_ascii=False)
+    else:
+        # Plain text output
+        lines = []
+        if all_unparsed_files:
+            for file_info in all_unparsed_files:
+                status_parts = []
+                if file_info['unparsed']:
+                    status_parts.append('unparsed')
+                if file_info['uncategorized']:
+                    status_parts.append('uncategorized')
+                status = ', '.join(status_parts)
+                
+                size_mb = file_info['size'] / (1024 * 1024)
+                bieter_info = f" (bieter: {file_info['bieter']})" if file_info['bieter'] else ""
+                lines.append(f"{file_info['file']} - {status} ({size_mb:.2f} MB){bieter_info}")
+        # Remove the "No files found" message for less verbosity
+        
+        output_content = '\n'.join(lines)
+    
+    # Write output
+    if output_file:
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(output_content)
+    else:
+        # Auto-save output to the target directory when no output file specified
+        if json_output:
+            default_output_file = input_path_obj / 'un_items.json'
+        else:
+            default_output_file = input_path_obj / 'un_items.txt'
+        with open(default_output_file, 'w', encoding='utf-8') as f:
+            f.write(output_content)
+    # Suppress all stdout output - no printing to console

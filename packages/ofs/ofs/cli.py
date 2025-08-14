@@ -284,6 +284,39 @@ def create_parser() -> argparse.ArgumentParser:
         help="Root directory to analyze (default: current directory)"
     )
 
+    # index un command
+    un_parser = index_subparsers.add_parser(
+        "un",
+        help="List unparsed and uncategorized files in OFS structure"
+    )
+    un_parser.add_argument(
+        "directory",
+        nargs="?",
+        default=".",
+        help="Directory to analyze (default: current directory)"
+    )
+    un_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Output results in JSON format"
+    )
+    un_parser.add_argument(
+        "--output",
+        "-o",
+        help="Output file path (default: print to stdout)"
+    )
+    un_parser.add_argument(
+        "--recursive",
+        action="store_true",
+        default=True,
+        help="Process subdirectories recursively (default: True)"
+    )
+    un_parser.add_argument(
+        "--no-recursive",
+        action="store_true",
+        help="Disable recursive processing"
+    )
+
     return parser
 
 
@@ -495,16 +528,19 @@ def handle_kriterien(project: str, action: str, limit: Optional[int] = None, tag
         sys.exit(1)
 
 
-def handle_index(action: str, directory: str, recursive: bool = False, force: bool = False, max_age: int = 24) -> None:
+def handle_index(action: str, directory: str, recursive: bool = False, force: bool = False, max_age: int = 24, 
+                json_output: bool = False, output_file: str = None) -> None:
     """
     Handle index management commands.
 
     Args:
-        action: Index action to perform (create, update, clear, stats)
+        action: Index action to perform (create, update, clear, stats, un)
         directory: Directory to operate on
         recursive: Whether to operate recursively
         force: Whether to force overwrite (for create)
         max_age: Maximum age in hours for update
+        json_output: Whether to output in JSON format (for un action)
+        output_file: Output file path (for un action)
     """
     import os
     
@@ -534,6 +570,9 @@ def handle_index(action: str, directory: str, recursive: bool = False, force: bo
                 sys.exit(1)
         elif action == "stats":
             print_index_stats(directory)
+        elif action == "un":
+            from .index import generate_un_items_list
+            generate_un_items_list(directory, output_file, json_output, recursive)
         else:
             print(f"Unknown index action: {action}", file=sys.stderr)
             sys.exit(1)
@@ -593,7 +632,16 @@ def main(argv: Optional[list[str]] = None) -> int:
             recursive = getattr(args, 'recursive', False)
             force = getattr(args, 'force', False)
             max_age = getattr(args, 'max_age', 24)
-            handle_index(args.index_action, directory, recursive, force, max_age)
+            
+            # Handle 'un' action specific parameters
+            json_output = getattr(args, 'json', False)
+            output_file = getattr(args, 'output', None)
+            
+            # Handle --no-recursive flag for 'un' action
+            if args.index_action == 'un' and getattr(args, 'no_recursive', False):
+                recursive = False
+            
+            handle_index(args.index_action, directory, recursive, force, max_age, json_output, output_file)
         else:
             print(f"Unknown command: {args.command}", file=sys.stderr)
             return 1

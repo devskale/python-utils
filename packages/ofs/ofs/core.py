@@ -63,6 +63,7 @@ from .index import (
     update_index,
     clear_index,
     print_index_stats,
+    generate_un_items_list,
     load_index_from_directory,
     process_index_file,
 )
