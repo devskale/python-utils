@@ -208,7 +208,7 @@ def process_directory(input_dir: str, converter: PDFtoMarkdown, args) -> tuple[i
                 if not os.path.exists(index_file_path):
                     index_data = {"files": []}
                 else:
-                    with open(index_file_path, 'r') as index_file:
+                    with open(index_file_path, 'r', encoding='utf-8') as index_file:
                         index_data = json.load(index_file)
 
                 # Update or add file entry in the index
@@ -220,8 +220,8 @@ def process_directory(input_dir: str, converter: PDFtoMarkdown, args) -> tuple[i
                 if parser not in file_entry["parsers"]["det"]:
                     file_entry["parsers"]["det"].append(parser)
 
-                with open(index_file_path, 'w') as index_file:
-                    json.dump(index_data, index_file, indent=4)
+                with open(index_file_path, 'w', encoding='utf-8') as index_file:
+                    json.dump(index_data, index_file, indent=4, ensure_ascii=False)
             elif status == 'skipped':
                 print(f"  ⊘ Skipped: Existing file")
                 skipped_files += 1
@@ -409,7 +409,7 @@ def process_unfile(json_file_path: str, num_files: int, converter: PDFtoMarkdown
     
     # Load the JSON file
     try:
-        with open(json_file_path, 'r') as f:
+        with open(json_file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
     except json.JSONDecodeError as e:
         print(f"Error: Invalid JSON file {json_file_path}: {e}")
@@ -536,7 +536,7 @@ def process_unfile(json_file_path: str, num_files: int, converter: PDFtoMarkdown
                 if not os.path.exists(index_file_path):
                     index_data = {"files": []}
                 else:
-                    with open(index_file_path, 'r') as index_file:
+                    with open(index_file_path, 'r', encoding='utf-8') as index_file:
                         index_data = json.load(index_file)
                 
                 # Update or add file entry in the index
@@ -548,8 +548,8 @@ def process_unfile(json_file_path: str, num_files: int, converter: PDFtoMarkdown
                 if parser not in file_entry["parsers"]["det"]:
                     file_entry["parsers"]["det"].append(parser)
                 
-                with open(index_file_path, 'w') as index_file:
-                    json.dump(index_data, index_file, indent=4)
+                with open(index_file_path, 'w', encoding='utf-8') as index_file:
+                    json.dump(index_data, index_file, indent=4, ensure_ascii=False)
             elif status == 'skipped':
                 print(f"    ⊘ Skipped: Existing file")
             else:  # status == 'failed'
@@ -625,7 +625,7 @@ def process_single_file(file_path: str, converter: PDFtoMarkdown, args) -> tuple
             if not os.path.exists(index_file_path):
                 index_data = {"files": []}
             else:
-                with open(index_file_path, 'r') as index_file:
+                with open(index_file_path, 'r', encoding='utf-8') as index_file:
                     index_data = json.load(index_file)
 
             # Update or add file entry in the index
@@ -637,8 +637,8 @@ def process_single_file(file_path: str, converter: PDFtoMarkdown, args) -> tuple
             if parser not in file_entry["parsers"]["det"]:
                 file_entry["parsers"]["det"].append(parser)
 
-            with open(index_file_path, 'w') as index_file:
-                json.dump(index_data, index_file, indent=4)
+            with open(index_file_path, 'w', encoding='utf-8') as index_file:
+                json.dump(index_data, index_file, indent=4, ensure_ascii=False)
         elif status == 'skipped':
             print(f"  ⊘ Skipped: Existing file")
             skipped_files += 1
@@ -689,7 +689,7 @@ def main():
                         help="Output the result in JSON format (used with --index un)")
     parser.add_argument("-o", "--output", type=str,
                         help="Specify the output file (used with --index un)")
-    parser.add_argument("--index-age", type=int, default=30,
+    parser.add_argument("--index-age", type=int, default=5,
                         help="Maximum age (in seconds) for index files before they're considered stale (default: 30)")
     parser.add_argument("--status", nargs='?', const='all', default=None,
                         help="Show parsing status. Provide a parser name to see files not yet parsed by it. Without a name, it shows completely unparsed files.")
@@ -785,7 +785,7 @@ def main():
                 with open(output_file, 'w') as f:
                     json.dump({"un_items": []}, f)  # Initialize with proper structure
 
-            with open(output_file, 'r+') as f:
+            with open(output_file, 'r+', encoding='utf-8') as f:
                 data = json.load(f)
                 data['processing_time'] = processing_time
                 data['date'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')

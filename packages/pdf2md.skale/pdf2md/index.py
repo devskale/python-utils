@@ -6,6 +6,7 @@ import json
 import hashlib
 from typing import Optional, Dict, List  # Added Optional, Dict, List
 from .config import ConfigManager
+from .index_helper import _has_content_changes
 
 # Define constants for relevant file extensions
 RELEVANT_EXTENSIONS = ['.pdf', '.docx', '.xlsx', '.pptx', '.jpg', '.jpeg', '.png', '.gif']
@@ -26,7 +27,7 @@ def _generate_index_data_for_path(current_root: str, sub_dir_names: List[str], f
     # Load existing index data if available
     existing_meta = {}
     if existing_index_path and os.path.exists(existing_index_path):
-        with open(existing_index_path, 'r') as f:
+        with open(existing_index_path, 'r', encoding='utf-8') as f:
             existing_data = json.load(f)
             for file_entry in existing_data.get('files', []):
                 existing_meta[file_entry['name']] = file_entry.get('meta', {})
@@ -332,7 +333,7 @@ def filter_files(files: List[str]) -> List[str]:
 def read_index_file(path: str) -> Optional[Dict]:
     """Read and return index data from a file."""
     if os.path.exists(path):
-        with open(path, 'r') as f:
+        with open(path, 'r', encoding='utf-8') as f:
             return json.load(f)
     return None
 
@@ -340,7 +341,7 @@ def read_index_file(path: str) -> Optional[Dict]:
 def write_index_file(path: str, data: Dict) -> None:
     """Write index data to a file."""
     with open(path, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=4)
+        json.dump(data, f, indent=4, ensure_ascii=False)
 
 # Reusable directory traversal function
 def traverse_directories(directory: str, recursive: bool = False):
@@ -367,7 +368,14 @@ def create_index(directory: str, recursive: bool = False, test_mode: bool = Fals
 # Update existing index files if they're older than max_age seconds
 def update_index(directory: str, max_age: int = 5, recursive: bool = False, test_mode: bool = False) -> None:
     """Update existing index files if they're older than max_age seconds."""
+    print(f"Scanning directories {'recursively' if recursive else 'non-recursively'} in: {directory}")
+    
+    processed_count = 0
+    updated_count = 0
+    skipped_count = 0
+    
     for root, dirs, files in traverse_directories(directory, recursive):
+        processed_count += 1
         index_file_name = ConfigManager().get('index_file_name')
         index_path = os.path.join(root, index_file_name)
         old_index_data = read_index_file(index_path)
@@ -376,14 +384,33 @@ def update_index(directory: str, max_age: int = 5, recursive: bool = False, test
         if old_index_data:
             index_age = time.time() - os.path.getmtime(index_path)
             if index_age <= max_age and not test_mode:
-                print(f"Index is up-to-date: {index_path} (age: {index_age:.2f}s)")
+                skipped_count += 1
                 needs_update = False
 
         if needs_update:
             new_index_data = _generate_index_data_for_path(root, dirs, files, index_path)
-            _compare_and_print_index_changes(old_index_data, new_index_data, index_path, test_mode=test_mode)
-            if not test_mode:
-                write_index_file(index_path, new_index_data)
+            
+            # Check if there are actual content changes before writing
+            has_content_changes = _has_content_changes(old_index_data, new_index_data, root)
+            
+            if has_content_changes or old_index_data is None:
+                # Preserve original timestamp if no content changes, update if there are changes
+                if not has_content_changes and old_index_data:
+                    new_index_data['timestamp'] = old_index_data.get('timestamp', time.time())
+                
+                print(f"[{updated_count + 1}] Processing directory: {root}")
+                _compare_and_print_index_changes(old_index_data, new_index_data, index_path, test_mode=test_mode)
+                if not test_mode:
+                    write_index_file(index_path, new_index_data)
+                updated_count += 1
+            else:
+                # No content changes detected, don't update the file
+                skipped_count += 1
+    
+    print(f"\n=== Update Summary ===")
+    print(f"Directories processed: {processed_count}")
+    print(f"Indexes updated: {updated_count}")
+    print(f"Indexes skipped: {skipped_count}")
 
 # Remove all .pdf2md_index.json files
 def clear_index(directory: str, recursive: bool = False) -> None:
@@ -429,7 +456,7 @@ def process_index_file(index_path: str) -> tuple[int, int, int]:
     if not os.path.exists(index_path):
         return 0, 0, 0
 
-    with open(index_path, 'r') as f:
+    with open(index_path, 'r', encoding='utf-8') as f:
         index_data = json.load(f)
 
     total_docs = len(index_data.get('files', []))
@@ -535,7 +562,7 @@ def generate_unparsed_file_list(directory: str, output_file: str, recursive: boo
     if unparsed_files:
         if json_output:
             with open(output_file, 'w', encoding='utf-8') as f:
-                json.dump({"unparsed_files": unparsed_files}, f, indent=4)
+                json.dump({"unparsed_files": unparsed_files}, f, indent=4, ensure_ascii=False)
         else:
             with open(output_file, 'w', encoding='utf-8') as f:
                 f.write("\n".join(unparsed_files))
@@ -587,7 +614,7 @@ def generate_un_items_list(directory: str, output_file: str, recursive: bool = F
     if un_items:
         if json_output:
             with open(output_file, 'w', encoding='utf-8') as f:
-                json.dump({"un_items": un_items}, f, indent=4)
+                json.dump({"un_items": un_items}, f, indent=4, ensure_ascii=False)
         else:
             with open(output_file, 'w', encoding='utf-8') as f:
                 for item in un_items:
