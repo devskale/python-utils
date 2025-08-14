@@ -3,7 +3,7 @@
 from pdf2md.config import config
 from pdf2md.converter import PDFtoMarkdown
 from pdf2md.factory import ExtractorFactory
-from pdf2md.index import create_index, update_index, clear_index, get_index_data, print_index_stats, generate_unparsed_file_list, generate_un_items_list
+from pdf2md.index import create_index, update_index, clear_index, get_index_data, print_index_stats, generate_unparsed_file_list, generate_un_items_list, filter_directories
 import os
 import argparse
 import platform
@@ -92,9 +92,8 @@ def print_directory_stats(input_dir: str, recursive: bool = False) -> None:
     if recursive:
         # Process subdirectories
         for root, dirs, files in os.walk(input_dir):
-            # Skip hidden directories, ./md subdirs, and directories starting with '_'
-            dirs[:] = [d for d in dirs if not d.startswith(
-                '.') and not d.startswith('_')]
+            # Filter directories using consistent logic
+            dirs[:] = filter_directories(dirs)
 
             for dir_name in dirs:
                 dir_path = os.path.join(root, dir_name)
@@ -343,8 +342,8 @@ def show_parsing_status(directory: str, recursive: bool, parser_name: Optional[s
     start_directory = os.path.abspath(directory)
 
     for root, dirs, _ in os.walk(start_directory):
-        # Modify dirs in-place to control traversal
-        dirs[:] = [d for d in dirs if not d.startswith('.') and d != 'md']
+        # Filter directories using consistent logic
+        dirs[:] = filter_directories(dirs)
 
         index_data = get_index_data(root)
 
@@ -938,7 +937,7 @@ def main():
         total_dirs = 0
         total_files_to_process = 0
         for root, dirs, files in os.walk(input_path):
-            dirs[:] = [d for d in dirs if not d.startswith('.')]
+            dirs[:] = filter_directories(dirs)
             total_dirs += len(dirs)
 
             # Count files that would be processed
@@ -958,9 +957,8 @@ def main():
         print("Starting conversion...\n")
 
         for root, dirs, files in os.walk(input_path):
-            # Skip hidden directories, ./md subdirs, and directories starting with '_'
-            dirs[:] = [d for d in dirs if not d.startswith(
-                '.') and not d.startswith('_')]
+            # Filter directories using consistent logic
+            dirs[:] = filter_directories(dirs)
 
             # Process current directory
             print(
