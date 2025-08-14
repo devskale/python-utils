@@ -464,8 +464,8 @@ def print_index_stats(root_dir: str) -> None:
         root_dir: Root directory to analyze
     """
     config = get_config()
-    # Use pdf2md compatible index file name for compatibility
-    index_file_name = '.pdf2md_index.json'
+    # Use configurable index file name
+    index_file_name = config.get('INDEX_FILE', '.ofs.index.json')
     results = []
     
     for entry in os.listdir(root_dir):
@@ -509,17 +509,14 @@ def print_index_stats(root_dir: str) -> None:
                         total_b_parsers += b_parsers
                         total_b_categories += b_categories
         
-        # Calculate totals
-        total_docs = a_docs + total_b_docs
-        total_parsers = a_parsers + total_b_parsers
-        total_categories = a_categories + total_b_categories
-        
-        if total_docs > 0:
+        # Only show A directory documents in main count (not including bidder documents)
+        # This matches the expectation that project stats should reflect tender documents, not bidder submissions
+        if a_docs > 0 or bieter_list:  # Show project if it has A docs or bidders
             results.append({
                 'project': entry,
-                'total_docs': total_docs,
-                'parsed_docs': total_parsers,
-                'categorized_docs': total_categories,
+                'total_docs': a_docs,  # Only A directory documents
+                'parsed_docs': a_parsers,  # Only A directory parsed documents
+                'categorized_docs': a_categories,  # Only A directory categorized documents
                 'a_docs': a_docs,
                 'b_docs': total_b_docs,
                 'bieter_list': bieter_list
