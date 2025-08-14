@@ -57,6 +57,16 @@ from .kriterien import (
     get_kriterien_tag_json,
 )
 
+# Import from index module
+from .index import (
+    create_index,
+    update_index,
+    clear_index,
+    print_index_stats,
+    load_index_from_directory,
+    process_index_file,
+)
+
 # Re-export all functions for backward compatibility
 __all__ = [
     # Path functions
@@ -94,6 +104,14 @@ __all__ = [
     "get_kriterien_pop_json",
     "get_kriterien_tree_json",
     "get_kriterien_tag_json",
+
+    # Index functions
+    "create_index",
+    "update_index",
+    "clear_index",
+    "print_index_stats",
+    "load_index_from_directory",
+    "process_index_file",
 
     # Private functions (for internal use)
     "_load_pdf2md_index",

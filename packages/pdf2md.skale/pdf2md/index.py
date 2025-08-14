@@ -450,7 +450,7 @@ def process_index_file(index_path: str) -> tuple[int, int, int]:
     Returns:
         A tuple containing:
         - Total number of documents.
-        - Number of parsed documents (with non-empty parsers.det).
+        - Number of parsed documents (with markdown files in /md subdirectory).
         - Number of categorized documents (with non-empty meta.kategorie or meta.Kategorie).
     """
     if not os.path.exists(index_path):
@@ -462,10 +462,33 @@ def process_index_file(index_path: str) -> tuple[int, int, int]:
     total_docs = len(index_data.get('files', []))
     parsed_docs = 0
     categorized_docs = 0
+    
+    # Get the directory containing the index file
+    index_dir = os.path.dirname(index_path)
+    md_dir = os.path.join(index_dir, 'md')
 
     for file_entry in index_data.get('files', []):
-        if file_entry.get('parsers', {}).get('det'):
-            parsed_docs += 1
+        # Check if corresponding markdown files exist in /md subdirectory
+        file_name = file_entry.get('name', '')
+        if file_name and os.path.exists(md_dir):
+            file_base_name = os.path.splitext(file_name)[0]
+            # Check for any markdown files with this base name
+            has_md_files = False
+            if os.path.isdir(md_dir):
+                for md_file in os.listdir(md_dir):
+                    if md_file.startswith(file_base_name + '.') and md_file.endswith('.md'):
+                        has_md_files = True
+                        break
+                    # Also check for marker subdirectory
+                    marker_subdir = os.path.join(md_dir, file_base_name)
+                    if os.path.isdir(marker_subdir):
+                        marker_file = os.path.join(marker_subdir, file_base_name + '.marker.md')
+                        if os.path.exists(marker_file):
+                            has_md_files = True
+                            break
+            if has_md_files:
+                parsed_docs += 1
+        
         # Check for both "kategorie" and "Kategorie" (case variations)
         meta = file_entry.get('meta', {})
         if meta.get('kategorie') or meta.get('Kategorie'):
@@ -553,8 +576,26 @@ def generate_unparsed_file_list(directory: str, output_file: str, recursive: boo
             continue
 
         # Identify unparsed files
+        md_dir = os.path.join(root, 'md')
         for file_entry in index_data.get('files', []):
-            if not file_entry.get('parsers', {}).get('det'):  # No parsers detected
+            # Check if corresponding markdown files exist in /md subdirectory
+            file_name = file_entry.get('name', '')
+            has_md_files = False
+            if file_name and os.path.exists(md_dir) and os.path.isdir(md_dir):
+                file_base_name = os.path.splitext(file_name)[0]
+                for md_file in os.listdir(md_dir):
+                    if md_file.startswith(file_base_name + '.') and md_file.endswith('.md'):
+                        has_md_files = True
+                        break
+                    # Also check for marker subdirectory
+                    marker_subdir = os.path.join(md_dir, file_base_name)
+                    if os.path.isdir(marker_subdir):
+                        marker_file = os.path.join(marker_subdir, file_base_name + '.marker.md')
+                        if os.path.exists(marker_file):
+                            has_md_files = True
+                            break
+            
+            if not has_md_files:  # No markdown files found
                 relative_path = os.path.relpath(os.path.join(root, file_entry['name']), directory)
                 unparsed_files.append(relative_path)
 
@@ -597,8 +638,26 @@ def generate_un_items_list(directory: str, output_file: str, recursive: bool = F
             continue
 
         # Identify unparsed and uncategorized items
+        md_dir = os.path.join(root, 'md')
         for file_entry in index_data.get('files', []):
-            is_unparsed = not file_entry.get('parsers', {}).get('det')  # No parsers detected
+            # Check if corresponding markdown files exist in /md subdirectory
+            file_name = file_entry.get('name', '')
+            has_md_files = False
+            if file_name and os.path.exists(md_dir) and os.path.isdir(md_dir):
+                file_base_name = os.path.splitext(file_name)[0]
+                for md_file in os.listdir(md_dir):
+                    if md_file.startswith(file_base_name + '.') and md_file.endswith('.md'):
+                        has_md_files = True
+                        break
+                    # Also check for marker subdirectory
+                    marker_subdir = os.path.join(md_dir, file_base_name)
+                    if os.path.isdir(marker_subdir):
+                        marker_file = os.path.join(marker_subdir, file_base_name + '.marker.md')
+                        if os.path.exists(marker_file):
+                            has_md_files = True
+                            break
+            
+            is_unparsed = not has_md_files  # No markdown files found
             # Check for both "kategorie" and "Kategorie" (case variations)
             meta = file_entry.get('meta', {})
             is_unkategorized = not (meta.get('kategorie') or meta.get('Kategorie'))  # No category metadata

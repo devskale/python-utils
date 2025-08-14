@@ -13,7 +13,7 @@ import unicodedata
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
-from .config import get_base_dir
+from .config import get_base_dir, get_config
 
 
 def _load_pdf2md_index(directory_path: Path) -> Optional[Dict[str, Any]]:
@@ -26,7 +26,9 @@ def _load_pdf2md_index(directory_path: Path) -> Optional[Dict[str, Any]]:
     Returns:
         Optional[Dict[str, Any]]: Parsed JSON data or None if file doesn't exist
     """
-    index_file = directory_path / ".pdf2md_index.json"
+    config = get_config()
+    index_file_name = config.get('INDEX_FILE', 'ofs.index.json')
+    index_file = directory_path / index_file_name
     if index_file.exists():
         try:
             with open(index_file, 'r', encoding='utf-8') as f:

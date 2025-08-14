@@ -28,6 +28,12 @@ from .core import (
     get_kriterien_tree_json,
     get_kriterien_tag_json
 )
+from .index import (
+    create_index,
+    update_index,
+    clear_index,
+    print_index_stats
+)
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -192,6 +198,90 @@ def create_parser() -> argparse.ArgumentParser:
         "tag_id",
         nargs="?",
         help="Specific tag ID to show (e.g., F_SUB_001). If omitted, shows all available tags"
+    )
+
+    # index command
+    index_parser = subparsers.add_parser(
+        "index",
+        help="Manage OFS index files for faster access"
+    )
+    index_subparsers = index_parser.add_subparsers(
+        dest="index_action",
+        help="Index management actions"
+    )
+
+    # index create command
+    create_parser = index_subparsers.add_parser(
+        "create",
+        help="Create index files for directories"
+    )
+    create_parser.add_argument(
+        "directory",
+        nargs="?",
+        default=".",
+        help="Directory to index (default: current directory)"
+    )
+    create_parser.add_argument(
+        "--recursive",
+        action="store_true",
+        help="Create indexes recursively for subdirectories"
+    )
+    create_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite existing index files"
+    )
+
+    # index update command
+    update_parser = index_subparsers.add_parser(
+        "update",
+        help="Update existing index files"
+    )
+    update_parser.add_argument(
+        "directory",
+        nargs="?",
+        default=".",
+        help="Directory to update indexes for (default: current directory)"
+    )
+    update_parser.add_argument(
+        "--recursive",
+        action="store_true",
+        help="Update indexes recursively for subdirectories"
+    )
+    update_parser.add_argument(
+        "--max-age",
+        type=int,
+        default=24,
+        help="Maximum age in hours before forcing update (default: 24)"
+    )
+
+    # index clear command
+    clear_parser = index_subparsers.add_parser(
+        "clear",
+        help="Remove index files from directories"
+    )
+    clear_parser.add_argument(
+        "directory",
+        nargs="?",
+        default=".",
+        help="Directory to clear indexes from (default: current directory)"
+    )
+    clear_parser.add_argument(
+        "--recursive",
+        action="store_true",
+        help="Clear indexes recursively from subdirectories"
+    )
+
+    # index stats command
+    stats_parser = index_subparsers.add_parser(
+        "stats",
+        help="Show statistics for indexed files and directories"
+    )
+    stats_parser.add_argument(
+        "directory",
+        nargs="?",
+        default=".",
+        help="Root directory to analyze (default: current directory)"
     )
 
     return parser
@@ -405,6 +495,53 @@ def handle_kriterien(project: str, action: str, limit: Optional[int] = None, tag
         sys.exit(1)
 
 
+def handle_index(action: str, directory: str, recursive: bool = False, force: bool = False, max_age: int = 24) -> None:
+    """
+    Handle index management commands.
+
+    Args:
+        action: Index action to perform (create, update, clear, stats)
+        directory: Directory to operate on
+        recursive: Whether to operate recursively
+        force: Whether to force overwrite (for create)
+        max_age: Maximum age in hours for update
+    """
+    import os
+    
+    # Convert relative path to absolute path
+    directory = os.path.abspath(directory)
+    
+    if not os.path.exists(directory):
+        print(f"Error: Directory does not exist: {directory}", file=sys.stderr)
+        sys.exit(1)
+    
+    if not os.path.isdir(directory):
+        print(f"Error: Path is not a directory: {directory}", file=sys.stderr)
+        sys.exit(1)
+    
+    try:
+        if action == "create":
+            success = create_index(directory, recursive=recursive, force=force)
+            if not success:
+                sys.exit(1)
+        elif action == "update":
+            success = update_index(directory, recursive=recursive, max_age_hours=max_age)
+            if not success:
+                sys.exit(1)
+        elif action == "clear":
+            success = clear_index(directory, recursive=recursive)
+            if not success:
+                sys.exit(1)
+        elif action == "stats":
+            print_index_stats(directory)
+        else:
+            print(f"Unknown index action: {action}", file=sys.stderr)
+            sys.exit(1)
+    except Exception as e:
+        print(f"Error during index {action}: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     """
     Main entry point for the OFS CLI.
@@ -448,6 +585,15 @@ def main(argv: Optional[list[str]] = None) -> int:
             limit = getattr(args, 'limit', None)
             tag_id = getattr(args, 'tag_id', None)
             handle_kriterien(args.project, args.kriterien_action, limit, tag_id)
+        elif args.command == "index":
+            if not args.index_action:
+                print("Error: index command requires an action (create, update, clear, stats)", file=sys.stderr)
+                return 1
+            directory = getattr(args, 'directory', '.')
+            recursive = getattr(args, 'recursive', False)
+            force = getattr(args, 'force', False)
+            max_age = getattr(args, 'max_age', 24)
+            handle_index(args.index_action, directory, recursive, force, max_age)
         else:
             print(f"Unknown command: {args.command}", file=sys.stderr)
             return 1
