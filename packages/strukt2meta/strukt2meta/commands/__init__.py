@@ -10,6 +10,7 @@ from .batch import BatchCommand
 from .dirmeta import DirmetaCommand
 from .clearmeta import ClearmetaCommand
 from .unlist import UnlistCommand
+from .kriterien import KriterienCommand
 
 __all__ = [
     'BaseCommand',
@@ -20,5 +21,6 @@ __all__ = [
     'BatchCommand',
     'DirmetaCommand',
     'ClearmetaCommand',
-    'UnlistCommand'
+    'UnlistCommand',
+    'KriterienCommand'
 ]

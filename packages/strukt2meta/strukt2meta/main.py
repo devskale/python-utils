@@ -8,7 +8,8 @@ from strukt2meta.commands import (
     BatchCommand,
     DirmetaCommand,
     ClearmetaCommand,
-    UnlistCommand
+    UnlistCommand,
+    KriterienCommand
 )
 
 
@@ -209,6 +210,38 @@ It offers a suite of commands for various operations:
         help='Enable verbose output for detailed logging'
     )
 
+    # Kriterien command
+    kriterien_parser = subparsers.add_parser(
+        'kriterien',
+        help='Extract criteria from tender documents (Ausschreibungsunterlagen).',
+        description='Analyzes tender documents to extract criteria using AI models. Supports both overwrite and insert modes for JSON output.'
+    )
+    kriterien_parser.add_argument(
+        '-p', '--prompt',
+        required=True,
+        help='Path to the prompt file for criteria extraction'
+    )
+    kriterien_parser.add_argument(
+        '-f', '--file',
+        required=True,
+        help='Path to the tender document file to analyze'
+    )
+    kriterien_parser.add_argument(
+        '-o', '--output',
+        required=True,
+        help='Path to the output JSON file'
+    )
+    kriterien_parser.add_argument(
+        '-i', '--insert',
+        type=str,
+        help='Insert mode: specify JSON key to clear and replace (e.g., "meta", "kriterien")'
+    )
+    kriterien_parser.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        help='Enable verbose output for detailed logging'
+    )
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -224,7 +257,8 @@ It offers a suite of commands for various operations:
         'batch': BatchCommand,
         'dirmeta': DirmetaCommand,
         'clearmeta': ClearmetaCommand,
-        'unlist': UnlistCommand
+        'unlist': UnlistCommand,
+        'kriterien': KriterienCommand
     }
     
     # Execute the appropriate command
