@@ -58,6 +58,12 @@ Create a python library to access, edit and navigate the opinionated filesystem 
   - Support for directories-only mode
   - **Reserved directory filtering** - Excludes 'md/' and 'archive/' directories from tree output
   - **Reserved file filtering** - Excludes '.json' and '.md' files from tree output
+- [x] **Documentation synchronization**:
+  - Updated `README.md` to reflect current implementation
+  - Synchronized CLI usage examples with actual functionality
+  - Updated Python API documentation with all available functions
+  - Corrected index file format documentation (`.ofs.index.json` structure)
+  - Updated architecture section to reflect modular design
 
 ### `read_doc(doc_id, parser=None)`
 

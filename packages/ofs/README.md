@@ -109,30 +109,153 @@ ofs read-doc "ProjectName" "BidderName" "document.pdf"
 ofs tree
 ```
 
+## CLI Usage
+
+The package provides a comprehensive command-line interface:
+
+### Path Resolution
+```bash
+# Get path for a project or bidder name
+ofs get-path "2025-04 Lampen"
+ofs get-path "Lampion GmbH"
+```
+
+### Project Management
+```bash
+# List all projects
+ofs list-projects
+
+# List bidders in a project
+ofs list-bidders "2025-04 Lampen"
+
+# Find specific bidder in project
+ofs find-bidder "2025-04 Lampen" "Lampion GmbH"
+```
+
+### Document Listing
+```bash
+# List project documents (from A/ folder) - minimal view
+ofs list-docs "2025-04 Lampen"
+
+# List project documents with full metadata
+ofs list-docs "2025-04 Lampen" --meta
+
+# List bidder documents - minimal view
+ofs list-docs "2025-04 Lampen@Lampion GmbH"
+
+# List bidder documents with full metadata
+ofs list-docs "2025-04 Lampen@Lampion GmbH" --meta
+
+# Get detailed information for specific document
+ofs list-docs "2025-04 Lampen@Lampion GmbH@document.pdf"
+```
+
+### Tree Visualization
+```bash
+# Show complete tree structure
+ofs tree
+
+# Show only directories (no documents)
+ofs tree -d
+```
+
+### Criteria Management
+```bash
+# Show next unproven criterion
+ofs kriterien "2025-04 Lampen" pop
+
+# Display criteria organized by category and type
+ofs kriterien "2025-04 Lampen" tree
+
+# Get specific criterion by ID
+ofs kriterien "2025-04 Lampen" tag "EIG_001"
+
+# List all available criterion tags
+ofs kriterien "2025-04 Lampen" tag
+```
+
+### Index Management
+```bash
+# Create index for directory
+ofs index create "/path/to/directory"
+
+# Update existing index
+ofs index update "/path/to/directory"
+
+# Clear index data
+ofs index clear "/path/to/directory"
+
+# Show index statistics
+ofs index stats "/path/to/directory"
+```
+
+### Configuration
+```bash
+# Show current configuration
+ofs config
+```
+
 ### Python API
 
-OFS can also be used programmatically:
-
 ```python
-from ofs.config import OFSConfig
-from ofs.core import OFS
-from ofs.paths import get_path
-from ofs.docs import list_bidder_docs_json
+import ofs
 
-# Initialize configuration
-config = OFSConfig()
-ofs = OFS(config)
+# Path resolution
+path = ofs.get_path("2025-04 Lampen")  # Find project or bidder
+print(f"Path: {path}")
 
-# Get path for a project or bidder
-project_path = get_path("ProjectName")
-bidder_path = get_path("BidderName")
+# Project management
+projects = ofs.list_projects()  # List all projects
+bidders = ofs.list_bidders("2025-04 Lampen")  # List bidders in project
+bidder_path = ofs.find_bidder_in_project("2025-04 Lampen", "Lampion GmbH")
 
-# List documents for a bidder
-docs = list_bidder_docs_json("ProjectName", "BidderName")
+# Document management
+# List project documents (minimal view)
+project_docs = ofs.list_project_docs_json("2025-04 Lampen")
 
-# Access configuration
-base_dir = config.BASE_DIR
-index_file = config.INDEX_FILE
+# List project documents with full metadata
+project_docs_full = ofs.list_project_docs_json("2025-04 Lampen", include_metadata=True)
+
+# List bidder documents
+bidder_docs = ofs.list_bidder_docs_json("2025-04 Lampen", "Lampion GmbH")
+
+# Get specific document details
+doc_details = ofs.get_bidder_document_json("2025-04 Lampen", "Lampion GmbH", "document.pdf")
+
+# Read document content with intelligent parser selection
+content = ofs.read_doc("2025-04 Lampen@Lampion GmbH@document.pdf")
+# Or specify a parser
+content = ofs.read_doc("2025-04 Lampen@Lampion GmbH@document.pdf", parser="docling")
+
+# Tree structure
+tree_data = ofs.generate_tree_structure()  # Full tree
+tree_dirs_only = ofs.generate_tree_structure(directories_only=True)
+tree_string = ofs.print_tree_structure()  # Formatted string
+
+# Criteria management
+kriterien_file = ofs.find_kriterien_file("2025-04 Lampen")
+if kriterien_file:
+    kriterien_data = ofs.load_kriterien(kriterien_file)
+    unproven = ofs.get_unproven_kriterien(kriterien_data)
+    tree = ofs.build_kriterien_tree(kriterien_data)
+    specific = ofs.get_kriterien_by_tag(kriterien_data, "EIG_001")
+
+# Index management
+ofs.create_index("/path/to/directory")
+ofs.update_index("/path/to/directory")
+index_data = ofs.load_index_from_directory("/path/to/directory")
+
+# JSON API endpoints (for web interfaces)
+paths_data = ofs.get_paths_json("project-name")
+projects_json = ofs.list_projects_json()
+bidders_json = ofs.list_bidders_json("2025-04 Lampen")
+kriterien_pop = ofs.get_kriterien_pop_json("2025-04 Lampen")
+kriterien_tree = ofs.get_kriterien_tree_json("2025-04 Lampen")
+
+# Configuration
+config = ofs.get_config()
+base_dir = ofs.get_base_dir()
+print(f"Base directory: {base_dir}")
 ```
 
 ## OFS Structure
@@ -328,15 +451,18 @@ Certain filenames are reserved for system-generated content:
 **Example Structure**:
 ```json
 {
+  "timestamp": 1234567890,
   "files": [
     {
       "name": "document_name.pdf",
       "size": 12345,
-      "hash": "md5_hash",
+      "modified": 1234567890,
+      "hash": "sha256_hash",
+      "extension": ".pdf",
       "parsers": {
-        "status": "completed",
-        "det": ["docling", "pdfplumber"],
-        "default": "docling"
+        "det": ["docling", "pdfplumber", "marker"],
+        "default": "docling",
+        "status": ""
       },
       "meta": {
         "kategorie": "Eignungsnachweise",
@@ -344,16 +470,26 @@ Certain filenames are reserved for system-generated content:
       }
     }
   ],
-  "directories": [],
-  "timestamp": 1234567890.123
+  "directories": [
+    {
+      "name": "subdirectory",
+      "size": 4096,
+      "modified": 1234567890,
+      "hash": "directory_hash"
+    }
+  ]
 }
 ```
 
 **Key Fields**:
+- `timestamp`: Index creation/update timestamp
 - `size`: Original file size in bytes for reference
-- `hash`: MD5 hash of file content for integrity verification
-- `parsers.status`: Current parsing status (`completed`, `pending`, `failed`)
-- `parsers.det`: Available parsers for this file
+- `modified`: File modification timestamp
+- `hash`: SHA-256 hash of file content for integrity verification
+- `extension`: File extension for type identification
+- `parsers.det`: Available parsers detected for this file (based on `md/` folder contents)
+- `parsers.default`: Default parser selected based on hierarchy (docling > marker > llamaparse > pdfplumber)
+- `parsers.status`: Current parsing status (empty string by default)
 - `meta.kategorie`: Document category (e.g., "Berufliche Zuverlässigkeit", "Eignungsnachweise")
 - `meta.name`: Human-readable display name for the document
 
@@ -460,14 +596,52 @@ Before deploying or archiving projects, ensure:
 
 ## Development
 
-This package is currently in early development. The main functionality includes:
+This package provides comprehensive functionality for managing OFS (Opinionated Filesystem) structures. The main functionality includes:
 
-- `get_path(name)`: Returns a path for a given name using configured BASE_DIR
-- `get_paths_json(name)`: Retrieves paths for a name in JSON format.
-- `list_projects_json()`: Retrieves all projects in JSON format.
-- Configuration system with file and environment variable support.
-- CLI interface for basic operations
-- Extensible structure for future OFS features
+### Core Functions
+- `get_path(name)`: Returns a path for a given name using intelligent search algorithm
+- `get_paths_json(name)`: Retrieves paths for a name in JSON format
+- `list_projects()`: List all projects (AUSSCHREIBUNGNAME)
+- `list_projects_json()`: Retrieves all projects in JSON format
+- `list_bidders(project)`: List bidders in a specific project
+- `find_bidder_in_project(project, bidder)`: Locate specific bidder within project
+
+### Document Management
+- `list_project_docs_json(project, include_metadata=False)`: List documents in project A/ folder
+- `list_bidder_docs_json(project, bidder, include_metadata=False)`: List bidder documents
+- `get_bidder_document_json(project, bidder, filename)`: Get detailed document information
+- `read_doc(identifier, parser=None)`: Read document content with intelligent parser selection
+
+### Tree Structure
+- `generate_tree_structure(directories_only=False)`: Generate structured tree data
+- `print_tree_structure(directories_only=False)`: Format tree for display
+
+### Criteria Management
+- `load_kriterien(file_path)`: Load criteria from JSON file
+- `find_kriterien_file(project)`: Find criteria file for project
+- `get_unproven_kriterien(data)`: Get criteria that haven't been proven
+- `build_kriterien_tree(data)`: Build hierarchical criteria structure
+- `get_kriterien_by_tag(data, tag_id)`: Get specific criterion by ID
+
+### Index Management
+- `create_index(directory)`: Create index for directory
+- `update_index(directory)`: Update existing index
+- `clear_index(directory)`: Clear index data
+- `load_index_from_directory(directory)`: Load index from directory
+
+### Configuration System
+- File-based configuration (`ofs.config.json`)
+- Environment variable support (`OFS_BASE_DIR`, `OFS_INDEX_FILE`, `OFS_METADATA_SUFFIX`)
+- Intelligent defaults with `.dir` as BASE_DIR
+
+### CLI Interface
+Comprehensive command-line interface with commands for:
+- Path resolution (`ofs get-path <name>`)
+- Project management (`ofs list-projects`, `ofs list-bidders <project>`)
+- Document listing (`ofs list-docs <project>`, `ofs list-docs <project@bidder>`)
+- Tree visualization (`ofs tree`, `ofs tree -d`)
+- Criteria management (`ofs kriterien <project> pop|tree|tag`)
+- Index operations (`ofs index create|update|clear`)
 
 ## Requirements
 
@@ -478,33 +652,49 @@ This package is currently in early development. The main functionality includes:
 ```
 ofs/
 ├── ofs/
-│   ├── __init__.py
-│   ├── core.py
-│   └── cli.py
-├── tests/
-├── docs/
-├── setup.py
-├── README.md
-└── PRD.md
+│   ├── __init__.py          # Package initialization and exports
+│   ├── __main__.py          # Module execution support
+│   ├── core.py              # Backward compatibility aggregator
+│   ├── paths.py             # Path resolution and navigation
+│   ├── docs.py              # Document listing and reading
+│   ├── tree.py              # Tree structure generation
+│   ├── kriterien.py         # Criteria management
+│   ├── index.py             # Index management
+│   ├── config.py            # Configuration system
+│   ├── cli.py               # Command-line interface
+│   └── logging.py           # Logging utilities
+├── tests/                   # Comprehensive test suite
+├── docs/                    # Documentation
+├── setup.py                 # Package configuration
+├── README.md               # This file
+└── PRD.md                  # Product requirements document
 ```
 
-## Legacy Integration
+## Architecture and Design
 
-OFS is designed to integrate with and eventually replace functionality from `strukt2meta` and `pdf2md` libraries. The refactoring plan (see `REFACTOR.md`) outlines the migration strategy:
+### Module Decomposition
 
-### Current Integration Points
+OFS has been designed with a modular architecture for maintainability and extensibility:
 
-- **Index Management**: OFS maintains `.ofs.index.json` files that track document parsing status
+- **`ofs/core.py`**: Backward compatibility aggregator that imports and re-exports all functions
+- **`ofs/paths.py`**: Path resolution, project/bidder discovery, and OFS navigation
+- **`ofs/docs.py`**: Document listing, metadata handling, and content reading
+- **`ofs/tree.py`**: Directory tree structure generation and visualization
+- **`ofs/kriterien.py`**: Criteria management and evaluation system
+- **`ofs/index.py`**: Index file creation, updating, and management
+- **`ofs/config.py`**: Configuration system with file and environment variable support
+- **`ofs/cli.py`**: Comprehensive command-line interface
+
+### Integration with Processing Pipelines
+
+- **Index Management**: OFS maintains `.ofs.index.json` files that track document parsing status and available parsers
 - **Metadata Processing**: Project and document metadata is managed through structured JSON files
-- **Document Processing**: Support for multiple parsers (docling, pdfplumber, marker) with status tracking
+- **Document Processing**: Support for multiple parsers (docling, pdfplumber, marker, llamaparse) with intelligent selection
+- **Parser Detection**: Automatically detects available parsers by scanning `md/` subdirectories
+- **Content Reading**: Intelligent content extraction from pre-processed Markdown files
 
-### Migration Status
+### Backward Compatibility
 
-The package is currently in active development to consolidate indexing functionality from `pdf2md` into OFS core, making OFS the central authority for document indexing and metadata management.
-
-### Future Enhancements
-
-- Enhanced CLI commands for index management
-- Automated categorization of uncategorized items
-- Integration with existing processing pipelines
-- Backward compatibility with legacy workflows
+- **Zero Breaking Changes**: All existing APIs are preserved through the `core.py` aggregator
+- **Legacy Index Support**: Continues to work with existing `.pdf2md_index.json` files while transitioning to `.ofs.index.json`
+- **Gradual Migration**: Supports both old and new metadata formats during transition periods
