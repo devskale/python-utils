@@ -8,7 +8,9 @@ import os
 import time
 import json
 import hashlib
-from typing import Optional, Dict, List
+import unicodedata
+from pathlib import Path
+from typing import Optional, Dict, List, Any
 from .config import get_config
 from .index_helper import _has_content_changes
 
@@ -308,12 +310,18 @@ def update_index(directory: str, recursive: bool = False, max_age_hours: int = 2
     max_age_seconds = max_age_hours * 3600
     
     try:
+        updated_any = False
         for root, dirs, files in traverse_directories(directory, recursive):
             index_path = os.path.join(root, index_file_name)
             
-            # Skip if no index exists
+            # If no index exists, create one
             if not os.path.exists(index_path):
-                print(f"No index found: {index_path} (use create command first)")
+                # Generate new index data
+                index_data = _generate_index_data_for_path(root, dirs, files, index_path)
+                write_index_file(index_path, index_data)
+                rel_path = os.path.relpath(root, directory)
+                print(f"Created index for {rel_path}")
+                updated_any = True
                 continue
             
             # Check if index is too old
@@ -325,6 +333,7 @@ def update_index(directory: str, recursive: bool = False, max_age_hours: int = 2
                 # Generate new index data
                 index_data = _generate_index_data_for_path(root, dirs, files, index_path)
                 write_index_file(index_path, index_data)
+                updated_any = True
                 continue
             
             # Check for content changes
@@ -336,6 +345,7 @@ def update_index(directory: str, recursive: bool = False, max_age_hours: int = 2
                 rel_path = os.path.relpath(root, directory)
                 print(f"Content changes {rel_path}")
                 write_index_file(index_path, new_data)
+                updated_any = True
             # Skip printing "Index up to date" messages
         
         return True
@@ -534,10 +544,7 @@ def generate_un_items_list(input_path: str, output_file: str = None, json_output
         json_output: Whether to output in JSON format (default: False for plain text)
         recursive: Whether to process subdirectories recursively (default: True)
     """
-    import json
-    import unicodedata
-    from pathlib import Path
-    from typing import List, Dict, Any
+    # Imports moved to top of file
     
     def is_ofs_directory(path: Path) -> bool:
         """Check if a directory follows OFS structure."""

@@ -8,6 +8,7 @@ This module contains functions for:
 """
 
 import json
+import unicodedata
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
