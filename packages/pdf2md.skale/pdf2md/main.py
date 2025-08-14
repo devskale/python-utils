@@ -378,13 +378,13 @@ def show_parsing_status(directory: str, recursive: bool, parser_name: Optional[s
     if not unparsed_files_map:
         print("\nAll relevant files seem to be parsed according to the criteria.")
     else:
-        print(f"\nFound {total_unparsed_count} unparsed file(s):")
+        print(f"\nFound {total_unparsed_count} unparsed file(s):\n")
         for dir_path, files in unparsed_files_map.items():
             relative_dir_path = os.path.relpath(dir_path, start_directory)
             if relative_dir_path == '.':
-                print(f"\nIn directory: {start_directory}")
+                print(f"{start_directory}")
             else:
-                print(f"\nIn directory: {relative_dir_path}")
+                print(f"{relative_dir_path}")
 
             for file_name in files:
                 print(f"  - {file_name}")

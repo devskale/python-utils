@@ -435,7 +435,7 @@ def get_index_data(directory: str) -> Optional[Dict]:
     index_file_name = config.get('index_file_name')
     index_path = os.path.join(directory, index_file_name)
     if os.path.exists(index_path):
-        with open(index_path, 'r') as f:
+        with open(index_path, 'r', encoding='utf-8') as f:
             return json.load(f)
     return None
 

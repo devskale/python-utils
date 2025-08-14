@@ -1,39 +1,39 @@
 # pdf2md-skale: Elegant PDF to Markdown Converter
 
-`pdf2md-skale` is a versatile Python package designed to convert PDF files into Markdown format. It offers a range of extraction methods, including text-based and OCR-based approaches, to ensure accurate and comprehensive conversion. This tool is particularly useful for extracting content from PDFs for note-taking, content repurposing, or data analysis.
+`pdf2md-skale` is a comprehensive Python package designed to convert PDF files and Office documents into Markdown format. It offers multiple extraction methods, intelligent indexing, and robust directory filtering to ensure accurate and efficient document processing.
 
-## Features
+**pdf2md-skale adheres to the [OFS (Opinionated Filesystem) specification v1.0](https://github.com/devskale/python-utils/tree/master/packages/ofs)**, ensuring consistent directory structure and metadata handling for tender documentation workflows.
 
-- **Multiple Extraction Methods:** Supports various PDF text extraction libraries:
-  - `pdfplumber`: For extracting text from well-structured PDFs.
-  - `PyPDF2`: Another robust library for text extraction.
-  - `PyMuPDF`: A fast and feature-rich PDF processing library.
-  - `LlamaParse`: Leverages the Llama Cloud API for advanced parsing and Markdown output.
-  - `OCR (Tesseract)`: Optical Character Recognition for image-based PDFs.
-  - `EasyOCR`: Another OCR engine, offering multilingual support.
-  - `Docling`: A new approach to extract text from pdfs.
-  - `Marker`: Uses marker extraction for enhanced text processing (creates dedicated subdirectory structure for each PDF).
-- **Recursive Processing:** Option to process directories recursively with `--recursive` flag.
-- **Dry Run Mode:** Preview file counts without conversion using `--dry` flag.
-- **Markdown Output:** Generates clean Markdown files, preserving text formatting.
-- **Metadata Inclusion:** Adds a YAML header to each Markdown file with:
-  - Title (derived from the PDF filename).
-  - Creation date.
-  - Number of pages.
-  - Word count.
-  - Character count.
-  - Extractor used.
-- **Command-Line Interface:** Easy to use with command-line arguments for input/output directories, overwriting files, and selecting extraction methods.
-- **OCR Support:** Handles image-based PDFs using OCR, with language selection.
-- **Error Handling:** Gracefully handles errors during conversion and provides informative messages.
-- **Environment Variable Support:** Uses `.env` file for API keys (e.g., `LLAMA_CLOUD_API_KEY`).
-- **Multiple Parsers:** You can select multiple parsers to use.
-- **System Architecture:** Updated architecture supports modular extractors and processors.
-- **Indexing System:** A robust indexing system that tracks file metadata, parser status, and directory changes. It enables:
-  - Incremental updates by processing only changed files.
-  - Parser status tracking to identify which files have been processed by specific parsers.
-  - Change detection for added, removed, or modified files.
-  - Directory monitoring for nested structures.
+## Key Features
+
+### 🔧 **Multiple Extraction Methods**
+Supports 8 different parsers for optimal text extraction:
+- **`pdfplumber`**: Excellent for well-structured PDFs with tables and layouts
+- **`pypdf2`**: Lightweight and fast for simple text extraction
+- **`pymupdf`**: Feature-rich library with advanced PDF processing capabilities
+- **`docling`**: Modern AI-powered approach for complex document structures
+- **`llamaparse`**: Cloud-based AI parsing with superior accuracy (requires API key)
+- **`marker`**: Advanced extraction with dedicated subdirectory output structure
+- **`ocr` (Tesseract)**: Optical Character Recognition for image-based PDFs
+- **`easyocr`**: Multilingual OCR engine with broad language support
+
+### 📁 **Smart Processing**
+- **Recursive Processing**: Scan entire directory trees with `--recursive`
+- **Single File Support**: Process individual files or entire directories
+- **Dry Run Mode**: Preview operations without making changes using `--dry`
+- **Directory Filtering**: Automatically excludes `archive/`, `md/`, and hidden directories
+- **File Type Support**: Handles `.pdf`, `.docx`, `.xlsx`, and `.pptx` files
+
+### 📊 **Advanced Indexing System**
+- **Incremental Updates**: Process only changed files for efficiency
+- **Parser Status Tracking**: Monitor which parsers have processed each file
+- **Change Detection**: Automatically detect added, removed, or modified files
+- **Metadata Management**: Track file hashes, sizes, and processing history
+
+### 📝 **Rich Output**
+- **Clean Markdown**: Preserves formatting and document structure
+- **YAML Metadata**: Includes title, creation date, page count, word count, and parser info
+- **Multiple Output Formats**: Support for various markdown styles and structures
 
 ## Prerequisites
 
@@ -73,246 +73,574 @@
      llama_api_key = get_credential('llamacloud')
      ```
 
-## Usage
+## Quick Start
 
-1.  **Basic Conversion (pdfplumber):**
+### Basic Usage
 
-    ```bash
-    pdf2md <input_directory> <output_directory>
-    ```
+```bash
+# Convert PDFs in current directory using default parser (pdfplumber)
+pdf2md .
 
-    - `<input_directory>`: The directory containing the PDF files you want to convert.
-    - `<output_directory>`: The directory where the Markdown files will be saved.
-    - If you don't specify the directories, it will use the default directories:
-      - input: `/Users/johannwaldherr/code/ww/ww_private/vDaten/work`
-      - output: `/Users/johannwaldherr/code/ww/ww_private/vDaten/work/md`
+# Convert specific directory with output location
+pdf2md /path/to/pdfs /path/to/output
 
-2.  **Overwrite Existing Files:**
+# Process recursively through subdirectories
+pdf2md /path/to/pdfs --recursive
 
-    ```bash
-    pdf2md <input_directory> --overwrite
-    ```
+# Preview what would be processed (dry run)
+pdf2md /path/to/pdfs --dry --recursive
+```
 
-    - The `--overwrite` flag will force the script to overwrite existing Markdown files.
+### Parser Selection
 
-3.  **Using OCR:**
+```bash
+# Use specific parser
+pdf2md /path/to/pdfs --parser docling
 
-    ```bash
-    pdf2md <input_directory> --ocr
-    ```
+# Use multiple parsers (creates separate output for each)
+pdf2md /path/to/pdfs --parsers pdfplumber docling marker
 
-    - The `--ocr` flag enables OCR for text extraction.
+# OCR for image-based PDFs
+pdf2md /path/to/pdfs --parser ocr --ocr-lang eng
 
-4.  **OCR Language:**
+# AI-powered parsing with LlamaParse (requires API key)
+pdf2md /path/to/pdfs --parser llamaparse
+```
 
-    ```bash
-    pdf2md <input_directory> --ocr --ocr-lang deu
-    ```
+### Single File Processing
 
-    - The `--ocr-lang` flag specifies the language for OCR (e.g., `deu` for German, `eng` for English). Default is `deu`.
+```bash
+# Process individual file
+pdf2md document.pdf --parser docling
 
-5.  **Selecting Parsers:**
+# Process Office documents
+pdf2md presentation.pptx --parser docling
+pdf2md spreadsheet.xlsx --parser docling
 
-    ```bash
-    pdf2md <input_directory> --parsers pdfplumber llamaparse ocr
-    ```
+# Check what parsers are compatible with a file
+pdf2md document.pdf --dry
+```
 
-    - The `--parsers` flag allows you to specify which parsers to use. You can list multiple parsers separated by spaces.
-    - Available parsers: `pdfplumber`, `pypdf2`, `pymupdf`, `llamaparse`, `ocr`, `easyocr`, `docling`, `marker`.
-    - Note: `marker` extractor only works with PDF files and creates a dedicated subdirectory for each PDF.
+### Advanced Options
 
-6.  **Using multiple parsers**
-    ```bash
-    pdf2md <input_directory> --parsers pdfplumber pymupdf
-    ```
-    - This will create two markdown files for each pdf, one with the pdfplumber parser and one with the pymupdf parser.
+```bash
+# Overwrite existing markdown files
+pdf2md /path/to/pdfs --overwrite --parser docling
 
-## New Feature: Single File Input Support
+# Skip restricted directories (archive/, md/, hidden dirs)
+pdf2md /path/to/pdfs --recursive --parser docling
 
-`pdf2md-skale` now supports processing single files in addition to directories. This enhancement provides greater flexibility and efficiency for users who want to process individual files without scanning entire directories.
+# Combine multiple features
+pdf2md /path/to/pdfs --recursive --parsers docling pdfplumber --overwrite --dry
+```
 
-### Key Features of Single File Support
+## Comprehensive Examples
 
-- **File vs Directory Detection:** Automatically detects whether the input path is a file or a directory.
-- **Supported File Types:** Single file processing supports `.pdf`, `.docx`, `.xlsx`, and `.pptx` file types.
-- **Parser Compatibility Check:** Ensures the specified parsers are compatible with the file type.
-- **Error Handling:** Provides clear error messages for unsupported file types or non-existent paths.
-- **Index Operations:** All index-related commands (`create`, `update`, `clear`, `stats`, `un`) work seamlessly with single files by using the parent directory for index management.
-- **Dry Run Mode:** Displays file details and compatible parsers for single files without performing conversion.
+### Real-World Workflow Examples
 
-### Usage Examples
+#### Example 1: Processing a Document Collection
+```bash
+# Initial setup - create indexes for tracking
+pdf2md /path/to/documents --index create --recursive
 
-1. **Process a Single File:**
+# Process all PDFs with the best AI parser
+pdf2md /path/to/documents --parser docling --recursive
 
-    ```bash
-    pdf2md /path/to/document.pdf --parsers pdfplumber
-    ```
+# Check what files haven't been processed yet
+pdf2md /path/to/documents --status docling --recursive
 
-2. **Dry Run for a Single File:**
+# Process remaining files with fallback parser
+pdf2md /path/to/documents --parser pdfplumber --recursive
 
-    ```bash
-    pdf2md /path/to/document.pdf --dry
-    ```
+# Get statistics on processed files
+pdf2md /path/to/documents --index stats --recursive
+```
 
-3. **Index Operations for Single Files:**
+#### Example 2: Incremental Processing
+```bash
+# Initial processing
+pdf2md ./contracts --parser docling --recursive
 
-    ```bash
-    pdf2md /path/to/document.pdf --index update
-    ```
+# Later, after adding new files
+pdf2md ./contracts --index update --recursive
+pdf2md ./contracts --parser docling --recursive  # Only processes new/changed files
 
-4. **Check Parsing Status for Single Files:**
+# Check processing status
+pdf2md ./contracts --status all --recursive
+```
 
-    ```bash
-    pdf2md /path/to/document.pdf --status
-    ```
+#### Example 3: Multi-Parser Comparison
+```bash
+# Process with multiple parsers for quality comparison
+pdf2md ./research_papers --parsers docling pdfplumber marker --recursive
 
-### Benefits
+# This creates multiple markdown files per PDF:
+# - document_docling.md
+# - document_pdfplumber.md  
+# - document_marker/ (subdirectory with enhanced structure)
+```
 
-- **Flexibility:** Process individual files without scanning directories.
-- **Efficiency:** Focus on specific files for faster processing.
-- **Consistency:** Single file processing integrates seamlessly with existing features like indexing and status checks.
+#### Example 4: OCR for Scanned Documents
+```bash
+# Process image-based PDFs with OCR
+pdf2md ./scanned_docs --parser ocr --ocr-lang eng --recursive
 
-This update ensures that `pdf2md-skale` remains a versatile and user-friendly tool for all your PDF-to-Markdown conversion needs.
+# For multilingual documents
+pdf2md ./multilingual_docs --parser easyocr --recursive
+
+# Combine OCR with text extraction
+pdf2md ./mixed_docs --parsers docling ocr --recursive
+```
+
+#### Example 5: Enterprise Document Processing
+```bash
+# Large-scale processing with filtering
+pdf2md /enterprise/documents \
+  --parser docling \
+  --recursive \
+  --overwrite \
+  --index create
+
+# Monitor progress
+pdf2md /enterprise/documents --index stats --recursive
+
+# Process only specific file types
+pdf2md /enterprise/documents --parser docling --recursive  # Auto-filters to supported types
+```
 
 ## Indexing System
 
-The indexing system is a core feature of `pdf2md-skale`, designed to streamline and optimize the conversion process. It creates and manages `.pdf2md_index.json` files in each directory, which store metadata about files and directories.
+The indexing system is the intelligence behind `pdf2md-skale`'s efficiency. It creates `.pdf2md_index.json` files that track file metadata, parser status, and changes, enabling smart incremental processing.
 
-### Key Benefits
+### 🎯 **Why Use Indexing?**
 
-1. **Incremental Updates:** 
-   - Tracks file changes using hashes and metadata.
-   - Processes only files that have been added, modified, or removed since the last index update.
+- **⚡ Speed**: Process only changed files, not entire directories
+- **📊 Tracking**: Know exactly which files have been processed by which parsers
+- **🔄 Incremental**: Add new files without reprocessing existing ones
+- **📈 Analytics**: Get detailed statistics about your document collection
 
-2. **Parser Status Tracking:**
-   - Records which parsers have processed each file.
-   - Helps identify unparsed files or files that need reprocessing with specific parsers.
+### 📋 **Index Management Commands**
 
-3. **Change Detection:**
-   - Detects added, removed, or modified files and directories.
-   - Ensures accurate and up-to-date indexing.
-
-4. **Directory Monitoring:**
-   - Tracks nested directory structures.
-   - Provides detailed statistics about indexed files and directories.
-
-### Index Management Commands
-
-You can manage indexes using the following CLI options:
-
-- **Create Indexes:**
-  ```bash
-  pdf2md --index create
-  ```
-  Creates fresh `.pdf2md_index.json` files in the specified directory and its subdirectories (if `--recursive` is used).
-
-- **Update Indexes:**
-  ```bash
-  pdf2md --index update --index-age 60
-  ```
-  Updates existing `.pdf2md_index.json` files if they are older than 60 seconds.
-
-- **Clear Indexes:**
-  ```bash
-  pdf2md --index clear
-  ```
-  Removes all `.pdf2md_index.json` files from the specified directory.
-
-- **Print Index Stats:**
-  ```bash
-  pdf2md --index stats
-  ```
-  Displays detailed statistics about indexed files, including document counts, parser usage, and categories.
-
-- **Show Parsing Status:**
-  ```bash
-  pdf2md --status all
-  ```
-  Lists files that have not been parsed by any parser.
-
-  ```bash
-  pdf2md --status pdfplumber
-  ```
-  Lists files that have not been parsed by the `pdfplumber` parser.
-
-### Example Workflow
-
-1. **Create Indexes:**
-   ```bash
-   pdf2md --index create /path/to/directory
-   ```
-   Generates `.pdf2md_index.json` files in `/path/to/directory` and its subdirectories.
-
-2. **Update Indexes:**
-   ```bash
-   pdf2md --index update /path/to/directory --index-age 30
-   ```
-   Updates `.pdf2md_index.json` files if they are older than 30 seconds.
-
-3. **Clear Indexes:**
-   ```bash
-   pdf2md --index clear /path/to/directory
-   ```
-   Deletes all `.pdf2md_index.json` files in the specified directory.
-
-4. **Print Index Stats:**
-   ```bash
-   pdf2md --index stats /path/to/directory
-   ```
-   Displays statistics about indexed files and directories.
-
-5. **Check Parsing Status:**
-   ```bash
-   pdf2md --status all /path/to/directory
-   ```
-   Lists files that have not been parsed by any parser.
-
-### Technical Details
-
-- **Index File Format:** 
-  - `.pdf2md_index.json` files store metadata about files and directories, including:
-    - File name, size, and hash.
-    - Parsers used and their status.
-    - Metadata such as categories.
-
-- **Hash-Based Tracking:** 
-  - Uses MD5 hashes to detect file changes.
-  - Ensures efficient and accurate indexing.
-
-- **Parser Hierarchy:** 
-  - Prioritizes parsers based on a predefined hierarchy (e.g., `docling`, `marker`, `llamaparse`, `pdfplumber`).
-
-- **Test Mode:** 
-  - Allows testing index creation or updates without making changes.
-
-## Example
-
+#### Create Fresh Indexes
 ```bash
-# Basic conversion with default parser
-pdf2md my_pdfs
+# Create indexes in current directory
+pdf2md . --index create
 
-# Recursive processing with multiple parsers
-pdf2md my_pdfs --recursive --parsers pdfplumber marker --overwrite
+# Create indexes recursively through all subdirectories
+pdf2md /path/to/docs --index create --recursive
 
-# Dry run to preview file counts
-pdf2md my_pdfs --dry --recursive
+# Create indexes for specific directory
+pdf2md ./contracts --index create
 ```
 
-## Additional CLI Example
-
+#### Update Existing Indexes
 ```bash
-pdf2md /Users/johannwaldherr/code/ww/ww_private/vDaten/work \
-       /Users/johannwaldherr/code/ww/ww_private/vDaten/work/md \
-       --ocr --ocr-lang eng
+# Update indexes if older than 60 seconds (default)
+pdf2md . --index update
+
+# Force update regardless of age
+pdf2md . --index update --index-age 0
+
+# Update with custom age threshold (300 seconds = 5 minutes)
+pdf2md . --index update --index-age 300 --recursive
+```
+
+#### Monitor Processing Status
+```bash
+# Show files not processed by any parser
+pdf2md . --status all --recursive
+
+# Show files not processed by specific parser
+pdf2md . --status docling --recursive
+pdf2md . --status pdfplumber --recursive
+
+# Check status for single file
+pdf2md document.pdf --status docling
+```
+
+#### Get Statistics
+```bash
+# Detailed statistics about indexed files
+pdf2md . --index stats --recursive
+
+# Example output:
+# Total Files: 150
+# PDF Files: 120
+# Office Files: 30
+# Processed by docling: 95
+# Processed by pdfplumber: 145
+# Unprocessed: 5
+```
+
+#### Clean Up Indexes
+```bash
+# Remove all index files
+pdf2md . --index clear --recursive
+
+# Remove indexes from specific directory
+pdf2md ./old_project --index clear
+```
+
+### 🔄 **Smart Processing Workflows**
+
+#### Workflow 1: Initial Setup
+```bash
+# Step 1: Create comprehensive index
+pdf2md ./documents --index create --recursive
+
+# Step 2: Process with primary parser
+pdf2md ./documents --parser docling --recursive
+
+# Step 3: Check what's left unprocessed
+pdf2md ./documents --status docling --recursive
+
+# Step 4: Process remaining with fallback
+pdf2md ./documents --parser pdfplumber --recursive
+```
+
+#### Workflow 2: Daily Incremental Updates
+```bash
+# Update indexes to detect new/changed files
+pdf2md ./documents --index update --recursive
+
+# Process only new/changed files
+pdf2md ./documents --parser docling --recursive
+
+# Get daily statistics
+pdf2md ./documents --index stats --recursive
+```
+
+#### Workflow 3: Quality Assurance
+```bash
+# Find files that failed processing
+pdf2md ./documents --status all --recursive
+
+# Reprocess failed files with different parser
+pdf2md ./documents --parser pdfplumber --recursive
+
+# Verify all files are now processed
+pdf2md ./documents --status all --recursive
+```
+
+### 🔧 **Technical Details**
+
+#### Index File Structure
+Each `.pdf2md_index.json` contains:
+```json
+{
+  "files": {
+    "document.pdf": {
+      "size": 1024000,
+      "hash": "abc123...",
+      "parsers": ["docling", "pdfplumber"],
+      "last_modified": "2024-01-15T10:30:00Z",
+      "category": "pdf"
+    }
+  },
+  "directories": ["subdir1", "subdir2"],
+  "last_updated": "2024-01-15T10:30:00Z"
+}
+```
+
+#### Smart Features
+- **Hash-based change detection**: Uses MD5 hashes to detect file modifications
+- **Parser hierarchy**: Prioritizes `docling` > `marker` > `llamaparse` > `pdfplumber`
+- **Directory filtering**: Automatically excludes `archive/`, `md/`, and hidden directories
+- **Incremental updates**: Only processes files that have changed since last index update
+
+## Parser Comparison & Best Practices
+
+### 🎯 **Choosing the Right Parser**
+
+| Parser | Best For | Speed | Quality | Special Features |
+|--------|----------|-------|---------|------------------|
+| **docling** | Modern PDFs, AI-powered | Medium | Excellent | Latest AI technology, handles complex layouts |
+| **marker** | Academic papers, complex layouts | Slow | Excellent | Creates structured subdirectories, preserves formatting |
+| **llamaparse** | Any PDF type | Medium | Excellent | Cloud-based AI, requires API key |
+| **pdfplumber** | Tables, structured data | Fast | Good | Excellent table extraction |
+| **pymupdf** | General purpose | Very Fast | Good | Lightweight, reliable |
+| **pypdf2** | Simple text extraction | Very Fast | Basic | Minimal dependencies |
+| **ocr** | Scanned/image PDFs | Slow | Variable | Handles image-based content |
+| **easyocr** | Multilingual scanned docs | Slow | Good | 80+ languages supported |
+
+### 📋 **Recommended Workflows**
+
+#### For Academic/Research Documents
+```bash
+# Use marker for best structure preservation
+pdf2md ./research --parser marker --recursive
+
+# Fallback with docling for failed files
+pdf2md ./research --status marker --recursive
+pdf2md ./research --parser docling --recursive
+```
+
+#### For Business Documents
+```bash
+# Start with docling for modern AI parsing
+pdf2md ./contracts --parser docling --recursive
+
+# Use pdfplumber for table-heavy documents
+pdf2md ./reports --parser pdfplumber --recursive
+```
+
+#### For Mixed Document Collections
+```bash
+# Multi-parser approach for comprehensive coverage
+pdf2md ./documents --parsers docling pdfplumber --recursive
+
+# OCR for scanned documents
+pdf2md ./scanned --parser ocr --ocr-lang eng --recursive
+```
+
+#### For Large-Scale Processing
+```bash
+# Efficient incremental processing
+pdf2md ./enterprise --index create --recursive
+pdf2md ./enterprise --parser docling --recursive
+pdf2md ./enterprise --index update --recursive  # Daily updates
+```
+
+### ⚡ **Performance Tips**
+
+1. **Use indexing** for large collections to avoid reprocessing
+2. **Start with fast parsers** (pymupdf, pdfplumber) for initial processing
+3. **Use dry run** to estimate processing time: `--dry --recursive`
+4. **Process incrementally** with `--index update` for ongoing collections
+5. **Filter directories** automatically excludes `archive/`, `md/`, hidden dirs
+
+## Complete Examples
+
+### Basic Usage
+```bash
+# Quick start - process current directory
+pdf2md . --parser docling
+
+# Process with output directory
+pdf2md ./pdfs ./markdown_output --parser docling
+
+# Recursive processing with dry run preview
+pdf2md ./documents --parser docling --recursive --dry
+```
+
+### Advanced Processing
+```bash
+# Enterprise-grade processing with indexing
+pdf2md /enterprise/docs \
+  --parser docling \
+  --recursive \
+  --index create \
+  --overwrite
+
+# Multi-parser quality comparison
+pdf2md ./important_docs \
+  --parsers docling marker pdfplumber \
+  --recursive
+
+# OCR processing for scanned documents
+pdf2md ./scanned_archive \
+  --parser ocr \
+  --ocr-lang eng \
+  --recursive \
+  --overwrite
+```
+
+### Monitoring & Maintenance
+```bash
+# Check processing status
+pdf2md ./documents --status all --recursive
+
+# Get detailed statistics
+pdf2md ./documents --index stats --recursive
+
+# Update indexes and process new files
+pdf2md ./documents --index update --recursive
+pdf2md ./documents --parser docling --recursive
 ```
 
 ## Python Library Usage
 
+### Basic Library Usage
+
 ```python
 from pdf2md.converter import PDFtoMarkdown
+from pdf2md.main import main
+import os
 
-converter = PDFtoMarkdown(['ocr'])
-converter.convert('example.pdf', 'output_dir', 'example.md', 'ocr', overwrite=True)
+# Method 1: Using the converter class
+converter = PDFtoMarkdown(['docling'])
+converter.convert('document.pdf', 'output_dir', 'document.md', 'docling', overwrite=True)
+
+# Method 2: Using the main function programmatically
+args = {
+    'input_path': './documents',
+    'output_dir': './markdown_output',
+    'parsers': ['docling', 'pdfplumber'],
+    'recursive': True,
+    'overwrite': True,
+    'dry': False
+}
+main(args)
+```
+
+### Advanced Library Integration
+
+```python
+from pdf2md.index import create_index, update_index, get_index_stats
+from pdf2md.main import process_directory
+import json
+
+# Create and manage indexes programmatically
+index_path = './documents'
+create_index(index_path, recursive=True)
+
+# Get processing statistics
+stats = get_index_stats(index_path, recursive=True)
+print(f"Total files: {stats['total_files']}")
+print(f"Processed files: {stats['processed_files']}")
+
+# Process with custom configuration
+config = {
+    'parsers': ['docling'],
+    'recursive': True,
+    'overwrite': False,
+    'ocr_lang': 'eng'
+}
+process_directory('./documents', config)
+```
+
+### Batch Processing Script
+
+```python
+#!/usr/bin/env python3
+"""
+Batch processing script for pdf2md-skale
+"""
+
+import os
+import sys
+from pathlib import Path
+from pdf2md.main import main
+from pdf2md.index import create_index, update_index
+
+def batch_process_directories(base_path, parsers=['docling']):
+    """Process multiple directories with pdf2md"""
+    
+    base_path = Path(base_path)
+    
+    for directory in base_path.iterdir():
+        if directory.is_dir() and not directory.name.startswith('.'):
+            print(f"Processing directory: {directory}")
+            
+            # Create index
+            create_index(str(directory), recursive=True)
+            
+            # Process with specified parsers
+            args = {
+                'input_path': str(directory),
+                'parsers': parsers,
+                'recursive': True,
+                'overwrite': False,
+                'dry': False
+            }
+            
+            try:
+                main(args)
+                print(f"✅ Successfully processed {directory}")
+            except Exception as e:
+                print(f"❌ Error processing {directory}: {e}")
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        batch_process_directories(sys.argv[1])
+    else:
+        print("Usage: python batch_process.py <base_directory>")
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### 1. Parser Not Found
+```bash
+# Error: Parser 'docling' not found
+# Solution: Install the required parser
+pip install docling
+
+# For marker parser
+pip install marker
+
+# For OCR parsers
+pip install pytesseract easyocr
+```
+
+#### 2. LlamaParse API Key Issues
+```bash
+# Error: LLAMA_CLOUD_API_KEY not found
+# Solution: Set up API key
+echo "LLAMA_CLOUD_API_KEY=your_key_here" > .env
+
+# Or use credgoo (recommended)
+pip install -r https://skale.dev/credgoo
+```
+
+#### 3. Permission Errors
+```bash
+# Error: Permission denied
+# Solution: Check file/directory permissions
+chmod -R 755 /path/to/documents
+
+# Or run with appropriate permissions
+sudo pdf2md /restricted/path --parser docling
+```
+
+#### 4. Memory Issues with Large Files
+```bash
+# For large PDF files, use lighter parsers first
+pdf2md ./large_files --parser pymupdf --recursive
+
+# Process files individually
+for file in *.pdf; do
+    pdf2md "$file" --parser docling
+done
+```
+
+#### 5. Index Corruption
+```bash
+# Clear and recreate indexes
+pdf2md ./documents --index clear --recursive
+pdf2md ./documents --index create --recursive
+```
+
+### Performance Optimization
+
+```bash
+# 1. Use dry run to estimate processing time
+pdf2md ./large_collection --dry --recursive
+
+# 2. Process in batches by file type
+pdf2md ./documents --parser docling --recursive  # PDFs first
+pdf2md ./documents --parser docling --recursive  # Office docs
+
+# 3. Use faster parsers for initial processing
+pdf2md ./documents --parser pymupdf --recursive
+
+# 4. Monitor progress with status checks
+pdf2md ./documents --status all --recursive
+```
+
+### Debug Mode
+
+```bash
+# Enable verbose logging (if available)
+export PDF2MD_DEBUG=1
+pdf2md ./documents --parser docling --recursive
+
+# Check index file contents
+cat .pdf2md_index.json | jq .
+
+# Verify file processing status
+pdf2md ./documents --index stats --recursive
 ```
 
 # Status
