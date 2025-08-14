@@ -23,7 +23,7 @@ class OFSConfig:
     
     DEFAULT_CONFIG = {
         "BASE_DIR": ".dir",
-        "INDEX_FILE": "index.json",
+        "INDEX_FILE": ".ofs.index.json",
         "METADATA_SUFFIX": ".meta.json"
     }
     
@@ -99,6 +99,24 @@ class OFSConfig:
             str: The base directory path
         """
         return self._config["BASE_DIR"]
+    
+    def get_index_file(self) -> str:
+        """
+        Get the INDEX_FILE configuration value.
+        
+        Returns:
+            str: The index file name
+        """
+        return self._config["INDEX_FILE"]
+    
+    def get_metadata_suffix(self) -> str:
+        """
+        Get the METADATA_SUFFIX configuration value.
+        
+        Returns:
+            str: The metadata file suffix
+        """
+        return self._config["METADATA_SUFFIX"]
     
     def set(self, key: str, value: Any) -> None:
         """

@@ -1,11 +1,15 @@
 # OFS (Opinionated Filesystem)
 
-A Python package for accessing, editing, and navigating opinionated filesystem structures designed to organize tender documents (Ausschreibungsdokumente) and bidder documents (Bieterdokumente) in a standardized, efficient manner. This structure facilitates AI-assisted legal analysis, ensuring modularity, easy navigation, and integration with processing tools.
+A comprehensive Python package for managing opinionated filesystem structures designed to organize tender documents (Ausschreibungsdokumente) and bidder documents (Bieterdokumente) in a standardized, efficient manner. This structure facilitates AI-assisted legal analysis, document processing, and metadata management.
+
+## Key Concepts
 
 - **Ausschreibungsdokumente**: Documents created and published by the contracting authority to inform potential bidders about the tender. They include performance descriptions, participation conditions, contract terms, and deadlines.
 - **Bieterdokumente**: Documents submitted by bidders, including offers, price sheets, suitability proofs, and possibly concepts or technical solutions.
+- **Index Files**: `.ofs.index.json` files that track document metadata, parsing status, and categorization.
+- **Metadata Files**: JSON files containing project information, criteria, and document metadata.
 
-The structure supports local and remote storage (e.g., via WebDAV) and is optimized for processing pipelines like PDF to Markdown conversion.
+The structure supports local and remote storage (e.g., via WebDAV) and is optimized for processing pipelines like PDF to Markdown conversion with comprehensive indexing and metadata management.
 
 ## Supported File Types
 
@@ -20,101 +24,115 @@ Processed outputs include Markdown (.md) and JSON metadata.
 
 ## Installation
 
-### Development Installation
-
-1. Create a virtual environment:
-
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # On macOS/Linux
+# Install from source (development)
+cd /path/to/ofs
+pip install -e .
+
+# Install with development dependencies
+pip install -e ".[dev]"
 ```
 
-2. Install in development mode:
+## Configuration
+
+OFS uses a hierarchical configuration system that loads settings from multiple sources in priority order:
+
+1. **Environment variables** (highest priority)
+2. **Local config**: `ofs.config.json` (in the current working directory)
+3. **User config**: `~/.ofs/config.json` (in the user's home directory)
+4. **Default values** (lowest priority)
+
+### Configuration Options
+
+```json
+{
+  "BASE_DIR": ".dir",
+  "INDEX_FILE": ".ofs.index.json",
+  "METADATA_SUFFIX": ".meta.json"
+}
+```
+
+- **BASE_DIR**: Root directory for OFS operations (default: `.dir`)
+- **INDEX_FILE**: Name of index files (default: `.ofs.index.json`)
+- **METADATA_SUFFIX**: Suffix for metadata files (default: `.meta.json`)
+
+### Environment Variables
+
+You can override any configuration setting using environment variables:
 
 ```bash
-pip install -e .
+export OFS_BASE_DIR="/path/to/documents"
+export OFS_INDEX_FILE="custom_index.json"
+export OFS_METADATA_SUFFIX=".metadata.json"
 ```
 
 ## Usage
 
 ### Command Line Interface
 
+OFS provides a comprehensive CLI for managing and navigating your document structure:
+
+#### Path Operations
 ```bash
-# Get path for a project (AUSSCHREIBUNGNAME) or bidder (BIETERNAME)
-ofs get-path "Demoprojekt1"
-ofs get-path "Demo2"
-
-# List all available items (projects, bidders, files)
-ofs list
-
-# List all projects (AUSSCHREIBUNGNAME)
-ofs list-projects
-
-# List all bidders in a specific project
-ofs list-bidders "Demoprojekt1"
-
-# Find a specific bidder within a project
-ofs find-bidder "Demoprojekt1" "Demo2"
+# Get path for a project or bidder
+ofs get-path "ProjectName"
+ofs get-path "BidderName"
 
 # Get OFS root directory
 ofs root
+```
 
-# Get paths in JSON format
-ofs get-paths-json "Demoprojekt1"
+#### Listing and Discovery
+```bash
+# List all available items (projects, bidders, files)
+ofs list
 
-# List projects in JSON format
-ofs list-projects-json
+# List all projects
+ofs list-projects
 
-# Index management commands
-ofs index create .dir --recursive    # Create index files
-ofs index update .dir --recursive    # Update existing index files
-ofs index clear .dir --recursive     # Clear/remove index files
+# List all bidders in a specific project
+ofs list-bidders "ProjectName"
+
+# Find a specific bidder within a project
+ofs find-bidder "ProjectName" "BidderName"
+
+# List documents for a specific bidder
+ofs list-docs "ProjectName" "BidderName"
+```
+
+#### Document Operations
+```bash
+# Read a specific document
+ofs read-doc "ProjectName" "BidderName" "document.pdf"
+
+# Display directory tree structure
+ofs tree
 ```
 
 ### Python API
 
+OFS can also be used programmatically:
+
 ```python
-import ofs
+from ofs.config import OFSConfig
+from ofs.core import OFS
+from ofs.paths import get_path
+from ofs.docs import list_bidder_docs_json
+
+# Initialize configuration
+config = OFSConfig()
+ofs = OFS(config)
 
 # Get path for a project or bidder
-project_path = ofs.get_path("Demoprojekt1")
-print(project_path)  # Output: .dir/Demoprojekt1
+project_path = get_path("ProjectName")
+bidder_path = get_path("BidderName")
 
-bidder_path = ofs.get_path("Demo2")
-print(bidder_path)  # Output: .dir/Demoprojekt1/B/Demo2
-
-# List all items (includes projects, bidders, files from filesystem and index files)
-items = ofs.list_ofs_items()
-print(items)
-
-# List all projects
-projects = ofs.list_projects()
-print(projects)  # Output: ['2025-04 Lampen', 'Demoprojekt1', ...]
-
-# List bidders in a project
-bidders = ofs.list_bidders("Demoprojekt1")
-print(bidders)  # Output: ['Demo2', 'Demo4', 'Siemens AG', ...]
-
-# Find specific bidder in project
-bidder_path = ofs.find_bidder_in_project("Demoprojekt1", "Demo2")
-print(bidder_path)  # Output: .dir/Demoprojekt1/B/Demo2
-
-# Get OFS root
-root = ofs.get_ofs_root()
-print(root)
-
-# Access paths in JSON format
-paths_json = ofs.get_paths_json("Demoprojekt1")
-print(paths_json)
-
-# List projects in JSON format
-projects_json = ofs.list_projects_json()
-print(projects_json)
+# List documents for a bidder
+docs = list_bidder_docs_json("ProjectName", "BidderName")
 
 # Access configuration
-config = ofs.get_config()
-base_dir = config.get("BASE_DIR")
-print(base_dir)  # Output: .dir
+base_dir = config.BASE_DIR
+index_file = config.INDEX_FILE
 ```
 
 ## OFS Structure
@@ -362,22 +380,9 @@ Certain filenames are reserved for system-generated content:
 4. Criteria extraction pipeline outputs `kriterien.meta.json` referencing authoritative source documents
 5. Downstream enrichment augments `meta` blocks inside the index and/or adds structured objects to `projekt.meta.json`
 
-## Configuration
+## Advanced Configuration
 
-OFS uses a priority-based configuration system to load settings:
-
-1. **Environment variables** (highest priority)
-2. **Local config file** (`./ofs.config.json`)
-3. **User home config file** (`~/.ofs.config.json`)
-4. **Default values** (lowest priority)
-
-### Configurable Options
-
-- `BASE_DIR`: Base directory for OFS structure (default: `.dir`)
-- `INDEX_FILE`: Name of index files (default: `.ofs.index.json`)
-- `METADATA_SUFFIX`: Suffix for metadata files (default: `.meta.json`)
-
-### Environment Variables
+For advanced use cases, you can override configuration settings using environment variables:
 
 ```bash
 # Override BASE_DIR
@@ -483,23 +488,23 @@ ofs/
 └── PRD.md
 ```
 
-## legacy code
+## Legacy Integration
 
-we are trying to rebuild and replicate certain functions from strukt2meta and from pdf2md library
+OFS is designed to integrate with and eventually replace functionality from `strukt2meta` and `pdf2md` libraries. The refactoring plan (see `REFACTOR.md`) outlines the migration strategy:
 
-`pdf --index un` stores unparsed and unkategorized items into a file called un_items.json
+### Current Integration Points
 
-````shell
-pdf2md .disk --index un --recursive --json```
-````
+- **Index Management**: OFS maintains `.ofs.index.json` files that track document parsing status
+- **Metadata Processing**: Project and document metadata is managed through structured JSON files
+- **Document Processing**: Support for multiple parsers (docling, pdfplumber, marker) with status tracking
 
-```
-Found 119 unparsed or uncategorized item(s).
-Unparsed and uncategorized items list saved to: .disk/un_items.json
-```
+### Migration Status
 
-strukt2umeta unlist kategorizes 119 items from the list and updates the ofs index.
+The package is currently in active development to consolidate indexing functionality from `pdf2md` into OFS core, making OFS the central authority for document indexing and metadata management.
 
-```bash
-strukt2meta unlist 119 .disk2/un_items.json
-```
+### Future Enhancements
+
+- Enhanced CLI commands for index management
+- Automated categorization of uncategorized items
+- Integration with existing processing pipelines
+- Backward compatibility with legacy workflows

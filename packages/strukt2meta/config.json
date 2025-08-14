@@ -2,6 +2,7 @@
   "provider": "tu",
   "model": "mistral-small-3.1-24b",
   "default_input_file": "./default_input.md",
+  "index_file_name": ".ofs.index.json",
   "file_discovery": {
     "parser_rankings": {
       "pdf": [

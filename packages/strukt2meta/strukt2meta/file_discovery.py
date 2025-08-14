@@ -57,6 +57,22 @@ class FileDiscovery:
         self.base_directory = Path(base_directory)
         self.md_directory = self.base_directory / "md"
         self.config = self._load_config(config_path)
+        # Determine index file name (configurable)
+        self.index_file_name = self.config.get('index_file_name') or self.config.get('file_discovery', {}).get('index_file_name')
+        if not self.index_file_name:
+            # Try loading from root config.json if provided separately
+            try:
+                root_config_path = Path('config.json')
+                if root_config_path.exists():
+                    with open(root_config_path, 'r', encoding='utf-8') as cf:
+                        root_cfg = json.load(cf)
+                        self.index_file_name = root_cfg.get('index_file_name')
+            except Exception:
+                pass
+        # Fallbacks: new preferred then legacy
+        if not self.index_file_name:
+            self.index_file_name = '.ofs.index.json'
+        self.legacy_index_file_name = '.pdf2md_index.json'
 
     def _load_config(self, config_path: Optional[str]) -> Dict:
         """Load configuration with parser rankings and preferences."""
@@ -363,15 +379,22 @@ class FileDiscovery:
             "exists" if metadata found, "none" if not found or file doesn't exist
         """
         if json_file_path is None:
-            json_file_path = self.base_directory / ".pdf2md_index.json"
+            # Prefer new configurable index file; fallback to legacy if missing
+            candidate: Path = self.base_directory / self.index_file_name
+            if not candidate.exists():
+                legacy_candidate: Path = self.base_directory / self.legacy_index_file_name
+                chosen = legacy_candidate if legacy_candidate.exists() else candidate
+            else:
+                chosen = candidate
+            json_path_obj = chosen
         else:
-            json_file_path = Path(json_file_path)
+            json_path_obj = Path(json_file_path)
 
         try:
-            if not json_file_path.exists():
+            if not json_path_obj.exists():
                 return "none"
 
-            with open(json_file_path, 'r', encoding='utf-8') as f:
+            with open(json_path_obj, 'r', encoding='utf-8') as f:
                 data = json.load(f)
 
             # Look for the file in the JSON structure
@@ -402,15 +425,21 @@ class FileDiscovery:
             Dictionary of metadata values or None if not found
         """
         if json_file_path is None:
-            json_file_path = self.base_directory / ".pdf2md_index.json"
+            candidate: Path = self.base_directory / self.index_file_name
+            if not candidate.exists():
+                legacy_candidate: Path = self.base_directory / self.legacy_index_file_name
+                chosen = legacy_candidate if legacy_candidate.exists() else candidate
+            else:
+                chosen = candidate
+            json_path_obj = chosen
         else:
-            json_file_path = Path(json_file_path)
+            json_path_obj = Path(json_file_path)
 
         try:
-            if not json_file_path.exists():
+            if not json_path_obj.exists():
                 return None
 
-            with open(json_file_path, 'r', encoding='utf-8') as f:
+            with open(json_path_obj, 'r', encoding='utf-8') as f:
                 data = json.load(f)
 
             # Look for the file in the JSON structure

@@ -64,7 +64,19 @@ class DirmetaCommand(BaseCommand):
         if self.args.json_file:
             json_file_path = self.args.json_file
         else:
-            json_file_path = str(Path(self.args.directory) / ".pdf2md_index.json")
+            # Determine index file name from config or use new default, fallback to legacy
+            index_file_name = '.ofs.index.json'
+            try:
+                cfg_path = Path('config.json')
+                if cfg_path.exists():
+                    with open(cfg_path, 'r', encoding='utf-8') as cf:
+                        cfg = json.load(cf)
+                        index_file_name = cfg.get('index_file_name', index_file_name)
+            except Exception:
+                pass
+            candidate = Path(self.args.directory) / index_file_name
+            legacy = Path(self.args.directory) / '.pdf2md_index.json'
+            json_file_path = str(legacy if (not candidate.exists() and legacy.exists()) else candidate)
         
         for mapping in mappings:
             if not mapping.best_markdown:
@@ -174,7 +186,18 @@ class DirmetaCommand(BaseCommand):
             if self.args.json_file:
                 json_path = Path(self.args.json_file)
             else:
-                json_path = Path(self.args.directory) / ".pdf2md_index.json"
+                index_file_name = '.ofs.index.json'
+                try:
+                    cfg_path = Path('config.json')
+                    if cfg_path.exists():
+                        with open(cfg_path, 'r', encoding='utf-8') as cf:
+                            cfg = json.load(cf)
+                            index_file_name = cfg.get('index_file_name', index_file_name)
+                except Exception:
+                    pass
+                candidate = Path(self.args.directory) / index_file_name
+                legacy = Path(self.args.directory) / '.pdf2md_index.json'
+                json_path = legacy if (not candidate.exists() and legacy.exists()) else candidate
             
             # Inject metadata using correct parameter names
             success = inject_metadata_to_json(
@@ -202,5 +225,16 @@ class DirmetaCommand(BaseCommand):
             if self.args.json_file:
                 json_file_display = self.args.json_file
             else:
-                json_file_display = str(Path(self.args.directory) / ".pdf2md_index.json")
+                index_file_name = '.ofs.index.json'
+                try:
+                    cfg_path = Path('config.json')
+                    if cfg_path.exists():
+                        with open(cfg_path, 'r', encoding='utf-8') as cf:
+                            cfg = json.load(cf)
+                            index_file_name = cfg.get('index_file_name', index_file_name)
+                except Exception:
+                    pass
+                candidate = Path(self.args.directory) / index_file_name
+                legacy = Path(self.args.directory) / '.pdf2md_index.json'
+                json_file_display = str(legacy if (not candidate.exists() and legacy.exists()) else candidate)
             print(f"   📄 Metadata written to: {json_file_display}")

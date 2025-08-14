@@ -6,6 +6,7 @@ import json
 import os
 import tempfile
 from pathlib import Path
+from typing import Optional, Union, Dict, Any
 from .base import BaseCommand
 
 
@@ -193,8 +194,8 @@ class UnlistCommand(BaseCommand):
                 json_cleanup=getattr(self.args, 'json_cleanup', False)
             )
 
-            # Always update the .pdf2md_index.json file with the generated metadata
-            success = self._update_pdf2md_index(result, path, base_directory, prompt_name, parser_used)
+            # Always update the index file with the generated metadata
+            success = self._update_index_file(result, path, base_directory, prompt_name, parser_used)
 
             # If we have a target JSON file for injection, also inject there
             if hasattr(self.args, 'target_json') and self.args.target_json:
@@ -279,19 +280,10 @@ class UnlistCommand(BaseCommand):
         else:
             return 'basic'  # Basic file info extraction
 
-    def _update_pdf2md_index(self, result: dict, file_path: str, base_directory: Path, prompt_name: str, parser_used: str = None) -> bool:
-        """
-        Update the .pdf2md_index.json file in the file's specific directory with the generated metadata.
-        
-        Args:
-            result: The AI-generated metadata result
-            file_path: The relative file path
-            base_directory: The base directory for resolving relative paths
-            prompt_name: The name of the prompt used for AI generation
-            parser_used: The parser type used for content extraction
-            
-        Returns:
-            True if successful, False otherwise
+    def _update_index_file(self, result: Union[Dict[str, Any], str], file_path: str, base_directory: Path, prompt_name: str, parser_used: Optional[str] = None) -> bool:
+        """Update the configured index JSON file in the file's directory with metadata.
+
+        Supports new default '.ofs.index.json' and falls back to legacy '.pdf2md_index.json' if that exists.
         """
         try:
             import json
@@ -308,8 +300,21 @@ class UnlistCommand(BaseCommand):
                 full_file_path = base_directory / file_path
                 file_directory = full_file_path.parent
             
-            # Determine the .pdf2md_index.json file path in the file's directory
-            pdf2md_index_path = file_directory / ".pdf2md_index.json"
+            # Load config for index file name
+            index_file_name = '.ofs.index.json'
+            try:
+                cfg_path = Path('./config.json')
+                if cfg_path.exists():
+                    with open(cfg_path, 'r', encoding='utf-8') as cfh:
+                        cfg = json.load(cfh)
+                        index_file_name = cfg.get('index_file_name', index_file_name)
+            except Exception:
+                pass
+            # Determine path (prefer new, fallback to legacy if present)
+            index_path = file_directory / index_file_name
+            legacy_path = file_directory / '.pdf2md_index.json'
+            if not index_path.exists() and legacy_path.exists():
+                index_path = legacy_path
             
             # Clean and extract metadata from the AI result
             if isinstance(result, dict):
@@ -360,24 +365,24 @@ class UnlistCommand(BaseCommand):
                 else:
                     metadata["Autor"] = f"KI-generiert unknown@unknown@{prompt_name} {datetime.now().strftime('%Y-%m-%d')}"
             
-            # Inject metadata into the .pdf2md_index.json file
+            # Inject metadata into the index file
             success = inject_metadata_to_json(
                 source_filename=file_path_obj.name,  # Use just the filename for the index
                 metadata=metadata,
-                json_file_path=str(pdf2md_index_path),
+                json_file_path=str(index_path),
                 base_directory=str(file_directory)
             )
             
             if success and self.verbose:
-                self.log(f"Updated {pdf2md_index_path} with metadata for: {file_path}", "success")
+                self.log(f"Updated {index_path} with metadata for: {file_path}", "success")
             
             return success
             
         except Exception as e:
-            self.log(f"Error updating .pdf2md_index.json for {file_path}: {str(e)}", "warning")
+            self.log(f"Error updating index file for {file_path}: {str(e)}", "warning")
             return False
 
-    def _inject_metadata(self, result: dict, file_path: str, target_json: str) -> bool:
+    def _inject_metadata(self, result: Union[Dict[str, Any], str], file_path: str, target_json: str) -> bool:
         """Inject generated metadata into target JSON file."""
         try:
             # Create injection parameters
@@ -417,7 +422,7 @@ class UnlistCommand(BaseCommand):
             self.log(f"Injection failed: {str(e)}", "warning")
             return False
 
-    def _print_categorization_result(self, file_path: str, result, prompt_name: str, chosen_md_file: str = None, parser_used: str = None, success: bool = True) -> None:
+    def _print_categorization_result(self, file_path: str, result, prompt_name: str, chosen_md_file: Optional[str] = None, parser_used: Optional[str] = None, success: bool = True) -> None:
         """Print simplified categorization result for a file."""
         # Show source file
         print(f"📄 {file_path} (sourcefile)")
@@ -443,7 +448,7 @@ class UnlistCommand(BaseCommand):
 
         if successful > 0:
             print(
-                f"   📄 Metadata written to .pdf2md_index.json files in each file's directory")
+                f"   📄 Metadata written to index files (.ofs.index.json or legacy .pdf2md_index.json) in each file's directory")
 
             # Also mention target JSON if specified
             if hasattr(self.args, 'target_json') and self.args.target_json:

@@ -134,7 +134,7 @@ It offers a suite of commands for various operations:
     )
     dirmeta_parser.add_argument(
         '-j', '--json-file',
-        help='Path to the JSON index file (default: <directory>/.pdf2md_index.json)'
+        help='Path to the JSON index file (default: <directory>/.ofs.index.json with legacy fallback .pdf2md_index.json)'
     )
     dirmeta_parser.add_argument(
         '-v', '--verbose',
