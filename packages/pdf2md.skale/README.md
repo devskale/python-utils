@@ -272,6 +272,51 @@ pdf2md . --index stats --recursive
 # Unprocessed: 5
 ```
 
+### 🔍 **Understanding Status vs Stats Commands**
+
+Two commands provide different types of information about your document processing:
+
+#### `--index stats` - Aggregate Overview
+- **Purpose**: High-level statistics for OFS (Opinionated Filesystem) structure
+- **Output**: Summary counts per project with A/B directory breakdown
+- **Use case**: Project management and progress reporting
+
+```bash
+pdf2md .dir --index stats
+# Output:
+ProjectName (25 docs, 20 pars, 15 kat)
+   ├─ SubDir1 (12 docs, 10 pars, 8 kat)
+   ├─ SubDir2 (8 docs, 6 pars, 4 kat)
+```
+
+#### `--status all --recursive` - Detailed File Listing
+- **Purpose**: Lists individual unparsed files for actionable processing
+- **Output**: Specific file names that need attention
+- **Use case**: Operational tasks and identifying work remaining
+
+```bash
+pdf2md .dir --status all --recursive
+# Output:
+Found 15 unparsed file(s):
+
+directory/path
+  - document1.pdf
+  - presentation.pptx
+  - spreadsheet.xlsx
+```
+
+#### When to Use Each Command
+
+| Command | Best For | Information Type | Workflow Stage |
+|---------|----------|------------------|----------------|
+| `--index stats` | **Progress reporting** | Aggregate counts | Project management |
+| `--status all --recursive` | **Processing planning** | Individual files | Operational tasks |
+
+**Recommended Workflow:**
+1. Use `--index stats` for **management reports** and **progress overview**
+2. Use `--status all --recursive` to **identify specific files** that need processing
+3. Both commands complement each other in a complete document processing workflow
+
 #### Clean Up Indexes
 ```bash
 # Remove all index files
