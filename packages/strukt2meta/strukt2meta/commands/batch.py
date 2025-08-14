@@ -13,6 +13,11 @@ class BatchCommand(BaseCommand):
 
     def run(self) -> None:
         """Execute the batch command for processing multiple files."""
+        # DEPRECATION WARNING
+        self.log("⚠️  WARNING: The 'batch' command is deprecated and considered technical debt.", "warning")
+        self.log("   Please use 'dirmeta' command instead for better functionality and OFS compatibility.", "warning")
+        self.log("   See PRD.md for migration guidance.\n", "warning")
+        
         from strukt2meta.file_discovery import FileDiscovery
         from strukt2meta.injector import JSONInjector
 

@@ -587,3 +587,33 @@ The system uses opinionated directory structure for automatic prompt selection:
 - **Quality Assurance**: Easy identification of AI model and prompt used
 - **Audit Trail**: Complete record of when and how metadata was generated
 - **Reproducibility**: All information needed to reproduce the metadata generation
+
+## Command Architecture Decision: dirmeta vs batch
+
+### Status: DEPRECATED - batch command
+
+After analysis and production usage, the `dirmeta` command has proven to be the superior approach for metadata processing:
+
+### dirmeta (Recommended)
+- **Modern Architecture**: Uses OFS-compatible `.ofs.index.json` format
+- **Intelligent Processing**: Checks existing metadata to avoid unnecessary reprocessing
+- **Flexible Overwrite**: `--overwrite` flag for controlled re-processing
+- **Directory-Centric**: Natural workflow for processing document collections
+- **Legacy Support**: Maintains compatibility with `.pdf2md_index.json`
+- **Production Ready**: Successfully deployed in multiple projects
+
+### batch (Legacy/Technical Debt)
+- **Outdated Approach**: Requires separate JSON file specification
+- **No Intelligence**: Always processes all files regardless of existing metadata
+- **Complex Workflow**: Multi-step process with manual file management
+- **Limited Flexibility**: Fixed schema and processing approach
+
+### Migration Path
+- New projects should use `dirmeta` exclusively
+- Existing `batch` workflows can be migrated to `dirmeta` with minimal changes
+- `batch` command maintained for backward compatibility but not recommended for new use
+
+### TODO
+- [x] Add deprecation warning to batch command
+- [x] Update documentation to promote dirmeta as primary command
+- [ ] Consider removing batch from main CLI help in future version

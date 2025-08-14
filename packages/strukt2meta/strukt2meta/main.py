@@ -97,11 +97,11 @@ It offers a suite of commands for various operations:
     analyze_parser.add_argument("-v", "--verbose", action="store_true",
                                 help="Enable verbose output for detailed logging")
 
-    # Batch command
+    # Batch command (DEPRECATED)
     batch_parser = subparsers.add_parser(
         'batch',
-        help='Batch process multiple source files and inject metadata into a JSON file.',
-        description='Intelligently discovers, analyzes, and processes multiple files to generate and inject metadata in a single run.'
+        help='[DEPRECATED] Batch process multiple source files and inject metadata into a JSON file.',
+        description='[DEPRECATED] Use "dirmeta" instead. Intelligently discovers, analyzes, and processes multiple files to generate and inject metadata in a single run.'
     )
     batch_parser.add_argument("--directory", "-d", required=True,
                               help="Base directory containing the source files for batch processing")
