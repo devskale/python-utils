@@ -65,7 +65,7 @@
 
   2. Using the credgoo library (recommended, see [documentation](https://github.com/devskale/python-utils/blob/master/README.md)):
      ```bash
-     pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/credgoo
+     pip install -r https://skale.dev/credgoo
      ```
      Then in your code:
      ```python

@@ -657,7 +657,7 @@ def main():
 
     # Parse command line arguments
     parser = argparse.ArgumentParser(
-        description="Convert PDF to Markdown\n\nInstallation:\n  pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/pdf2md.skale")
+        description="Convert PDF to Markdown\n\nInstallation:\n  pip install -r https://skale.dev/pdf2md")
     parser.add_argument("--version", action="store_true",
                         help="Show version and exit")
     parser.add_argument("input_path", nargs='?', default=default_input,

@@ -339,7 +339,7 @@ def read_index_file(path: str) -> Optional[Dict]:
 # Helper function to write index file
 def write_index_file(path: str, data: Dict) -> None:
     """Write index data to a file."""
-    with open(path, 'w') as f:
+    with open(path, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=4)
 
 # Reusable directory traversal function
@@ -453,15 +453,15 @@ def print_index_stats(root_dir: str):
     config = ConfigManager()
     index_file_name = config.get('index_file_name')
     results = []
-    print(f"Debug: Starting to process root directory: {root_dir}")
+#    print(f"Debug: Starting to process root directory: {root_dir}")
     for entry in os.listdir(root_dir):
         if entry.startswith('.') or entry == 'archive':
-            print(f"Debug: Skipping hidden or archive folder: {entry}")
+        #    print(f"Debug: Skipping hidden or archive folder: {entry}")
             continue
         entry_path = os.path.join(root_dir, entry)
-        print(f"Debug: Processing entry: {entry}")
+        #print(f"Debug: Processing entry: {entry}")
         if not os.path.isdir(entry_path):
-            print(f"Debug: Skipping non-directory entry: {entry}")
+        #    print(f"Debug: Skipping non-directory entry: {entry}")
             continue
         # Process A directory
         a_dir_path = os.path.join(entry_path, 'A')
@@ -475,7 +475,7 @@ def print_index_stats(root_dir: str):
         if os.path.exists(b_dir_path):
             for d in os.listdir(b_dir_path):
                 if d == 'archive':
-                    print(f"Debug: Skipping archive folder in B: {d}")
+         #           print(f"Debug: Skipping archive folder in B: {d}")
                     continue
                 subdir_path = os.path.join(b_dir_path, d)
                 if os.path.isdir(subdir_path):
@@ -484,7 +484,7 @@ def print_index_stats(root_dir: str):
                     subdirs.append((d, b_docs, b_parsers, b_categories))
         results.append((entry, a_docs, a_parsers, a_categories, subdirs))
     # Print results
-    print("Debug: Finished processing directories. Preparing results...")
+    # print("Debug: Finished processing directories. Preparing results...")
     for project, a_docs, a_parsers, a_categories, subdirs in results:
         print(f"{project} ({a_docs} docs, {a_parsers} pars, {a_categories} kat)")
         for subdir, b_docs, b_parsers, b_categories in subdirs:
@@ -534,10 +534,10 @@ def generate_unparsed_file_list(directory: str, output_file: str, recursive: boo
     # Write unparsed files to the output file
     if unparsed_files:
         if json_output:
-            with open(output_file, 'w') as f:
+            with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump({"unparsed_files": unparsed_files}, f, indent=4)
         else:
-            with open(output_file, 'w') as f:
+            with open(output_file, 'w', encoding='utf-8') as f:
                 f.write("\n".join(unparsed_files))
         print(f"Found {len(unparsed_files)} unparsed file(s).")
     else:
@@ -586,10 +586,10 @@ def generate_un_items_list(directory: str, output_file: str, recursive: bool = F
     # Write unparsed and uncategorized items to the output file
     if un_items:
         if json_output:
-            with open(output_file, 'w') as f:
+            with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump({"un_items": un_items}, f, indent=4)
         else:
-            with open(output_file, 'w') as f:
+            with open(output_file, 'w', encoding='utf-8') as f:
                 for item in un_items:
                     f.write(f"{item['path']} (Unparsed: {item['unparsed']}, Uncategorized: {item['uncategorized']})\n")
         print(f"Found {len(un_items)} unparsed or uncategorized item(s).")
