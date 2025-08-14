@@ -590,16 +590,26 @@ def generate_un_items_list(input_path: str, output_file: str = None, json_output
                     markdown_files.add(base_name)
         return markdown_files
     
-    def get_categorized_files(kriterien_file: Path) -> set:
-        """Get set of filenames that have category metadata."""
+    def get_categorized_files(kriterien_file: Path, directory: Path = None) -> set:
+        """Get set of filenames that have category metadata.
+        
+        Checks both kriterien.meta.json and local .ofs.index.json files
+        for categorization metadata.
+        
+        Args:
+            kriterien_file: Path to kriterien.meta.json file
+            directory: Directory to check for local .ofs.index.json files
+        
+        Returns:
+            Set of base filenames that have categorization metadata
+        """
         categorized_files = set()
+        
+        # Check kriterien.meta.json file
         if kriterien_file.exists():
             try:
                 with open(kriterien_file, 'r', encoding='utf-8') as f:
                     kriterien_data = json.load(f)
-            except (IOError, json.JSONDecodeError, PermissionError) as e:
-                logger.warning(f"Could not load kriterien file {kriterien_file}: {e}")
-                return categorized_files
                     
                 # Extract filenames from kriterien structure
                 for category, items in kriterien_data.get('kriterien', {}).items():
@@ -608,8 +618,30 @@ def generate_un_items_list(input_path: str, output_file: str = None, json_output
                             # Remove file extension for comparison
                             base_name = Path(filename).stem
                             categorized_files.add(base_name)
-            except (json.JSONDecodeError, FileNotFoundError):
-                pass
+            except (IOError, json.JSONDecodeError, PermissionError) as e:
+                logger.warning(f"Could not load kriterien file {kriterien_file}: {e}")
+        
+        # Check local .ofs.index.json files for meta.kategorie
+        if directory:
+            config = get_config()
+            index_file = directory / config.get('INDEX_FILE', '.ofs.index.json')
+            if index_file.exists():
+                try:
+                    with open(index_file, 'r', encoding='utf-8') as f:
+                        index_data = json.load(f)
+                        
+                    # Check each file entry for meta.kategorie
+                    for file_entry in index_data.get('files', []):
+                        meta = file_entry.get('meta', {})
+                        if meta.get('kategorie'):
+                            # Remove file extension for comparison
+                            filename = file_entry.get('name', '')
+                            if filename:
+                                base_name = Path(filename).stem
+                                categorized_files.add(base_name)
+                except (IOError, json.JSONDecodeError, PermissionError) as e:
+                    logger.warning(f"Could not load index file {index_file}: {e}")
+        
         return categorized_files
     
     def find_unparsed_files(directory: Path, base_path: Path = None) -> List[Dict[str, Any]]:
@@ -630,7 +662,7 @@ def generate_un_items_list(input_path: str, output_file: str = None, json_output
         
         # Get global categorized files from project root
         kriterien_file = directory / 'kriterien.meta.json'
-        categorized_files = get_categorized_files(kriterien_file)
+        categorized_files = get_categorized_files(kriterien_file, directory)
         
         # Check A and B directories for unparsed files
         for subdir_name in ['A', 'B']:
@@ -643,6 +675,9 @@ def generate_un_items_list(input_path: str, output_file: str = None, json_output
                             # Get markdown files specific to this bieter directory
                             bieter_md_dir = bieter_dir / 'md'
                             markdown_files = get_markdown_files(bieter_md_dir)
+                            
+                            # Get categorized files including local index for this bieter directory
+                            bieter_categorized_files = get_categorized_files(kriterien_file, bieter_dir)
                             
                             for file_path in bieter_dir.rglob('*'):
                                 if file_path.is_file() and not file_path.name.startswith('.'):
@@ -659,7 +694,7 @@ def generate_un_items_list(input_path: str, output_file: str = None, json_output
                                     
                                     # Check if file is unparsed or uncategorized
                                     is_unparsed = base_name not in markdown_files
-                                    is_uncategorized = base_name not in categorized_files
+                                    is_uncategorized = base_name not in bieter_categorized_files
                                     
                                     if is_unparsed or is_uncategorized:
                                         # Handle filesystem encoding issues by normalizing Unicode
@@ -679,6 +714,9 @@ def generate_un_items_list(input_path: str, output_file: str = None, json_output
                     a_md_dir = subdir / 'md'
                     markdown_files = get_markdown_files(a_md_dir)
                     
+                    # Get categorized files including local index for A directory
+                    a_categorized_files = get_categorized_files(kriterien_file, subdir)
+                    
                     # Check files directly in A directory
                     for file_path in subdir.rglob('*'):
                         if file_path.is_file() and not file_path.name.startswith('.'):
@@ -695,7 +733,7 @@ def generate_un_items_list(input_path: str, output_file: str = None, json_output
                             
                             # Check if file is unparsed or uncategorized
                             is_unparsed = base_name not in markdown_files
-                            is_uncategorized = base_name not in categorized_files
+                            is_uncategorized = base_name not in a_categorized_files
                             
                             if is_unparsed or is_uncategorized:
                                 # Handle filesystem encoding issues by normalizing Unicode
