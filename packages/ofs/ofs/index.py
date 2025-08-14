@@ -13,6 +13,10 @@ from pathlib import Path
 from typing import Optional, Dict, List, Any
 from .config import get_config
 from .index_helper import _has_content_changes
+from .logging import setup_logger
+
+# Module logger
+logger = setup_logger(__name__)
 
 # Relevant file extensions for OFS indexing
 RELEVANT_EXTENSIONS = ['.pdf', '.docx', '.xlsx', '.pptx', '.jpg', '.jpeg', '.png', '.gif']
@@ -46,7 +50,7 @@ def _generate_index_data_for_path(
             with open(existing_index_path, 'r', encoding='utf-8') as f:
                 existing_data = json.load(f)
         except (IOError, json.JSONDecodeError, PermissionError) as e:
-            print(f"Warning: Could not load existing index from {existing_index_path}: {e}")
+            logger.warning(f"Could not load existing index from {existing_index_path}: {e}")
             existing_data = {}
     
     # Create index data structure
@@ -241,7 +245,7 @@ def write_index_file(path: str, data: Dict) -> None:
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
     except (IOError, OSError, PermissionError) as e:
-        print(f"Error writing index file {path}: {e}")
+        logger.error(f"Error writing index file {path}: {e}")
         raise
 
 
@@ -283,7 +287,7 @@ def create_index(directory: str, recursive: bool = False, force: bool = False) -
             
             # Skip if index exists and force is False
             if os.path.exists(index_path) and not force:
-                print(f"Index already exists: {index_path} (use --force to overwrite)")
+                logger.info(f"Index already exists: {index_path} (use --force to overwrite)")
                 continue
             
             # Generate index data
@@ -291,11 +295,11 @@ def create_index(directory: str, recursive: bool = False, force: bool = False) -
             
             # Write index file
             write_index_file(index_path, index_data)
-            print(f"Created index: {index_path}")
+            logger.info(f"Created index: {index_path}")
         
         return True
     except Exception as e:
-        print(f"Error creating index: {e}")
+        logger.error(f"Error creating index: {e}")
         return False
 
 
@@ -327,7 +331,7 @@ def update_index(directory: str, recursive: bool = False, max_age_hours: int = 2
                 index_data = _generate_index_data_for_path(root, dirs, files, index_path)
                 write_index_file(index_path, index_data)
                 rel_path = os.path.relpath(root, directory)
-                print(f"Created index for {rel_path}")
+                logger.info(f"Created index for {rel_path}")
                 updated_any = True
                 continue
             
@@ -336,7 +340,7 @@ def update_index(directory: str, recursive: bool = False, max_age_hours: int = 2
             age_seconds = current_time - index_stat.st_mtime
             
             if age_seconds > max_age_seconds:
-                print(f"Index too old ({age_seconds/3600:.1f}h), updating: {index_path}")
+                logger.info(f"Index too old ({age_seconds/3600:.1f}h), updating: {index_path}")
                 # Generate new index data
                 index_data = _generate_index_data_for_path(root, dirs, files, index_path)
                 write_index_file(index_path, index_data)
@@ -350,14 +354,14 @@ def update_index(directory: str, recursive: bool = False, max_age_hours: int = 2
             if _has_content_changes(existing_data, new_data, root):
                 # Show relative path from the base directory
                 rel_path = os.path.relpath(root, directory)
-                print(f"Content changes {rel_path}")
+                logger.info(f"Content changes {rel_path}")
                 write_index_file(index_path, new_data)
                 updated_any = True
             # Skip printing "Index up to date" messages
         
         return True
     except Exception as e:
-        print(f"Error updating index: {e}")
+        logger.error(f"Error updating index: {e}")
         return False
 
 
@@ -382,13 +386,13 @@ def clear_index(directory: str, recursive: bool = False) -> bool:
             
             if os.path.exists(index_path):
                 os.remove(index_path)
-                print(f"Removed index: {index_path}")
+                logger.info(f"Removed index: {index_path}")
             else:
-                print(f"No index found: {index_path}")
+                logger.info(f"No index found: {index_path}")
         
         return True
     except Exception as e:
-        print(f"Error clearing index: {e}")
+        logger.error(f"Error clearing index: {e}")
         return False
 
 
@@ -523,17 +527,17 @@ def print_index_stats(root_dir: str) -> None:
     
     # Print results in tree format similar to pdf2md
     if results:
-        print(f"Showing stats for indexes in {root_dir}")
+        logger.info(f"Showing stats for indexes in {root_dir}")
         for result in results:
-            print(f"{result['project']} ({result['total_docs']} docs, {result['parsed_docs']} pars, {result['categorized_docs']} kat)")
+            logger.info(f"{result['project']} ({result['total_docs']} docs, {result['parsed_docs']} pars, {result['categorized_docs']} kat)")
             
             # Show bieter information if available
             if result['bieter_list']:
                 for i, bieter in enumerate(result['bieter_list']):
                     prefix = "   ├─" if i < len(result['bieter_list']) - 1 else "   └─"
-                    print(f"{prefix} {bieter['name']} ({bieter['docs']} docs, {bieter['parsers']} pars, {bieter['categories']} kat)")
+                    logger.info(f"{prefix} {bieter['name']} ({bieter['docs']} docs, {bieter['parsers']} pars, {bieter['categories']} kat)")
     else:
-        print("No indexed projects found.")
+        logger.info("No indexed projects found.")
 
 
 def generate_un_items_list(input_path: str, output_file: str = None, json_output: bool = False, recursive: bool = True) -> None:
@@ -594,7 +598,7 @@ def generate_un_items_list(input_path: str, output_file: str = None, json_output
                 with open(kriterien_file, 'r', encoding='utf-8') as f:
                     kriterien_data = json.load(f)
             except (IOError, json.JSONDecodeError, PermissionError) as e:
-                print(f"Warning: Could not load kriterien file {kriterien_file}: {e}")
+                logger.warning(f"Could not load kriterien file {kriterien_file}: {e}")
                 return categorized_files
                     
                 # Extract filenames from kriterien structure
@@ -804,7 +808,7 @@ def generate_un_items_list(input_path: str, output_file: str = None, json_output
                 else:
                     f.write(output_content)
         except (IOError, OSError, PermissionError) as e:
-            print(f"Error writing output file {output_file}: {e}")
+            logger.error(f"Error writing output file {output_file}: {e}")
             raise
     else:
         # Auto-save output to the target directory when no output file specified
@@ -820,6 +824,6 @@ def generate_un_items_list(input_path: str, output_file: str = None, json_output
                 else:
                     f.write(output_content)
         except (IOError, OSError, PermissionError) as e:
-            print(f"Error writing default output file {default_output_file}: {e}")
+            logger.error(f"Error writing default output file {default_output_file}: {e}")
             raise
     # Suppress all stdout output - no printing to console

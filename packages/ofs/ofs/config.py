@@ -7,6 +7,7 @@ import os
 import json
 from pathlib import Path
 from typing import Dict, Any, Optional
+from .logging import setup_logger
 
 # Import the ConfigProvider protocol
 try:
@@ -44,6 +45,7 @@ class OFSConfig:
     def __init__(self):
         """Initialize the configuration manager."""
         self._config = self.DEFAULT_CONFIG.copy()
+        self._logger = setup_logger(__name__)
         self._load_config()
     
     def _load_config(self) -> None:
@@ -77,7 +79,7 @@ class OFSConfig:
                 file_config = json.load(f)
                 self._config.update(file_config)
         except (json.JSONDecodeError, IOError, PermissionError) as e:
-            print(f"Warning: Could not load config from {config_path}: {e}")
+            self._logger.warning(f"Could not load config from {config_path}: {e}")
             # Silently ignore config file errors and use defaults
             pass
     
@@ -159,7 +161,7 @@ class OFSConfig:
             with open(config_path, 'w', encoding='utf-8') as f:
                 json.dump(self._config, f, indent=4, ensure_ascii=False)
         except (IOError, OSError, PermissionError) as e:
-            print(f"Error saving config to {config_path}: {e}")
+            self._logger.error(f"Error saving config to {config_path}: {e}")
             raise RuntimeError(f"Failed to save config file: {e}")
 
 

@@ -7,6 +7,10 @@ import sys
 import json
 import argparse
 from typing import Optional
+from .logging import setup_logger
+
+# Module logger
+logger = setup_logger(__name__)
 
 from .core import (
     get_path,
@@ -376,7 +380,7 @@ def handle_find_bidder(project: str, bidder: str) -> None:
     if path:
         print(path)
     else:
-        print(f"Bidder '{bidder}' not found in project '{project}'")
+        logger.error(f"Bidder '{bidder}' not found in project '{project}'")
         sys.exit(1)
 
 
@@ -431,14 +435,14 @@ def handle_list_docs(project_bidder: str, meta: bool = False) -> None:
                 sys.exit(1)
 
         else:
-            print("Error: Invalid format. Use 'project', 'project@bidder', or 'project@bidder@filename' format.", file=sys.stderr)
+            logger.error("Invalid format. Use 'project', 'project@bidder', or 'project@bidder@filename' format.")
             sys.exit(1)
     else:
         # Handle project-only format (existing functionality)
         project = project_bidder.strip()
 
         if not project:
-            print("Error: Project name must be provided.", file=sys.stderr)
+            logger.error("Project name must be provided.")
             sys.exit(1)
 
         result = list_project_docs_json(project, include_metadata=meta)
@@ -457,7 +461,7 @@ def handle_root() -> None:
     if root:
         print(root)
     else:
-        print("OFS root not found", file=sys.stderr)
+        logger.error("OFS root not found")
         sys.exit(1)
 
 
@@ -524,7 +528,7 @@ def handle_kriterien(project: str, action: str, limit: Optional[int] = None, tag
         if "error" in result:
             sys.exit(1)
     else:
-        print(f"Unknown kriterien action: {action}", file=sys.stderr)
+        logger.error(f"Unknown kriterien action: {action}")
         sys.exit(1)
 
 
@@ -549,14 +553,14 @@ def handle_index(action: str, directory: str, recursive: bool = False, force: bo
         directory = os.path.abspath(directory)
         
         if not os.path.exists(directory):
-            print(f"Error: Directory '{directory}' does not exist.", file=sys.stderr)
+            logger.error(f"Directory '{directory}' does not exist.")
             sys.exit(1)
         
         if not os.path.isdir(directory):
-            print(f"Error: '{directory}' is not a directory.", file=sys.stderr)
+            logger.error(f"'{directory}' is not a directory.")
             sys.exit(1)
     except (OSError, PermissionError) as e:
-        print(f"Error accessing directory '{directory}': {e}", file=sys.stderr)
+        logger.error(f"Error accessing directory '{directory}': {e}")
         sys.exit(1)
     
     try:
@@ -578,10 +582,10 @@ def handle_index(action: str, directory: str, recursive: bool = False, force: bo
             from .index import generate_un_items_list
             generate_un_items_list(directory, output_file, json_output, recursive)
         else:
-            print(f"Unknown index action: {action}", file=sys.stderr)
+            logger.error(f"Unknown index action: {action}")
             sys.exit(1)
     except Exception as e:
-        print(f"Error during index {action}: {e}", file=sys.stderr)
+        logger.error(f"Error during index {action}: {e}")
         sys.exit(1)
 
 
@@ -623,14 +627,14 @@ def main(argv: Optional[list[str]] = None) -> int:
             handle_read_doc(args.identifier, args.parser, args.json)
         elif args.command == "kriterien":
             if not args.kriterien_action:
-                print("Error: kriterien command requires an action (pop, tree, tag)", file=sys.stderr)
+                logger.error("kriterien command requires an action (pop, tree, tag)")
                 return 1
             limit = getattr(args, 'limit', None)
             tag_id = getattr(args, 'tag_id', None)
             handle_kriterien(args.project, args.kriterien_action, limit, tag_id)
         elif args.command == "index":
             if not args.index_action:
-                print("Error: index command requires an action (create, update, clear, stats)", file=sys.stderr)
+                logger.error("index command requires an action (create, update, clear, stats)")
                 return 1
             directory = getattr(args, 'directory', '.')
             recursive = getattr(args, 'recursive', False)
@@ -647,13 +651,13 @@ def main(argv: Optional[list[str]] = None) -> int:
             
             handle_index(args.index_action, directory, recursive, force, max_age, json_output, output_file)
         else:
-            print(f"Unknown command: {args.command}", file=sys.stderr)
+            logger.error(f"Unknown command: {args.command}")
             return 1
 
         return 0
 
     except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
+        logger.error(f"Error: {e}")
         return 1
 
 
