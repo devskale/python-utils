@@ -19,6 +19,9 @@ from .paths import _load_pdf2md_index, _search_in_directory
 def _collect_bidders_structured(b_dir: Path) -> Dict[str, Any]:
     """
     Collect bidders from B directory, distinguishing between directories and files.
+    
+    This function orchestrates the collection of bidder data by delegating
+    specific tasks to focused helper functions.
 
     Args:
         b_dir (Path): The B directory to scan
@@ -26,23 +29,45 @@ def _collect_bidders_structured(b_dir: Path) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: Structured data with bidders and files
     """
-    import unicodedata
-
-    # Reserved directory names that should be filtered out
-    RESERVED_DIRS = {'md', '.pdf2md_index.json', 'A', 'B'}
-
-    bidder_dirs = []
-    all_files = []
-
     if not b_dir.exists():
         return {
-            "bidder_directories": bidder_dirs,
-            "all_files": all_files,
+            "bidder_directories": [],
+            "all_files": [],
             "total_bidders": 0,
             "total_files": 0
         }
+    
+    # Scan filesystem for bidders and files
+    bidder_dirs, all_files = _scan_bidder_directories(b_dir)
+    
+    # Load additional entries from index files
+    index_bidders, index_files = _load_bidders_from_index(b_dir)
+    
+    # Merge filesystem and index data
+    return _merge_bidder_data(bidder_dirs, all_files, index_bidders, index_files)
 
-    # Scan filesystem
+
+def _scan_bidder_directories(b_dir: Path) -> tuple[List[str], List[str]]:
+    """
+    Scan filesystem for bidder directories and files.
+    
+    This function focuses solely on filesystem scanning, separating
+    the concern from index file processing.
+
+    Args:
+        b_dir (Path): The B directory to scan
+
+    Returns:
+        tuple[List[str], List[str]]: Tuple of (bidder_directories, all_files)
+    """
+    import unicodedata
+    
+    # Reserved directory names that should be filtered out
+    RESERVED_DIRS = {'md', '.pdf2md_index.json', 'A', 'B'}
+    
+    bidder_dirs = []
+    all_files = []
+    
     try:
         for item in b_dir.iterdir():
             if item.name.startswith('.') or item.name.endswith('.meta.json'):
@@ -54,26 +79,68 @@ def _collect_bidders_structured(b_dir: Path) -> Dict[str, Any]:
                 # Filter out reserved directories
                 if normalized_name not in RESERVED_DIRS:
                     bidder_dirs.append(normalized_name)
-
                     # Collect files from within this bidder directory
-                    try:
-                        for sub_item in item.iterdir():
-                            if (sub_item.is_file() and
-                                not sub_item.name.startswith('.') and
-                                    not sub_item.name.endswith('.meta.json')):
-                                file_name = unicodedata.normalize(
-                                    'NFC', sub_item.name)
-                                all_files.append(file_name)
-                    except PermissionError:
-                        pass
+                    all_files.extend(_collect_files_from_bidder_dir(item))
             elif item.is_file():
                 # Files directly in B directory (rare but possible)
                 if not normalized_name.startswith('.'):
                     all_files.append(normalized_name)
     except PermissionError:
         pass
+    
+    return bidder_dirs, all_files
 
-    # Also check index file for additional entries
+
+def _collect_files_from_bidder_dir(bidder_dir: Path) -> List[str]:
+    """
+    Collect files from within a specific bidder directory.
+    
+    This function handles the nested file collection logic,
+    keeping it separate from the main directory scanning.
+
+    Args:
+        bidder_dir (Path): The bidder directory to scan for files
+
+    Returns:
+        List[str]: List of normalized file names
+    """
+    import unicodedata
+    
+    files = []
+    try:
+        for sub_item in bidder_dir.iterdir():
+            if (sub_item.is_file() and
+                not sub_item.name.startswith('.') and
+                not sub_item.name.endswith('.meta.json')):
+                file_name = unicodedata.normalize('NFC', sub_item.name)
+                files.append(file_name)
+    except PermissionError:
+        pass
+    
+    return files
+
+
+def _load_bidders_from_index(b_dir: Path) -> tuple[List[str], List[str]]:
+    """
+    Load bidder information from index files.
+    
+    This function focuses on extracting bidder and file information
+    from index files, separate from filesystem scanning.
+
+    Args:
+        b_dir (Path): The B directory containing index files
+
+    Returns:
+        tuple[List[str], List[str]]: Tuple of (index_bidders, index_files)
+    """
+    import unicodedata
+    
+    # Reserved directory names that should be filtered out
+    RESERVED_DIRS = {'md', '.pdf2md_index.json', 'A', 'B'}
+    
+    index_bidders = []
+    index_files = []
+    
     index_data = _load_pdf2md_index(b_dir)
     if index_data:
         # Add directories from index
@@ -81,21 +148,47 @@ def _collect_bidders_structured(b_dir: Path) -> Dict[str, Any]:
             dir_name = directory.get("name", "")
             if dir_name:
                 normalized_name = unicodedata.normalize('NFC', dir_name)
-                if normalized_name not in RESERVED_DIRS and normalized_name not in bidder_dirs:
-                    bidder_dirs.append(normalized_name)
+                if normalized_name not in RESERVED_DIRS:
+                    index_bidders.append(normalized_name)
 
         # Add files from index
         for file_info in index_data.get("files", []):
             file_name = file_info.get("name", "")
             if file_name and not file_name.endswith('.meta.json'):
                 normalized_name = unicodedata.normalize('NFC', file_name)
-                if not normalized_name.startswith('.') and normalized_name not in all_files:
-                    all_files.append(normalized_name)
+                if not normalized_name.startswith('.'):
+                    index_files.append(normalized_name)
+    
+    return index_bidders, index_files
 
+
+def _merge_bidder_data(fs_bidders: List[str], fs_files: List[str], 
+                      index_bidders: List[str], index_files: List[str]) -> Dict[str, Any]:
+    """
+    Merge bidder data from filesystem and index sources.
+    
+    This function handles the final data consolidation and formatting,
+    ensuring no duplicates and proper sorting.
+
+    Args:
+        fs_bidders (List[str]): Bidders found in filesystem
+        fs_files (List[str]): Files found in filesystem
+        index_bidders (List[str]): Bidders found in index
+        index_files (List[str]): Files found in index
+
+    Returns:
+        Dict[str, Any]: Merged and formatted bidder data
+    """
+    # Merge and deduplicate bidders
+    all_bidders = list(set(fs_bidders + index_bidders))
+    
+    # Merge and deduplicate files
+    all_files = list(set(fs_files + index_files))
+    
     return {
-        "bidder_directories": sorted(bidder_dirs),
+        "bidder_directories": sorted(all_bidders),
         "all_files": sorted(all_files),
-        "total_bidders": len(bidder_dirs),
+        "total_bidders": len(all_bidders),
         "total_files": len(all_files)
     }
 
