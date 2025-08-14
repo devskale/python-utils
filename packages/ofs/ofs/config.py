@@ -1,5 +1,4 @@
-"""
-Configuration management for OFS (Opinionated Filesystem).
+"""Configuration management for OFS (Opinionated Filesystem).
 
 Handles loading and managing configuration settings including BASE_DIR.
 """
@@ -9,10 +8,25 @@ import json
 from pathlib import Path
 from typing import Dict, Any, Optional
 
+# Import the ConfigProvider protocol
+try:
+    from .interfaces import ConfigProvider
+except ImportError:
+    # Fallback for when interfaces module is not available
+    from typing import Protocol
+    
+    class ConfigProvider(Protocol):
+        def get_base_dir(self) -> str: ...
+        def get_index_file(self) -> str: ...
+        def get_metadata_suffix(self) -> str: ...
+        def get(self, key: str, default: Any = None) -> Any: ...
+
 
 class OFSConfig:
     """
     Configuration manager for OFS settings.
+    
+    Implements the ConfigProvider protocol for dependency injection.
     
     Loads configuration from various sources with the following priority:
     1. Environment variables
