@@ -1,6 +1,0 @@
-{
-    "Kategorie": "Beilage",
-    "Aussteller": "Wiener Wohnen Hausbetreuung GmbH",
-    "Dokumententyp": "Leitfaden_Beilage_00",
-    "Begr\u00fcndung": "Enth\u00e4lt strukturierten Leitfaden zur Angebotsabgabe mit Angaben zu Fristen, Formbl\u00e4ttern (Beilage/01-17), Eignungsnachweisen und Bewertungskriterien \u2014 typisch als Beilage zu Ausschreibungsdokumenten."
-}
