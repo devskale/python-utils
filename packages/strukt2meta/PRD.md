@@ -48,6 +48,10 @@ python
 [x] Implement automatic "Autor" field generation with AI traceability
 [x] Include provider, model, prompt, and date information in metadata
 [x] Support for opinionated directory structure prompt selection
+[x] OFS File Filtering Enhancement
+[x] Skip markdown variants (.docling.md, .llamaparse.md, .marker.md) when processing OFS files
+[x] Skip metadata files (.json) to avoid processing errors
+[x] Only process original source files (PDFs) to prevent duplicate processing and read errors
 [x] Kriterien Extraction Feature
 [x] Create KriterienCommand for extracting criteria from tender documents
 [x] Integrate kriterien command into main CLI interface
@@ -613,7 +617,93 @@ After analysis and production usage, the `dirmeta` command has proven to be the 
 - Existing `batch` workflows can be migrated to `dirmeta` with minimal changes
 - `batch` command maintained for backward compatibility but not recommended for new use
 
+## OFS File Filtering Enhancement
+
+### Overview
+Implemented intelligent file filtering for OFS command to prevent processing of markdown variants and metadata files, eliminating duplicate processing and read errors.
+
+### Problem Solved
+Previously, the OFS command would process both original PDF files and their generated markdown variants (.docling.md, .llamaparse.md, .marker.md), leading to:
+- Duplicate processing of the same content
+- Read errors when trying to process markdown variants
+- Inefficient resource usage
+- Confusing progress output
+
+### Solution
+Added file filtering logic in `_should_process_file()` method to:
+- Skip markdown variants: `.docling.md`, `.llamaparse.md`, `.marker.md`
+- Skip metadata files: `.json` (including sync conflict files)
+- Only process original source files (primarily PDFs)
+
+### Example Output
+Before fix:
+```
+📊 11 files to process
+✅ 1/11 05 Fuhrungsbestatigung ANKO.pdf @ docling @ adok (OK)
+❌ 2/11 05 Fuhrungsbestatigung ANKO.docling.md @ unknown @ adok (FAIL - read error)
+❌ 3/11 05 Fuhrungsbestatigung ANKO.llamaparse.md @ unknown @ adok (FAIL - read error)
+❌ 4/11 05 Fuhrungsbestatigung ANKO.marker.md @ unknown @ adok (FAIL - read error)
+```
+
+After fix:
+```
+📊 7 files to process
+✅ 1/7 05 Fuhrungsbestatigung ANKO.pdf @ docling @ adok (OK)
+✅ 2/7 560330.pdf @ docling @ bdok (OK)
+✅ 3/7 2024-06-19 60th VDLM Meetup.pdf @ docling @ bdok (OK)
+```
+
+### Benefits
+- **Cleaner Processing**: Only processes meaningful source files
+- **No Read Errors**: Eliminates failures from markdown variants
+- **Better Performance**: Reduces processing time and resource usage
+- **Clear Progress**: Accurate file counts and progress tracking
+- **Maintains Functionality**: Preserves all existing features with `--overwrite` flag
+
+## Enhanced Progress Tracking for OFS Command
+
+### Overview
+
+The OFS command now provides better progress visibility even when not running in verbose mode (-v), addressing user feedback for more informative output during file processing.
+
+### Progress Display Format
+
+The enhanced progress tracking shows:
+
+1. **Total Files Count**: `📊 N files to process`
+2. **Processing Progress**: `🔄 1/N filename @ parsername`
+3. **Completion Status**: `✅ 1/N filename @ parsername @ promptname (OK)` or `❌ 1/N filename @ parsername @ promptname (FAIL - reason)`
+4. **Final Summary**: `✅ Processing complete: X/N files processed`
+
+### Example Output
+
+```
+📊 5 files to process
+🔄 1/5 document1.pdf @ llamaparse
+✅ 1/5 document1.pdf @ llamaparse @ adok (OK)
+🔄 2/5 document2.pdf @ pdfplumber
+❌ 2/5 document2.pdf @ pdfplumber @ adok (FAIL - no metadata)
+...
+✅ Processing complete: 4/5 files processed
+```
+
+### Benefits
+
+- **Real-time Progress**: Users can see processing progress without verbose mode
+- **Clear Status**: Immediate feedback on success/failure for each file
+- **Parser Visibility**: Shows which parser was used for each file
+- **Prompt Tracking**: Displays which prompt was applied
+- **Summary Statistics**: Final count of successfully processed files
+
+### Implementation
+
+- Progress messages use `print()` directly to bypass verbose mode filtering
+- Emoji icons provide visual clarity for different status types
+- Maintains backward compatibility with existing verbose logging
+- Error details still require verbose mode for full stack traces
+
 ### TODO
 - [x] Add deprecation warning to batch command
 - [x] Update documentation to promote dirmeta as primary command
+- [x] Enhanced verbosity for OFS command progress tracking
 - [ ] Consider removing batch from main CLI help in future version

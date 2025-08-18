@@ -139,28 +139,33 @@ def get_ofs_root() -> Optional[str]:
     Find the root directory of the current OFS structure.
 
     This function searches upward from the current directory to find
-    the OFS root (identified by the BASE_DIR or config files).
+    the OFS root (identified by the BASE_DIR or config files) and
+    returns the actual base directory path.
 
     Returns:
-        Optional[str]: Path to OFS root directory, or None if not found
+        Optional[str]: Path to OFS base directory, or None if not found
     """
     current_dir = Path.cwd()
     base_dir = get_base_dir()
 
     # Check if BASE_DIR exists in current directory
     if (current_dir / base_dir).exists():
-        return str(current_dir)
+        base_path = current_dir / base_dir
+        return str(base_path.resolve())
 
     # Search upward for OFS root
     for parent in current_dir.parents:
         if (parent / base_dir).exists():
-            return str(parent)
+            base_path = parent / base_dir
+            return str(base_path.resolve())
         # Also check for config files
         if (parent / "ofs.config.json").exists():
-            return str(parent)
+            base_path = parent / base_dir
+            if base_path.exists():
+                return str(base_path.resolve())
 
-    # If not found, return current directory as default
-    return str(current_dir)
+    # If not found, return None
+    return None
 
 
 def _collect_items_recursive(base_path: Path, collected_items: set, search_depth: int = 3) -> None:

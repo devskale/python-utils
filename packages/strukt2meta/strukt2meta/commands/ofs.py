@@ -46,6 +46,9 @@ class OfsCommand(BaseCommand):
         # Count total files first for progress tracking
         self._count_total_files(project, bidder, filename)
         
+        # Show total files count even in non-verbose mode
+        print(f"📊 {self.total_files} files to process")
+        
         # Determine processing scope and execute
         if filename:
             # Process single file
@@ -58,7 +61,7 @@ class OfsCommand(BaseCommand):
             self._process_project_files(project)
         
         # Summary
-        self.log(f"\nProcessing complete: {len(self.processed_files)}/{self.total_files} files processed", "info")
+        print(f"\n✅ Processing complete: {len(self.processed_files)}/{self.total_files} files processed")
     
     def _parse_ofs_parameter(self, ofs_param: str) -> Tuple[str, Optional[str], Optional[str]]:
         """Parse OFS parameter into project, bidder, and filename components.
@@ -190,7 +193,7 @@ class OfsCommand(BaseCommand):
             # Check if doc_result is a dict with success/error structure or direct content
             if isinstance(doc_result, dict) and 'success' in doc_result:
                 if not doc_result.get('success'):
-                    self.log(f"{self.file_counter}/{self.total_files} {filename} @ {doc_result.get('parser', 'unknown')} @ {prompt_name} (FAIL - read error)", "error")
+                    print(f"❌ {self.file_counter}/{self.total_files} {filename} @ {doc_result.get('parser', 'unknown')} @ {prompt_name} (FAIL - read error)")
                     return
                 content = doc_result.get('content', '')
                 parser = doc_result.get('parser', 'unknown')
@@ -199,6 +202,9 @@ class OfsCommand(BaseCommand):
                 content = doc_result if isinstance(doc_result, str) else str(doc_result)
                 parser = 'ofs'
             
+            # Show progress even in non-verbose mode
+            print(f"🔄 {self.file_counter}/{self.total_files} {filename} @ {parser}")
+            
             # Generate metadata
             metadata = self._generate_metadata(content, prompt_name, identifier)
             
@@ -206,14 +212,16 @@ class OfsCommand(BaseCommand):
                 # Inject metadata into appropriate JSON file
                 success = self._inject_metadata(metadata, project, bidder, filename)
                 status = "OK" if success else "FAIL - injection error"
-                self.log(f"{self.file_counter}/{self.total_files} {filename} @ {parser} @ {prompt_name} ({status})", "success" if success else "error")
+                # Show result with appropriate icon
+                icon = "✅" if success else "❌"
+                print(f"{icon} {self.file_counter}/{self.total_files} {filename} @ {parser} @ {prompt_name} ({status})")
                 if success:
                     self.processed_files.append(filename)
             else:
-                self.log(f"{self.file_counter}/{self.total_files} {filename} @ {parser} @ {prompt_name} (FAIL - no metadata)", "error")
+                print(f"❌ {self.file_counter}/{self.total_files} {filename} @ {parser} @ {prompt_name} (FAIL - no metadata)")
             
         except Exception as e:
-            self.log(f"{self.file_counter}/{self.total_files} {filename} @ unknown @ {prompt_name} (FAIL - {str(e)})", "error")
+            print(f"❌ {self.file_counter}/{self.total_files} {filename} @ unknown @ {prompt_name} (FAIL - {str(e)})")
     
     def _process_bidder_files(self, project: str, bidder: str) -> None:
         """Process all files for a specific bidder.
@@ -322,7 +330,16 @@ class OfsCommand(BaseCommand):
         Returns:
             True if file should be processed
         """
-        # Check if overwrite is enabled - process all files
+        filename = doc.get('name', '')
+        
+        # Skip markdown variants and metadata files
+        # Only process original files (PDFs) and skip generated variants and metadata files
+        skip_suffixes = ['.docling.md', '.llamaparse.md', '.marker.md', '.json']
+        if any(filename.endswith(suffix) for suffix in skip_suffixes):
+            self.log(f"Skipping generated/metadata file: {filename}", "info")
+            return False
+        
+        # Check if overwrite is enabled - process all remaining files
         if getattr(self.args, 'overwrite', False):
             return True
             
@@ -331,7 +348,6 @@ class OfsCommand(BaseCommand):
         kategorie = doc.get('kategorie') or (doc.get('meta', {}).get('kategorie') if doc.get('meta') else None)
         
         if kategorie:
-            filename = doc.get('name', 'unknown')
             self.log(f"Skipping {filename} - already has metadata (kategorie: {kategorie})", "info")
             return False
             

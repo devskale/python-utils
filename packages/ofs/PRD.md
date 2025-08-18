@@ -84,6 +84,13 @@ Create a python library to access, edit and navigate the opinionated filesystem 
   - Corrected index file format documentation (`.ofs.index.json` structure)
   - Updated architecture section to reflect modular design
 
+- [x] **Configuration file integration**:
+  - Fixed `ofs root` command to return actual base directory path instead of project directory
+  - Fixed `ofs index update` command to use configured base directory from `ofs.config.json`
+  - Enhanced `get_ofs_root()` function to resolve and return the actual base directory path
+  - Improved CLI index commands to automatically use OFS root when no specific directory provided
+  - All OFS commands now properly respect the `BASE_DIR` setting in configuration files
+
 ### `read_doc(doc_id, parser=None)`
 
 This function is the core of the document reading capability. It intelligently selects the appropriate parser based on the document type and available parsers, and extracts content from pre-parsed Markdown files located in `md/` subfolders.

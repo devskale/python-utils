@@ -561,6 +561,15 @@ def handle_index(action: str, directory: str, recursive: bool = False, force: bo
     """
     import os
 
+    # If directory is current directory (.), use OFS root instead
+    if directory == '.':
+        ofs_root = get_ofs_root()
+        if ofs_root:
+            directory = ofs_root
+        else:
+            logger.error("OFS root not found. Please run from an OFS project directory.")
+            sys.exit(1)
+
     # Convert relative path to absolute path
     try:
         directory = os.path.abspath(directory)
