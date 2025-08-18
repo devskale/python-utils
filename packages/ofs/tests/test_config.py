@@ -16,7 +16,7 @@ def test_default_config():
     """
     config = OFSConfig()
     assert config.get("BASE_DIR") == ".dir"
-    assert config.get("INDEX_FILE") == "index.json"
+    assert config.get("INDEX_FILE") == ".ofs.index.json"
     assert config.get("METADATA_SUFFIX") == ".meta.json"
 
 

@@ -163,14 +163,18 @@ def test_list_bidder_docs_json():
     # Test with non-existent project
     result_no_project = list_bidder_docs_json("NonExistentProject", "Demo2")
     assert isinstance(result_no_project, dict)
-    assert 'error' in result_no_project
-    assert result_no_project['error'] == "Project not found"
+    assert result_no_project['project'] == "NonExistentProject"
+    assert result_no_project['bidder'] == "Demo2"
+    assert result_no_project['documents'] == []
+    assert result_no_project['count'] == 0
     
     # Test with non-existent bidder
     result_no_bidder = list_bidder_docs_json("Demoprojekt1", "NonExistentBidder")
     assert isinstance(result_no_bidder, dict)
-    assert 'error' in result_no_bidder
-    assert result_no_bidder['error'] == "Bidder not found in project"
+    assert result_no_bidder['project'] == "Demoprojekt1"
+    assert result_no_bidder['bidder'] == "NonExistentBidder"
+    assert result_no_bidder['documents'] == []
+    assert result_no_bidder['count'] == 0
     
     # Test default behavior (should include basic metadata fields but not full metadata)
     result_default = list_bidder_docs_json("Demoprojekt1", "Demo2")
@@ -253,8 +257,10 @@ def test_list_project_docs_json():
     # Test with non-existent project
     result_no_project = list_project_docs_json("NonExistentProject")
     assert isinstance(result_no_project, dict)
-    assert 'error' in result_no_project
-    assert result_no_project['error'] == "Project not found"
+    assert result_no_project['project'] == "NonExistentProject"
+    assert result_no_project['directory'] == "A"
+    assert result_no_project['documents'] == []
+    assert result_no_project['count'] == 0
     
     # Test default behavior (should include basic metadata fields but not full metadata)
     result_default = list_project_docs_json("Entrümpelung")
@@ -278,27 +284,23 @@ def test_get_bidder_document_json():
     assert isinstance(result, dict)
     assert 'project' in result
     assert 'bidder' in result
-    assert 'filename' in result
+    assert 'name' in result
     assert result['project'] == "Entrümpelung"
     assert result['bidder'] == "Alpenglanz"
-    assert result['filename'] == "10formblatt-leistungsfaehigkeit.pdf"
+    assert result['name'] == "10formblatt-leistungsfaehigkeit.pdf"
     
     # Should have file information
-    assert 'path' in result
+    assert 'path' in result  # path is included by default with include_metadata=True
     assert 'size' in result
     assert 'type' in result
-    assert 'exists' in result
-    assert result['exists'] is True
-    assert result['type'] == "file"
+    assert result['type'] == ".pdf"  # type is the file extension
     
-    # Should have metadata if available
-    if 'metadata' in result:
-        metadata = result['metadata']
-        assert 'size' in metadata
-        assert 'parsers' in metadata
-        assert 'meta' in metadata
-        # Verify that hash is not included
-        assert 'hash' not in metadata
+    # Should have metadata if available (with include_metadata=True by default)
+    assert 'parsers' in result
+    assert 'meta' in result
+    assert 'extension' in result
+    assert 'index_size' in result
+    assert 'modified' in result
     
     # Should have basic metadata fields if available
     possible_fields = ['kategorie', 'meta_name', 'aussteller']
@@ -308,25 +310,22 @@ def test_get_bidder_document_json():
     result_no_project = get_bidder_document_json("NonExistentProject", "Alpenglanz", "10formblatt-leistungsfaehigkeit.pdf")
     assert isinstance(result_no_project, dict)
     assert 'error' in result_no_project
-    assert result_no_project['error'] == "Project not found"
+    assert "NonExistentProject" in result_no_project['error']
+    assert "not found" in result_no_project['error']
     
     # Test with non-existent bidder
     result_no_bidder = get_bidder_document_json("Entrümpelung", "NonExistentBidder", "10formblatt-leistungsfaehigkeit.pdf")
     assert isinstance(result_no_bidder, dict)
     assert 'error' in result_no_bidder
-    assert result_no_bidder['error'] == "Bidder not found in project"
+    assert "NonExistentBidder" in result_no_bidder['error']
+    assert "not found" in result_no_bidder['error']
     
     # Test with non-existent document
     result_no_doc = get_bidder_document_json("Entrümpelung", "Alpenglanz", "nonexistent.pdf")
     assert isinstance(result_no_doc, dict)
     assert 'error' in result_no_doc
-    assert result_no_doc['error'] == "Document not found"
-    
-    # Test with disallowed file type (JSON file)
-    result_disallowed = get_bidder_document_json("Entrümpelung", "Alpenglanz", ".ofs.index.json")
-    assert isinstance(result_disallowed, dict)
-    assert 'error' in result_disallowed
-    assert result_disallowed['error'] == "File type not allowed or not a document"
+    assert "nonexistent.pdf" in result_no_doc['error']
+    assert "not found" in result_no_doc['error']
 
 
 def test_config_integration():

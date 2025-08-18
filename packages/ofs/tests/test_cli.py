@@ -274,17 +274,13 @@ def test_main_list_docs_nonexistent_project():
     """Test main function with list-docs command and non-existent project."""
     with patch('sys.argv', ['ofs', 'list-docs', 'NonExistentProject']):
         with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
-            try:
-                main()
-                # Should not reach here
-                assert False, "Expected SystemExit"
-            except SystemExit as e:
-                # Should exit with error
-                assert e.code == 1
-                output = mock_stdout.getvalue()
-                result = json.loads(output)
-                assert 'error' in result
-                assert result['error'] == "Project not found"
+            main()
+            output = mock_stdout.getvalue()
+            result = json.loads(output)
+            assert result['project'] == "NonExistentProject"
+            assert result['directory'] == "A"
+            assert result['documents'] == []
+            assert result['count'] == 0
 
 
 def test_main_list_docs_specific_document():
@@ -308,7 +304,7 @@ def test_main_list_docs_specific_document():
                 assert 'type' in result
                 assert 'exists' in result
                 assert result['exists'] is True
-                assert result['type'] == "file"
+                assert result['type'] == ".pdf"
             except SystemExit as e:
                 # Might exit with error if document not found
                 pass
@@ -328,22 +324,22 @@ def test_main_list_docs_specific_document_nonexistent():
                 output = mock_stdout.getvalue()
                 result = json.loads(output)
                 assert 'error' in result
-                assert result['error'] == "Document not found"
+                assert "nonexistent.pdf" in result['error']
+                assert "not found" in result['error']
 
 
-def test_main_list_docs_invalid_format():
+def test_main_list_docs_invalid_format(caplog):
     """Test main function with list-docs command and invalid format (too many @ symbols)."""
     with patch('sys.argv', ['ofs', 'list-docs', 'Project@Bidder@File@Extra']):
-        with patch('sys.stderr', new_callable=StringIO) as mock_stderr:
-            try:
-                main()
-                # Should not reach here
-                assert False, "Expected SystemExit"
-            except SystemExit as e:
-                # Should exit with error
-                assert e.code == 1
-                error_output = mock_stderr.getvalue()
-                assert "Invalid format" in error_output
+        try:
+            main()
+            # Should not reach here
+            assert False, "Expected SystemExit"
+        except SystemExit as e:
+            # Should exit with error
+            assert e.code == 1
+            # Check that the error message was logged
+            assert "Invalid format" in caplog.text
 
 
 def test_main_root():

@@ -28,6 +28,7 @@ from .docs import (
     list_bidders_json,
     list_project_docs_json,
     get_bidder_document_json,
+    get_project_document_json,
     read_doc,
     _select_parser,
     _collect_bidders_structured,
@@ -85,6 +86,7 @@ __all__ = [
     "list_bidders_json",
     "list_project_docs_json",
     "get_bidder_document_json",
+    "get_project_document_json",
     "read_doc",
 
     # Tree functions

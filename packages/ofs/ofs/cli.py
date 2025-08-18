@@ -25,6 +25,7 @@ from .core import (
     list_bidder_docs_json,
     list_project_docs_json,
     get_bidder_document_json,
+    get_project_document_json,
     print_tree_structure,
     generate_tree_structure,
     read_doc,
@@ -363,7 +364,7 @@ def handle_list_bidders(project: str) -> None:
     result = {
         "project": project,
         "bidders": bidders,
-        "count": len(bidders)
+        "total_bidders": len(bidders)
     }
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
@@ -397,19 +398,28 @@ def handle_list_docs(project_bidder: str, meta: bool = False) -> None:
         parts = project_bidder.split('@')
 
         if len(parts) == 2:
-            # Handle project@bidder format (existing functionality)
-            project, bidder = parts
+            # Determine if this is project@bidder or project@document format
+            project, second_part = parts
             project = project.strip()
-            bidder = bidder.strip()
+            second_part = second_part.strip()
 
-            if not project or not bidder:
+            if not project or not second_part:
                 print(
-                    "Error: Both project and bidder names must be provided.", file=sys.stderr)
+                    "Error: Both project and second part must be provided.", file=sys.stderr)
                 sys.exit(1)
 
-            result = list_bidder_docs_json(
-                project, bidder, include_metadata=meta)
-            print(json.dumps(result, indent=2, ensure_ascii=False))
+            # Check if second_part looks like a filename (has an extension)
+            if '.' in second_part and len(second_part.split('.')[-1]) <= 5:  # reasonable file extension length
+                # Handle project@document format
+                filename = second_part
+                result = get_project_document_json(project, filename, include_metadata=meta)
+                print(json.dumps(result, indent=2, ensure_ascii=False))
+            else:
+                # Handle project@bidder format (existing functionality)
+                bidder = second_part
+                result = list_bidder_docs_json(
+                    project, bidder, include_metadata=meta)
+                print(json.dumps(result, indent=2, ensure_ascii=False))
 
             # Exit with error code if there was an error in the result
             if "error" in result:

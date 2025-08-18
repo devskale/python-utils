@@ -560,13 +560,107 @@ def get_bidder_document_json(project_name: str, bidder_name: str, filename: str,
         "project": project_name,
         "bidder": bidder_name,
         "name": filename,
+        "filename": filename,  # For backward compatibility
         "path": str(file_path),
         "size": file_path.stat().st_size if file_path.exists() else None,
-        "type": file_path.suffix.lower(),
+        "type": file_path.suffix,  # File extension
+        "exists": file_path.exists(),
     }
 
     # Add metadata from index file if available
     index_data = _load_ofs_index(b_dir)
+    if index_data:
+        # Normalize filename for comparison to handle Unicode issues
+        normalized_filename = unicodedata.normalize('NFC', filename)
+        for entry in index_data.get("files", []):
+            entry_name = entry.get("name")
+            if entry_name and unicodedata.normalize('NFC', entry_name) == normalized_filename:
+                meta = entry.get("meta", {})
+                if include_metadata:
+                    # Include all available metadata except potential hash fields
+                    parsers = entry.get("parsers")
+                    extension = entry.get("extension")
+                    size = entry.get("size")
+                    modified = entry.get("modified")
+                    if parsers is not None:
+                        file_info["parsers"] = parsers
+                    if meta is not None:
+                        file_info["meta"] = meta
+                    if extension is not None:
+                        file_info["extension"] = extension
+                    if size is not None:
+                        file_info["index_size"] = size
+                    if modified is not None:
+                        file_info["modified"] = modified
+                else:
+                    # Include minimal view fields when available
+                    file_info["kategorie"] = meta.get("kategorie")
+                    file_info["meta_name"] = meta.get("name")
+                break
+
+    return file_info
+
+
+def get_project_document_json(project_name: str, filename: str, include_metadata: bool = True) -> Dict[str, Any]:
+    """
+    Get detailed information about a specific project document (from A/ folder).
+    
+    Args:
+        project_name (str): Name of the project (AUSSCHREIBUNGNAME)
+        filename (str): Name of the document file
+        include_metadata (bool): Whether to include full metadata from .ofs.index.json (default: True)
+                                When False, returns minimal view with kategorie and meta_name only
+
+    Returns:
+        Dict[str, Any]: Document info including:
+        - Basic file information (name, path, size, type)
+        - With include_metadata=True: full metadata (parsers, meta, extension, index_size, modified)
+        - With include_metadata=False: minimal metadata (kategorie, meta_name)
+    """
+    try:
+        base_dir = get_base_dir()
+        base_path = Path(base_dir)
+        if not base_path.exists():
+            return {"error": f"Base directory not found: {base_dir}"}
+    except (OSError, PermissionError) as e:
+        return {"error": f"Cannot access base directory {base_dir}: {e}"}
+
+    # Find the project directory
+    project_path = _search_in_directory(base_path, project_name)
+    if not project_path:
+        return {"error": f"Project '{project_name}' not found"}
+
+    try:
+        project_dir = Path(project_path)
+        if not project_dir.exists():
+            return {"error": f"Project directory not found: {project_path}"}
+    except (OSError, PermissionError) as e:
+        return {"error": f"Cannot access project directory {project_path}: {e}"}
+    
+    a_dir = project_dir / "A"
+
+    if not a_dir.exists():
+        return {"error": f"Project documents folder 'A' not found in project '{project_name}'"}
+
+    # Path to the file
+    file_path = a_dir / filename
+
+    if not file_path.exists():
+        return {"error": f"File '{filename}' not found in project '{project_name}'"}
+
+    # Basic file info
+    file_info: Dict[str, Any] = {
+        "project": project_name,
+        "name": filename,
+        "size": file_path.stat().st_size if file_path.exists() else None,
+        "type": file_path.suffix.lower(),
+    }
+    
+    if include_metadata:
+        file_info["path"] = str(file_path)
+
+    # Add metadata from index file if available
+    index_data = _load_ofs_index(a_dir)
     if index_data:
         # Normalize filename for comparison to handle Unicode issues
         normalized_filename = unicodedata.normalize('NFC', filename)
