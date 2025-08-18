@@ -61,6 +61,12 @@ Create a python library to access, edit and navigate the opinionated filesystem 
   - Maintains full backward compatibility with existing 3-part format
   - Updated CLI help text and documentation to reflect new capabilities
   - All tests continue to pass with enhanced functionality
+- [x] **read-doc Edge Case Fixes**:
+  - Fixed 'md' parser file lookup: now correctly searches for `md/basename.md` pattern
+  - Added basename file discovery: supports both `filename` and `filename.ext` formats
+  - Enhanced file validation with automatic extension matching
+  - Resolves issues where documents with 'md' parser couldn't be found
+  - Maintains backward compatibility for all existing file naming patterns
   - Intelligent file discovery (searches for `kriterien.json`, `kriterien.meta.json`, etc.)
   - Status tracking (proven/unproven criteria)
   - Hierarchical categorization and subcategorization

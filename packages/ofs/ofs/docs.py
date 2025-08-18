@@ -810,7 +810,14 @@ def read_doc(identifier: str, parser: Optional[str] = None) -> Dict[str, Any]:
     # Check if original file exists (for validation)
     original_file_path = doc_dir / filename
     if not original_file_path.exists():
-        return {"success": False, "error": f"Original file '{filename}' not found for {identifier_context} '{bidder}' in project '{project}'"}
+        # Try to find file by basename if exact filename not found
+        possible_files = list(doc_dir.glob(f"{filename}.*"))
+        if possible_files:
+            # Use the first match and update filename for further processing
+            original_file_path = possible_files[0]
+            filename = original_file_path.name
+        else:
+            return {"success": False, "error": f"Original file '{filename}' not found for {identifier_context} '{bidder}' in project '{project}'"}
 
     # Load available parsers from index metadata
     md_index = _load_ofs_index(doc_dir)
@@ -830,12 +837,23 @@ def read_doc(identifier: str, parser: Optional[str] = None) -> Dict[str, Any]:
 
     # Generate possible markdown filenames based on naming conventions
     base_name = Path(filename).stem  # filename without extension
-    possible_md_files = [
-        f"{base_name}.{selected_parser}.md",      # filename.parser.md
-        f"{base_name}_{selected_parser}.md",      # filename_parser.md
-        f"{filename}.{selected_parser}.md",       # filename.ext.parser.md
-        f"{filename}_{selected_parser}.md"        # filename.ext_parser.md
-    ]
+    
+    # Special case for 'md' parser: look for md/basename.md
+    if selected_parser == 'md':
+        possible_md_files = [
+            f"{base_name}.md",                        # Special case: basename.md for 'md' parser
+            f"{base_name}.{selected_parser}.md",      # filename.parser.md
+            f"{base_name}_{selected_parser}.md",      # filename_parser.md
+            f"{filename}.{selected_parser}.md",       # filename.ext.parser.md
+            f"{filename}_{selected_parser}.md"        # filename.ext_parser.md
+        ]
+    else:
+        possible_md_files = [
+            f"{base_name}.{selected_parser}.md",      # filename.parser.md
+            f"{base_name}_{selected_parser}.md",      # filename_parser.md
+            f"{filename}.{selected_parser}.md",       # filename.ext.parser.md
+            f"{filename}_{selected_parser}.md"        # filename.ext_parser.md
+        ]
     # Also check subdirectory pattern: md/<base_name>/<base_name>.<parser>.md and underscore variant
     possible_md_subdir_files = [
         str(Path(base_name) / f"{base_name}.{selected_parser}.md"),
