@@ -109,7 +109,7 @@ Comprehensive documentation created:
 ## Current State
 
 ### Existing Components
-- **pdf2md.skale**: Uses `.pdf2md_index.json` for parsing status tracking
+- **pdf2md.skale**: Uses `.ofs.index.json` for parsing status tracking
 - **ofs**: Basic path resolution and project discovery
 - **Test Environment**: `.dir` symbolic link to `C:\Users\Hans\Documents\klark0\.dir` pointing to packages directory
 
@@ -124,7 +124,7 @@ Move indexing logic from pdf2md into OFS core, making OFS the central indexing a
 
 **Tasks**:
 1. Run pdf2md indexing against `.dir` structure
-2. Verify `.pdf2md_index.json` creation and updates
+2. Verify `.ofs.index.json` creation and updates
 3. Test parsing workflow with existing indexing
 4. Document any issues or limitations
 
@@ -173,7 +173,7 @@ pdf2md .dir --index --recursive
 python -m pdf2md parse --queue
 
 # Verify index files
-find . -name ".pdf2md_index.json" -exec cat {} \;
+find . -name ".ofs.index.json" -exec cat {} \;
 ```
 
 
@@ -254,7 +254,7 @@ files_to_parse = index_manager.get_unparsed_files()
 ```
 
 2. **Remove pdf2md indexing code**:
-- Remove `.pdf2md_index.json` creation logic
+- Remove `.ofs.index.json` creation logic
 - Remove internal file tracking
 - Update CLI commands to use OFS indexing
 

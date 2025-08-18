@@ -24,7 +24,7 @@ Create a python library to access, edit and navigate the opinionated filesystem 
 - [x] Default configuration file (`ofs.config.json`) with `BASE_DIR: ".dir"`
 - [x] **Enhanced `get_path` function** with intelligent search algorithm:
   - Direct filesystem matching
-  - `.pdf2md_index.json` file parsing and searching
+  - `.ofs.index.json` file parsing and searching
   - Recursive directory traversal
   - AUSSCHREIBUNGNAME and BIETERNAME resolution
 - [x] **Project and bidder management functions**:
@@ -71,7 +71,7 @@ This function is the core of the document reading capability. It intelligently s
 
 **Features:**
 
-- **Intelligent Parser Selection:** Uses `_select_parser` to choose the best parser based on the `.pdf2md_index.json` metadata.
+- **Intelligent Parser Selection:** Uses `_select_parser` to choose the best parser based on the `.ofs.index.json` metadata.
 - **Pre-parsed Markdown Reading:** Prioritizes reading from `md/` subfolders, supporting various naming conventions (e.g., `filename.parser.md`, `filename_parser.md`, and `md/<base_name>/` subfolders).
 - **Multi-format Support:** Handles `.txt`, `.md` (pre-parsed), and `.pdf` (original, for fallback/initial processing if no pre-parsed markdown is found) extensions.
 - **Fallback Mechanism:** If a specified parser's Markdown file is not found, it attempts to find other available Markdown versions or falls back to original PDF processing if necessary.

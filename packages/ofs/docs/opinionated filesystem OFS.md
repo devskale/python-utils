@@ -41,7 +41,7 @@ The root directory (e.g., `/disk/`) contains active tender project folders and a
 - archive/: Directory for archived projects.
   - Contains moved project folders (e.g., archived `Ausschreibungsname`).
 
-Additionally, index files like `.pdf2md_index.json` may appear at various levels to track conversions.
+Additionally, index files like `.ofs.index.json` may appear at various levels to track conversions.
 
 ### Example from `/disk/`
 
@@ -131,7 +131,7 @@ Certain filenames are reserved for system-generated content:
       "metadaten": []
     }
     ```
-- **.pdf2md_index.json** (hidden file in directories like project root or A/B):
+- **.ofs.index.json** (hidden file in directories like project root or A/B):
   This file serves as an index for PDF to Markdown conversions within a directory. It tracks the parsing status and available parsers for each document. Its structure is as follows:
 
   ```json
@@ -299,7 +299,7 @@ Best Practices:
 - Introduce `normalizationVersion` if scoring normalization logic changes later.
 - After human review, set `reviewStatus.humanReviewed=true` and optionally add `approver` + `reviewTimestamp`.
 
-### 3. .pdf2md_index.json (Directory-Level Parse & Metadata Index)
+### 3. .ofs.index.json (Directory-Level Parse & Metadata Index)
 Location: Any directory containing source documents (`A/`, bidder subfolders, etc.).
 Purpose: Operational index for file discovery, parser coverage tracking, and document-level metadata attachment (lightweight enrichment layer).
 Key Sections:
@@ -338,13 +338,13 @@ Integrity & Consistency:
 
 ### Relationships & Flow
 1. Raw documents enter `A/` or `B/<Bidder>/`.
-2. Conversions populate `md/` and update `.pdf2md_index.json` (parser coverage).
+2. Conversions populate `md/` and update `.ofs.index.json` (parser coverage).
 3. Project-level synthesis produces / updates `projekt.meta.json`.
 4. Criteria extraction pipeline outputs `kriterien.meta.json` referencing authoritative source doc(s) recorded in the index.
 5. Downstream enrichment (categorization, AI metadata) augments `meta` blocks inside the index and/or adds structured objects to `projekt.meta.json`.
 
 ### Example Cross-Referencing (Using Tree)
-- `2025-04 Lampen/A/2024_06001_AAB_EV.pdf` → entry in `A/.pdf2md_index.json` with parsers `[docling, pdfplumber, marker]`.
+- `2025-04 Lampen/A/2024_06001_AAB_EV.pdf` → entry in `A/.ofs.index.json` with parsers `[docling, pdfplumber, marker]`.
 - Criteria extraction sets `aabFileName` = that file in `kriterien.meta.json`.
 - `projekt.meta.json` `projektName` and `referenznummer` surface in UI search; `schlagworte` support tag-based retrieval.
 
@@ -354,8 +354,8 @@ Integrity & Consistency:
 | Project identity present | projekt.meta.json | `projektName` & `referenznummer` non-empty |
 | Core deadlines consistent | projekt.meta.json | `bieterabgabe` >= today or flagged archived |
 | AAB reference resolvable | kriterien.meta.json | `aabFileName` exists in index `files` list |
-| Parser coverage threshold | .pdf2md_index.json | Required minimum parser(s) executed |
-| Categorization completeness | .pdf2md_index.json | All `meta.kategorie` populated (or queued) |
+| Parser coverage threshold | .ofs.index.json | Required minimum parser(s) executed |
+| Categorization completeness | .ofs.index.json | All `meta.kategorie` populated (or queued) |
 
 ### Tooling Implications
 - `pdf2md` updates index incrementally → no direct writes to project / criteria JSON.

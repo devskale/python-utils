@@ -16,9 +16,9 @@ from typing import Optional, List, Dict, Any
 from .config import get_base_dir, get_config
 
 
-def _load_pdf2md_index(directory_path: Path) -> Optional[Dict[str, Any]]:
+def _load_ofs_index(directory_path: Path) -> Optional[Dict[str, Any]]:
     """
-    Load .pdf2md_index.json from a directory if it exists.
+    Load .ofs.index.json from a directory if it exists.
 
     Args:
         directory_path (Path): Path to the directory containing the index file
@@ -60,7 +60,7 @@ def _search_in_directory(base_path: Path, name: str, search_depth: int = 3) -> O
         return str(direct_path)
 
     # Load and check the index file in current directory
-    index_data = _load_pdf2md_index(base_path)
+    index_data = _load_ofs_index(base_path)
     if index_data:
         # Check directories in index
         for directory in index_data.get("directories", []):
@@ -97,11 +97,11 @@ def get_path(name: str) -> str:
     Get the path for a given name in the OFS structure.
 
     Searches for AUSSCHREIBUNGNAME (project names) and BIETERNAME (bidder names)
-    by traversing directories and consulting .pdf2md_index.json files.
+    by traversing directories and consulting .ofs.index.json files.
 
     The function searches in the following order:
     1. Direct match in BASE_DIR
-    2. Names listed in .pdf2md_index.json files
+    2. Names listed in .ofs.index.json files
     3. Recursive search through subdirectories
 
     Args:
@@ -191,7 +191,7 @@ def _collect_items_recursive(base_path: Path, collected_items: set, search_depth
         pass
 
     # Add items from index file
-    index_data = _load_pdf2md_index(base_path)
+    index_data = _load_ofs_index(base_path)
     if index_data:
         # Add directories from index
         for directory in index_data.get("directories", []):
@@ -214,7 +214,7 @@ def list_ofs_items() -> list[str]:
     """
     List all items available in the current OFS structure.
 
-    Scans the BASE_DIR and all .pdf2md_index.json files for available 
+    Scans the BASE_DIR and all .ofs.index.json files for available 
     files and directories, including AUSSCHREIBUNGNAME and BIETERNAME.
 
     Returns:
@@ -291,7 +291,7 @@ def list_projects() -> list[str]:
         pass
 
     # Get projects from index file
-    index_data = _load_pdf2md_index(base_path)
+    index_data = _load_ofs_index(base_path)
     if index_data:
         for directory in index_data.get("directories", []):
             dir_name = directory.get("name", "")
@@ -344,7 +344,7 @@ def list_bidders(project_name: str) -> list[str]:
         pass
     
     # Add bidders from index file
-    index_data = _load_pdf2md_index(b_dir)
+    index_data = _load_ofs_index(b_dir)
     if index_data:
         for directory in index_data.get("directories", []):
             dir_name = directory.get("name", "")
@@ -384,7 +384,7 @@ def _search_all_paths(base_path: Path, name: str, search_depth: int = 3) -> List
         })
 
     # Load and check the index file in current directory
-    index_data = _load_pdf2md_index(base_path)
+    index_data = _load_ofs_index(base_path)
     if index_data:
         # Check directories in index
         for directory in index_data.get("directories", []):

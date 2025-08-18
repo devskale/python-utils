@@ -696,5 +696,5 @@ OFS has been designed with a modular architecture for maintainability and extens
 ### Backward Compatibility
 
 - **Zero Breaking Changes**: All existing APIs are preserved through the `core.py` aggregator
-- **Legacy Index Support**: Continues to work with existing `.pdf2md_index.json` files while transitioning to `.ofs.index.json`
+- **Legacy Index Support**: Continues to work with existing `.ofs.index.json` files for document indexing and metadata management
 - **Gradual Migration**: Supports both old and new metadata formats during transition periods

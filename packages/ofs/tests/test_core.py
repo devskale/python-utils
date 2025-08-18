@@ -157,7 +157,7 @@ def test_list_bidder_docs_json():
     for doc in result_without_meta['documents']:
         assert 'metadata' not in doc  # No nested metadata object
         # But basic metadata fields might be present directly on the document
-        # Only name is guaranteed, other fields depend on .pdf2md_index.json availability
+        # Only name is guaranteed, other fields depend on .ofs.index.json availability
         assert 'name' in doc
     
     # Test with non-existent project
@@ -247,7 +247,7 @@ def test_list_project_docs_json():
     for doc in result_without_meta['documents']:
         assert 'metadata' not in doc  # No nested metadata object
         # But basic metadata fields might be present directly on the document
-        # Only name is guaranteed, other fields depend on .pdf2md_index.json availability
+        # Only name is guaranteed, other fields depend on .ofs.index.json availability
         assert 'name' in doc
     
     # Test with non-existent project
@@ -323,7 +323,7 @@ def test_get_bidder_document_json():
     assert result_no_doc['error'] == "Document not found"
     
     # Test with disallowed file type (JSON file)
-    result_disallowed = get_bidder_document_json("Entrümpelung", "Alpenglanz", ".pdf2md_index.json")
+    result_disallowed = get_bidder_document_json("Entrümpelung", "Alpenglanz", ".ofs.index.json")
     assert isinstance(result_disallowed, dict)
     assert 'error' in result_disallowed
     assert result_disallowed['error'] == "File type not allowed or not a document"

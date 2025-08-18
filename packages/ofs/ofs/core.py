@@ -15,7 +15,7 @@ from .paths import (
     list_bidders,
     get_paths_json,
     list_projects_json,
-    _load_pdf2md_index,
+    _load_ofs_index,
     _search_in_directory,
     _collect_items_recursive,
     _search_all_paths,
@@ -115,7 +115,7 @@ __all__ = [
     "process_index_file",
 
     # Private functions (for internal use)
-    "_load_pdf2md_index",
+    "_load_ofs_index",
     "_search_in_directory",
     "_collect_items_recursive",
     "_search_all_paths",

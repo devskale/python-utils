@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any
 
 from .config import get_base_dir
-from .paths import _load_pdf2md_index, _search_in_directory
+from .paths import _load_ofs_index, _search_in_directory
 
 
 def _collect_bidders_structured(b_dir: Path) -> Dict[str, Any]:
@@ -63,7 +63,7 @@ def _scan_bidder_directories(b_dir: Path) -> tuple[List[str], List[str]]:
     import unicodedata
     
     # Reserved directory names that should be filtered out
-    RESERVED_DIRS = {'md', '.pdf2md_index.json', 'A', 'B'}
+    RESERVED_DIRS = {'md', '.ofs.index.json', 'A', 'B'}
     
     bidder_dirs = []
     all_files = []
@@ -136,12 +136,12 @@ def _load_bidders_from_index(b_dir: Path) -> tuple[List[str], List[str]]:
     import unicodedata
     
     # Reserved directory names that should be filtered out
-    RESERVED_DIRS = {'md', '.pdf2md_index.json', 'A', 'B'}
+    RESERVED_DIRS = {'md', '.ofs.index.json', 'A', 'B'}
     
     index_bidders = []
     index_files = []
     
-    index_data = _load_pdf2md_index(b_dir)
+    index_data = _load_ofs_index(b_dir)
     if index_data:
         # Add directories from index
         for directory in index_data.get("directories", []):
@@ -198,11 +198,11 @@ def list_bidder_docs_json(project_name: str, bidder_name: str, include_metadata:
     List all documents for a specific bidder in a project in JSON format.
     
     By default, returns a minimal view with document name and basic metadata fields
-    (kategorie, meta_name) from .pdf2md_index.json files when available.
+    (kategorie, meta_name) from .ofs.index.json files when available.
     
     With include_metadata=True, provides full document details including:
     - Complete file information (path, size, type)
-    - Full metadata from .pdf2md_index.json files:
+    - Full metadata from .ofs.index.json files:
       - Document categorization (kategorie)
       - Document issuer (aussteller)
       - Document name (name)
@@ -275,7 +275,7 @@ def list_bidder_docs_json(project_name: str, bidder_name: str, include_metadata:
         return result
 
     # Load metadata from index file if it exists
-    index_data = _load_pdf2md_index(b_dir)
+    index_data = _load_ofs_index(b_dir)
     files_metadata: Dict[str, Any] = {}
     if index_data:
         for file_info in index_data.get("files", []):
@@ -434,7 +434,7 @@ def list_project_docs_json(project_name: str, include_metadata: bool = False) ->
         return result
 
     # Load metadata from index file if it exists
-    index_data = _load_pdf2md_index(a_dir)
+    index_data = _load_ofs_index(a_dir)
     files_metadata: Dict[str, Any] = {}
     if index_data:
         for file_info in index_data.get("files", []):
@@ -554,7 +554,7 @@ def get_bidder_document_json(project_name: str, bidder_name: str, filename: str)
     }
 
     # Add metadata from index file if available
-    index_data = _load_pdf2md_index(b_dir)
+    index_data = _load_ofs_index(b_dir)
     if index_data:
         for entry in index_data.get("files", []):
             if entry.get("name") == filename:
@@ -576,7 +576,7 @@ def _select_parser(requested_parser: Optional[str], available_parsers: Dict[str,
     
     Args:
         requested_parser: Explicitly requested parser name
-        available_parsers: Parser info from .pdf2md_index.json with structure:
+        available_parsers: Parser info from .ofs.index.json with structure:
             {"det": ["parser1", "parser2"], "default": "parser1", "status": "..."}
         default_ranking: Preference order for parser selection
     
@@ -680,13 +680,18 @@ def read_doc(identifier: str, parser: Optional[str] = None) -> Dict[str, Any]:
         return {"success": False, "error": f"Original file '{filename}' not found for {identifier_context} '{bidder}' in project '{project}'"}
 
     # Load available parsers from index metadata
-    md_index = _load_pdf2md_index(doc_dir)
+    md_index = _load_ofs_index(doc_dir)
     available_parsers: Dict[str, Any] = {}
     if md_index:
+        # Normalize filename for Unicode comparison (handles composed vs decomposed forms)
+        normalized_filename = unicodedata.normalize('NFC', filename)
         for f in md_index.get("files", []):
-            if f.get("name") == filename and isinstance(f.get("parsers"), dict):
-                available_parsers = f["parsers"]
-                break
+            file_name = f.get("name")
+            if file_name and isinstance(f.get("parsers"), dict):
+                normalized_file_name = unicodedata.normalize('NFC', file_name)
+                if normalized_file_name == normalized_filename:
+                    available_parsers = f["parsers"]
+                    break
 
     selected_parser = _select_parser(parser, available_parsers)
 
