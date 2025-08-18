@@ -1,4 +1,5 @@
 import json
+import time
 from uniinfer import (
     ChatMessage,
     ChatCompletionRequest,
@@ -81,6 +82,10 @@ def call_ai_model(prompt, input_text, verbose=False, json_cleanup=False):
             print(content, end="", flush=True)
             response_text += content
         print("\n=== End of Response ===\n")
+        
+        # Add 2-second cooldown after AI invocation
+        time.sleep(2)
+        
         if json_cleanup:
             # Cleanify the streamed response
             return cleanify_json(response_text)
@@ -89,6 +94,10 @@ def call_ai_model(prompt, input_text, verbose=False, json_cleanup=False):
     else:
         # Get the completion response
         response = provider.complete(request)
+        
+        # Add 2-second cooldown after AI invocation
+        time.sleep(2)
+        
         if json_cleanup:
             # Cleanify the response
             return cleanify_json(response.message.content)

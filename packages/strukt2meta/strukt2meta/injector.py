@@ -1,9 +1,19 @@
 """
-JSON Injection Module for strukt2meta
+JSON Injection Module for strukt2meta (reworked)
 
-Provides two paths:
-1. JSONInjector class: schema-driven generation + injection (used by batch command)
-2. inject_metadata_to_json helper: simple direct metadata insertion (used by dirmeta)
+Behavior changes:
+- Always write a sidecar metadata file next to the source file:
+    <source_filename>.meta.json
+  This sidecar contains the full generated metadata.
+- Only push a configurable subset of metadata fields into the index JSON
+  (default: ["name", "kategorie", "begründung"]).
+  These fields can be provided via:
+    - JSONInjector params: "index_meta_fields"
+    - a config.json at repository/base_directory containing "index_meta_fields"
+    - fallback to the built-in default
+- Backups of modified index files are created before writing.
+- Backwards-compatible helper function `inject_metadata_to_json` updated
+  to perform sidecar creation + selective index injection.
 """
 
 from __future__ import annotations
@@ -12,19 +22,49 @@ import json
 import os
 import shutil
 from datetime import datetime
-from typing import Dict, Any, Optional
+from pathlib import Path
+from typing import Dict, Any, Optional, List
 
 from strukt2meta.apicall import call_ai_model
 
 
+DEFAULT_INDEX_META_FIELDS = ["name", "kategorie", "begründung"]
+
+
+def _load_index_meta_fields_from_config(base_dir: Optional[str] = None) -> List[str]:
+    """
+    Try to load index_meta_fields from a config.json file. Search order:
+    1. If base_dir provided: base_dir/config.json
+    2. cwd/config.json
+    If not present or invalid, return the DEFAULT_INDEX_META_FIELDS.
+    """
+    candidates = []
+    if base_dir:
+        candidates.append(Path(base_dir) / "config.json")
+    candidates.append(Path("config.json"))
+    for cfg in candidates:
+        try:
+            if cfg.exists():
+                with open(cfg, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                fields = data.get("index_meta_fields")
+                if isinstance(fields, list) and all(isinstance(x, str) for x in fields):
+                    return fields
+        except Exception:
+            # ignore and continue to next candidate
+            pass
+    return DEFAULT_INDEX_META_FIELDS
+
+
 class JSONInjector:
-    """Schema-driven AI metadata generator + injector."""
+    """Schema-driven AI metadata generator + injector with sidecar + selective index push."""
 
     REQUIRED_FIELDS = [
         'input_path', 'prompt', 'json_inject_file', 'target_filename', 'injection_schema'
     ]
 
     def __init__(self, params_file: str):
+        self.params_file = params_file
         self.params = self._load_params(params_file)
         self.backup_path: Optional[str] = None
 
@@ -59,12 +99,29 @@ class JSONInjector:
         with open(target, 'r', encoding='utf-8') as f:
             return json.load(f)
 
-    # --------------------------- Discovery helpers ---------------------------
-    def _find_target_file_entry(self, json_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        for entry in json_data.get('files', []):
-            if entry.get('name') == self.params['target_filename']:
-                return entry
-        return None
+    # --------------------------- Sidecar helpers ---------------------------
+    def _sidecar_path_for_target(self) -> Path:
+        """
+        Decide where to write the sidecar metadata file.
+        Default: same directory as `input_path`, filename "<target_filename>.meta.json"
+        """
+        input_path = Path(self.params['input_path'])
+        sidecar_dir = input_path.parent if input_path.exists() else Path.cwd()
+        sidecar_name = f"{self.params['target_filename']}.meta.json"
+        return sidecar_dir / sidecar_name
+
+    def _save_sidecar(self, metadata: Dict[str, Any]) -> Path:
+        """
+        Write the full metadata to the sidecar path and return the path.
+        """
+        sidecar = self._sidecar_path_for_target()
+        try:
+            sidecar.parent.mkdir(parents=True, exist_ok=True)
+            with open(sidecar, 'w', encoding='utf-8') as f:
+                json.dump(metadata, f, indent=4, ensure_ascii=False)
+            return sidecar
+        except Exception as e:
+            raise RuntimeError(f"Failed to write sidecar file {sidecar}: {e}")
 
     # --------------------------- AI Generation ---------------------------
     def _generate_metadata(self) -> Dict[str, Any]:
@@ -85,8 +142,7 @@ class JSONInjector:
             self.params['injection_schema'], indent=2, ensure_ascii=False)
         full_prompt = base_prompt + schema_instruction
 
-        result = call_ai_model(full_prompt, input_text,
-                               verbose=False, json_cleanup=True)
+        result = call_ai_model(full_prompt, input_text, verbose=False, json_cleanup=True)
         if isinstance(result, str):
             try:
                 result = json.loads(result)
@@ -97,10 +153,12 @@ class JSONInjector:
         return result
 
     def _normalize_metadata(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
-        """Ensure metadata matches the schema shape (wrap flat keys into meta)."""
+        """
+        Ensure metadata matches the schema shape (wrap flat keys into meta).
+        Behavior preserved from previous implementation.
+        """
         try:
-            schema_meta = self.params.get(
-                'injection_schema', {}).get('meta', {})
+            schema_meta = self.params.get('injection_schema', {}).get('meta', {})
             # If already has 'meta' dict, keep it
             if 'meta' in metadata and isinstance(metadata['meta'], dict):
                 return metadata
@@ -112,7 +170,6 @@ class JSONInjector:
             if collected:
                 return {'meta': collected}
             # If nothing matched, but metadata is a flat dict, still wrap everything to avoid validation failure
-            # (Only if schema expects meta)
             if schema_meta and all(not isinstance(v, dict) for v in metadata.values()):
                 return {'meta': metadata}
             return metadata
@@ -131,7 +188,13 @@ class JSONInjector:
                     return False
         return True
 
-    # --------------------------- Injection ---------------------------
+    # --------------------------- Injection (sidecar + selective index) ---------------------------
+    def _find_target_file_entry(self, json_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        for entry in json_data.get('files', []):
+            if entry.get('name') == self.params['target_filename']:
+                return entry
+        return None
+
     def _upsert_file_entry(self, json_data: Dict[str, Any]) -> Dict[str, Any]:
         entry = self._find_target_file_entry(json_data)
         if entry is None:
@@ -141,16 +204,26 @@ class JSONInjector:
             entry['meta'] = {}
         return entry
 
-    def _apply_metadata(self, entry: Dict[str, Any], metadata: Dict[str, Any]) -> None:
-        # Allow metadata to either be a flat dict of fields (meta-level) or {'meta': {...}}
-        if 'meta' in metadata and isinstance(metadata['meta'], dict):
-            for k, v in metadata['meta'].items():
-                entry['meta'][k] = v
-        else:
-            for k, v in metadata.items():
-                entry['meta'][k] = v
+    def _apply_selected_to_entry(self, entry: Dict[str, Any], full_metadata: Dict[str, Any], index_fields: List[str]) -> List[str]:
+        """
+        Apply only the selected fields from full_metadata into the entry['meta'].
+        Return a list of applied keys.
+        full_metadata may have a 'meta' sub-dict or be flat.
+        """
+        applied = []
+        source_meta = {}
+        if isinstance(full_metadata, dict):
+            if 'meta' in full_metadata and isinstance(full_metadata['meta'], dict):
+                source_meta = full_metadata['meta']
+            else:
+                source_meta = full_metadata
+        for key in index_fields:
+            if key in source_meta:
+                entry.setdefault('meta', {})[key] = source_meta[key]
+                applied.append(key)
+        return applied
 
-    def _save(self, json_data: Dict[str, Any]) -> None:
+    def _save_index(self, json_data: Dict[str, Any]) -> None:
         target = self.params['json_inject_file']
         json_data['last_updated'] = datetime.now().isoformat()
         with open(target, 'w', encoding='utf-8') as f:
@@ -163,33 +236,92 @@ class JSONInjector:
         return False
 
     def inject(self) -> Dict[str, Any]:
-        """Main entry point used by batch command."""
+        """
+        Main entry point used by batch command.
+        Writes full metadata to sidecar and selectively pushes configured fields into index.
+        """
         json_data = self._load_target_json()
         raw_metadata = self._generate_metadata()
         metadata = self._normalize_metadata(raw_metadata)
         if self.params.get('validation_strict', True):
             if not self._validate_metadata(metadata):
                 raise ValueError('Metadata failed validation against schema')
-        entry = self._upsert_file_entry(json_data)
-        self._apply_metadata(entry, metadata)
-        self._save(json_data)
+
+        # Write full metadata to sidecar
+        sidecar_path = self._save_sidecar(metadata)
+
+        # Determine fields to push into index (priority: params -> config -> default)
+        index_fields = self.params.get('index_meta_fields')
+        if not index_fields:
+            index_fields = _load_index_meta_fields_from_config(base_dir=str(Path(self.params['input_path']).parent))
+        if not isinstance(index_fields, list) or not all(isinstance(x, str) for x in index_fields):
+            index_fields = DEFAULT_INDEX_META_FIELDS
+
+        # Only push to index if any of the selected fields exist in metadata
+        # (metadata may be {'meta': {...}} or a flat dict)
+        source_meta = metadata['meta'] if isinstance(metadata, dict) and 'meta' in metadata else metadata
+        if any(f in source_meta for f in index_fields):
+            entry = self._upsert_file_entry(json_data)
+            applied = self._apply_selected_to_entry(entry, metadata, index_fields)
+            self._save_index(json_data)
+        else:
+            applied = []
+
         return {
             'success': True,
             'target_file': self.params['target_filename'],
-            'metadata_keys': list(entry['meta'].keys()),
+            'sidecar_path': str(sidecar_path),
+            'applied_index_fields': applied,
             'backup_path': self.backup_path
         }
 
 
+# --------------------------- helper function (used by dirmeta / others) ---------------------------
 def inject_metadata_to_json(source_filename: str, metadata: Dict[str, Any], json_file_path: str, base_directory: str | None = None) -> bool:
-    """Simplified helper for direct metadata insertion (used by dirmeta)."""
+    """
+    Simplified helper for direct metadata insertion (used by dirmeta / dirmeta-like flows).
+
+    Behavior:
+    - Write full metadata to sidecar: <base_directory>/<source_filename>.meta.json
+      (if base_directory is None, write in cwd)
+    - Load or create the index file at json_file_path (backing it up first if exists)
+    - Push only configured index_meta_fields into the entry for source_filename
+      (fields determined by config.json in base_directory or DEFAULT_INDEX_META_FIELDS)
+    - Return True on success, False on failure.
+    """
     try:
+        # Normalize base_directory
+        if base_directory:
+            base_dir = Path(base_directory)
+        else:
+            base_dir = Path.cwd()
+
+        # Ensure metadata shape: allow {'meta': {...}} or flat dict
+        # Save sidecar next to base_directory / source_filename.meta.json
+        sidecar_path = base_dir / f"{source_filename}.meta.json"
+        try:
+            sidecar_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(sidecar_path, 'w', encoding='utf-8') as f:
+                json.dump(metadata, f, indent=4, ensure_ascii=False)
+        except Exception as e:
+            print(f"Error writing sidecar file {sidecar_path}: {e}")
+            # proceed: sidecar writing shouldn't prevent index push attempts
+
+        # Load or initialize index JSON
         if os.path.exists(json_file_path):
+            # Backup existing index
+            try:
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                backup_path = f"{json_file_path}.bak_{timestamp}"
+                shutil.copy2(json_file_path, backup_path)
+            except Exception:
+                backup_path = None
             with open(json_file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
         else:
             data = {"files": [], "created": datetime.now().isoformat(),
                     "last_updated": datetime.now().isoformat()}
+            backup_path = None
 
         # Locate / create file entry
         entry = None
@@ -203,13 +335,50 @@ def inject_metadata_to_json(source_filename: str, metadata: Dict[str, Any], json
         if 'meta' not in entry:
             entry['meta'] = {}
 
-        # Merge metadata
-        for k, v in metadata.items():
-            entry['meta'][k] = v
+        # Determine which fields to push to index
+        index_fields = _load_index_meta_fields_from_config(base_dir=str(base_dir))
+        # also allow override via environment variable (comma-separated)
+        env_override = os.environ.get('STRUKT2META_INDEX_FIELDS')
+        if env_override:
+            try:
+                env_fields = [x.strip() for x in env_override.split(',') if x.strip()]
+                if env_fields:
+                    index_fields = env_fields
+            except Exception:
+                pass
 
-        data['last_updated'] = datetime.now().isoformat()
-        with open(json_file_path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=4, ensure_ascii=False)
+        # Determine source_meta dict to read from
+        source_meta = {}
+        if isinstance(metadata, dict):
+            if 'meta' in metadata and isinstance(metadata['meta'], dict):
+                source_meta = metadata['meta']
+            else:
+                source_meta = metadata
+
+        # Apply only selected fields that exist in source_meta
+        applied_any = False
+        for key in index_fields:
+            if key in source_meta:
+                entry['meta'][key] = source_meta[key]
+                applied_any = True
+
+        # Only write index if we applied at least one field
+        if applied_any:
+            data['last_updated'] = datetime.now().isoformat()
+            try:
+                with open(json_file_path, 'w', encoding='utf-8') as f:
+                    json.dump(data, f, indent=4, ensure_ascii=False)
+            except Exception as e:
+                print(f"Error writing index file {json_file_path}: {e}")
+                # attempt restore backup if available
+                if backup_path:
+                    try:
+                        shutil.copy2(backup_path, json_file_path)
+                    except Exception:
+                        pass
+                return False
+
+        # Done: sidecar written (even if index unchanged)
         return True
     except Exception as e:
         print(f"Error injecting metadata: {e}")

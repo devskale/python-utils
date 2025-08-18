@@ -1,5 +1,6 @@
 -r https://skale.dev/credgoo
 -r https://skale.dev/uniinfer
 -r https://skale.dev/pdf2md
+-e ../ofs
 requests
 json-repair

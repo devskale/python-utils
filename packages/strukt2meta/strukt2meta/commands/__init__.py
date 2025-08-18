@@ -11,9 +11,9 @@ from .dirmeta import DirmetaCommand
 from .clearmeta import ClearmetaCommand
 from .unlist import UnlistCommand
 from .kriterien import KriterienCommand
+from .ofs import OfsCommand
 
 __all__ = [
-    'BaseCommand',
     'GenerateCommand',
     'InjectCommand',
     'DiscoverCommand',
@@ -22,5 +22,6 @@ __all__ = [
     'DirmetaCommand',
     'ClearmetaCommand',
     'UnlistCommand',
-    'KriterienCommand'
+    'KriterienCommand',
+    'OfsCommand'
 ]

@@ -9,7 +9,8 @@ from strukt2meta.commands import (
     DirmetaCommand,
     ClearmetaCommand,
     UnlistCommand,
-    KriterienCommand
+    KriterienCommand,
+    OfsCommand
 )
 
 
@@ -242,6 +243,33 @@ It offers a suite of commands for various operations:
         help='Enable verbose output for detailed logging'
     )
 
+    # OFS command
+    ofs_parser = subparsers.add_parser(
+        'ofs',
+        help='Process files in Opinionated File System (OFS) structure.',
+        description='Processes files in OFS directory structure using projectname[@biddername][@filename] patterns. Supports autoprompt selection for A/adok and B/bdok directories.'
+    )
+    ofs_parser.add_argument(
+        'ofs',
+        help='OFS parameter: projectname[@biddername][@filename] - specify project, optional bidder, and optional filename'
+    )
+    ofs_parser.add_argument(
+        '--un',
+        action='store_true',
+        default=True,
+        help='Process only uncategorized files (default behavior)'
+    )
+    ofs_parser.add_argument(
+        '--overwrite',
+        action='store_true',
+        help='Process all files, overriding the default uncategorized-only behavior'
+    )
+    ofs_parser.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        help='Enable verbose output for detailed logging'
+    )
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -258,7 +286,8 @@ It offers a suite of commands for various operations:
         'dirmeta': DirmetaCommand,
         'clearmeta': ClearmetaCommand,
         'unlist': UnlistCommand,
-        'kriterien': KriterienCommand
+        'kriterien': KriterienCommand,
+        'ofs': OfsCommand
     }
     
     # Execute the appropriate command
