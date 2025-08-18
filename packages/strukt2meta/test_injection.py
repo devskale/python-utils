@@ -74,7 +74,6 @@ def test_injection():
 
         if result['success']:
             print("✅ Injection completed successfully!")
-            print(f"   Backup created: {result['backup_path']}")
             print("\n📊 Injected metadata:")
             print(json.dumps(result['injected_metadata'],
                   indent=2, ensure_ascii=False))

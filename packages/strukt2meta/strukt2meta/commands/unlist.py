@@ -399,7 +399,7 @@ class UnlistCommand(BaseCommand):
                         "sprache": {"ai_generated_field": True}
                     }
                 },
-                "backup_enabled": True
+                "backup_enabled": False
             }
 
             # Create temporary parameter file

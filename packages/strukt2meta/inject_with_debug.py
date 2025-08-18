@@ -31,7 +31,7 @@ def main():
         
         if result['success']:
             print("✅ Injection completed successfully!")
-            print(f"💾 Backup created: {result.get('backup_path', 'N/A')}")
+            # No backup files generated
             
             # Show the injected metadata
             print("\n📊 Injected metadata:")

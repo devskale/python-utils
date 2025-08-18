@@ -254,15 +254,9 @@ It offers a suite of commands for various operations:
         help='OFS parameter: projectname[@biddername][@filename] - specify project, optional bidder, and optional filename'
     )
     ofs_parser.add_argument(
-        '--un',
-        action='store_true',
-        default=True,
-        help='Process only uncategorized files (default behavior)'
-    )
-    ofs_parser.add_argument(
         '--overwrite',
         action='store_true',
-        help='Process all files, overriding the default uncategorized-only behavior'
+        help='Process all files, including those that already have metadata (default: skip files with existing metadata)'
     )
     ofs_parser.add_argument(
         '-v', '--verbose',

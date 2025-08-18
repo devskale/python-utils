@@ -42,9 +42,8 @@ class ClearmetaCommand(BaseCommand):
             self.log("No metadata fields were cleared", "info")
             return
 
-        # Write back to file (with backup if not dry run)
+        # Write back to file (no backup to prevent .bak files)
         if not self.args.dry_run:
-            self._backup_file(json_path)
             self._write_json_file(json_path, data)
             self.log(f"Cleared {cleared_count} metadata field occurrences", "success")
         else:
@@ -118,16 +117,7 @@ class ClearmetaCommand(BaseCommand):
         
         return cleared_count
     
-    def _backup_file(self, json_path: Path) -> None:
-        """Create a backup of the original file."""
-        backup_path = json_path.with_suffix(json_path.suffix + '.backup')
-        try:
-            import shutil
-            shutil.copy2(json_path, backup_path)
-            if self.verbose:
-                self.log(f"Created backup: {backup_path}")
-        except Exception as e:
-            self.handle_warning(f"Could not create backup: {e}")
+    # Backup functionality removed to prevent .bak files
     
     def _write_json_file(self, json_path: Path, data: dict) -> None:
         """Write JSON data back to file."""

@@ -44,7 +44,6 @@ class InjectCommand(BaseCommand):
     def _log_injection_details(self, result: dict) -> None:
         """Log detailed injection results."""
         print(f"Target file: {result['target_file']}")
-        print(f"Backup created: {result['backup_path']}")
         print("Injected metadata:")
         print(json.dumps(
             result['injected_metadata'], 

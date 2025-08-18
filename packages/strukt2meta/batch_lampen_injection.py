@@ -98,7 +98,7 @@ def create_param_file(original_filename, md_path, temp_file="temp_injection_para
                 }
             }
         },
-        "backup_enabled": True,
+        "backup_enabled": False,
         "validation_strict": False
     }
 

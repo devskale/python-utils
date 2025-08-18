@@ -10,6 +10,6 @@
       "name": "ai_generated_field"
     }
   },
-  "backup_enabled": true,
+  "backup_enabled": false,
   "validation_strict": true
 }

@@ -42,7 +42,7 @@ def main():
 
         if result['success']:
             print("✅ Metadata injection successful!")
-            print(f"💾 Backup created: {result.get('backup_path', 'N/A')}")
+            # No backup files generated
             print(f"🎯 Target file: {result['target_file']}")
 
             # Show the injected metadata

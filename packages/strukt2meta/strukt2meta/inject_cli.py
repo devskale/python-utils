@@ -36,19 +36,11 @@ def main():
         help="Enable verbose output"
     )
     
-    parser.add_argument(
-        "--rollback", "-r",
-        help="Rollback using specified backup file"
-    )
+    # Rollback functionality removed (no backup files generated)
     
     args = parser.parse_args()
     
     try:
-        if args.rollback:
-            # Handle rollback operation
-            print(f"Rolling back from backup: {args.rollback}")
-            # Implementation for rollback would go here
-            return
         
         # Initialize injector
         if args.verbose:
@@ -73,7 +65,7 @@ def main():
             print("✅ Injection completed successfully!")
             if args.verbose:
                 print(f"Target file: {result['target_file']}")
-                print(f"Backup created: {result['backup_path']}")
+                # No backup files generated
                 print("Injected metadata:")
                 print(json.dumps(result['injected_metadata'], indent=2, ensure_ascii=False))
         else:

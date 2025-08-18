@@ -94,7 +94,7 @@ strukt2meta inject --params injection_params.json --dry-run
     3. Environment variable `STRUKT2META_INDEX_FIELDS="field1,field2"` (helper override).
     4. Built-in default: `["name", "kategorie", "begründung"]`.
   - The index is only written/updated if at least one of the configured `index_meta_fields` exists and is non-empty in the generated metadata. If none of the configured fields are present, the sidecar is still written but the index stays unchanged.
-  - Existing index files are backed up (timestamped `.bak_YYYYMMDD_HHMMSS`) before modification.
+  - Index files are updated directly without creating backup files.
 
 - Rationale:
   - Sidecars store the authoritative, full metadata produced by the AI and avoid data loss when the index schema is intentionally minimal.

@@ -27,6 +27,13 @@ from strukt2meta.injector import inject_metadata_to_json
 class OfsCommand(BaseCommand):
     """Handle OFS command for processing files in Opinionated File System structure."""
     
+    def __init__(self, args):
+        """Initialize OFS command with progress tracking."""
+        super().__init__(args)
+        self.file_counter = 0
+        self.total_files = 0
+        self.processed_files = []
+    
     def run(self) -> None:
         """Execute the OFS command for processing OFS structured files."""
         # Parse the OFS parameter
@@ -35,6 +42,9 @@ class OfsCommand(BaseCommand):
         
         self.log(f"Processing OFS parameter: {ofs_param}", "info")
         self.log(f"Parsed - Project: {project}, Bidder: {bidder}, File: {filename}", "info")
+        
+        # Count total files first for progress tracking
+        self._count_total_files(project, bidder, filename)
         
         # Determine processing scope and execute
         if filename:
@@ -46,6 +56,9 @@ class OfsCommand(BaseCommand):
         else:
             # Process all files in project (both A/ and B/ directories)
             self._process_project_files(project)
+        
+        # Summary
+        self.log(f"\nProcessing complete: {len(self.processed_files)}/{self.total_files} files processed", "info")
     
     def _parse_ofs_parameter(self, ofs_param: str) -> Tuple[str, Optional[str], Optional[str]]:
         """Parse OFS parameter into project, bidder, and filename components.
@@ -90,6 +103,66 @@ class OfsCommand(BaseCommand):
         else:
             raise ValueError(f"Invalid OFS parameter format: {ofs_param}")
     
+    def _count_total_files(self, project: str, bidder: Optional[str], filename: str) -> None:
+        """Count total files to be processed for progress tracking.
+        
+        Args:
+            project: Project name
+            bidder: Bidder name (optional)
+            filename: Filename (optional)
+        """
+        try:
+            if filename:
+                # Single file
+                self.total_files = 1
+            elif bidder:
+                # All files for specific bidder
+                docs_result = list_bidder_docs_json(project, bidder)
+                documents = self._extract_documents_list(docs_result)
+                self.total_files = len([doc for doc in documents if self._should_process_file(doc)])
+            else:
+                # All files in project
+                total = 0
+                
+                # Count project documents
+                docs_result = list_project_docs_json(project)
+                documents = self._extract_documents_list(docs_result)
+                total += len([doc for doc in documents if self._should_process_file(doc)])
+                
+                # Count bidder documents
+                try:
+                    bidders = list_bidders(project)
+                    for b in bidders:
+                        docs_result = list_bidder_docs_json(project, b)
+                        documents = self._extract_documents_list(docs_result)
+                        total += len([doc for doc in documents if self._should_process_file(doc)])
+                except Exception:
+                    pass
+                
+                self.total_files = total
+                
+        except Exception as e:
+            self.log(f"Warning: Could not count total files: {str(e)}", "warning")
+            self.total_files = 0
+    
+    def _extract_documents_list(self, docs_result) -> List[Dict[str, Any]]:
+        """Extract documents list from various result formats.
+        
+        Args:
+            docs_result: Result from OFS list functions
+            
+        Returns:
+            List of document dictionaries
+        """
+        if isinstance(docs_result, dict) and 'success' in docs_result:
+            if docs_result.get('success'):
+                return docs_result.get('documents', [])
+        elif isinstance(docs_result, dict) and 'documents' in docs_result:
+            return docs_result.get('documents', [])
+        elif isinstance(docs_result, list):
+            return docs_result
+        return []
+    
     def _process_single_file(self, project: str, bidder: Optional[str], filename: str) -> None:
         """Process a single file using OFS read_doc function.
         
@@ -105,7 +178,10 @@ class OfsCommand(BaseCommand):
             # For project files, use A as the "bidder" part
             identifier = f"{project}@A@{filename}"
         
-        self.log(f"Processing single file: {identifier}", "processing")
+        self.file_counter += 1
+        
+        # Determine prompt based on file location
+        prompt_name = self._determine_prompt(project, bidder)
         
         try:
             # Read document content using OFS
@@ -114,7 +190,7 @@ class OfsCommand(BaseCommand):
             # Check if doc_result is a dict with success/error structure or direct content
             if isinstance(doc_result, dict) and 'success' in doc_result:
                 if not doc_result.get('success'):
-                    self.log(f"Failed to read document: {doc_result.get('error', 'Unknown error')}", "error")
+                    self.log(f"{self.file_counter}/{self.total_files} {filename} @ {doc_result.get('parser', 'unknown')} @ {prompt_name} (FAIL - read error)", "error")
                     return
                 content = doc_result.get('content', '')
                 parser = doc_result.get('parser', 'unknown')
@@ -123,21 +199,21 @@ class OfsCommand(BaseCommand):
                 content = doc_result if isinstance(doc_result, str) else str(doc_result)
                 parser = 'ofs'
             
-            self.log(f"Document read successfully using parser: {parser}", "success")
-            
-            # Determine prompt based on file location
-            prompt_name = self._determine_prompt(project, bidder)
-            
             # Generate metadata
             metadata = self._generate_metadata(content, prompt_name, identifier)
             
             if metadata:
                 # Inject metadata into appropriate JSON file
-                self._inject_metadata(metadata, project, bidder, filename)
-                self.log(f"Successfully processed: {identifier}", "success")
+                success = self._inject_metadata(metadata, project, bidder, filename)
+                status = "OK" if success else "FAIL - injection error"
+                self.log(f"{self.file_counter}/{self.total_files} {filename} @ {parser} @ {prompt_name} ({status})", "success" if success else "error")
+                if success:
+                    self.processed_files.append(filename)
+            else:
+                self.log(f"{self.file_counter}/{self.total_files} {filename} @ {parser} @ {prompt_name} (FAIL - no metadata)", "error")
             
         except Exception as e:
-            self.log(f"Error processing {identifier}: {str(e)}", "error")
+            self.log(f"{self.file_counter}/{self.total_files} {filename} @ unknown @ {prompt_name} (FAIL - {str(e)})", "error")
     
     def _process_bidder_files(self, project: str, bidder: str) -> None:
         """Process all files for a specific bidder.
@@ -151,31 +227,19 @@ class OfsCommand(BaseCommand):
         try:
             # Get list of bidder documents
             docs_result = list_bidder_docs_json(project, bidder)
-            
-            # Handle direct list return or wrapped result
-            if isinstance(docs_result, dict) and 'success' in docs_result:
-                if not docs_result.get('success'):
-                    self.log(f"Failed to list bidder documents: {docs_result.get('error', 'Unknown error')}", "error")
-                    return
-                documents = docs_result.get('documents', [])
-            elif isinstance(docs_result, dict) and 'documents' in docs_result:
-                documents = docs_result.get('documents', [])
-            elif isinstance(docs_result, list):
-                documents = docs_result
-            else:
-                self.log(f"Unexpected result format from list_bidder_docs_json: {type(docs_result)}", "error")
-                return
+            documents = self._extract_documents_list(docs_result)
             
             if not documents:
                 self.log(f"No documents found for bidder: {bidder}", "warning")
                 return
             
-            self.log(f"Found {len(documents)} documents for bidder: {bidder}", "info")
+            processable_docs = [doc for doc in documents if self._should_process_file(doc)]
+            self.log(f"Found {len(processable_docs)} processable documents for bidder: {bidder}", "info")
             
             # Process each document
-            for doc in documents:
+            for doc in processable_docs:
                 filename = doc.get('name')
-                if filename and self._should_process_file(doc):
+                if filename:
                     self._process_single_file(project, bidder, filename)
                     
         except Exception as e:
@@ -208,28 +272,20 @@ class OfsCommand(BaseCommand):
         try:
             # Get list of project documents
             docs_result = list_project_docs_json(project)
+            documents = self._extract_documents_list(docs_result)
             
-            # Handle direct list return or wrapped result
-            if isinstance(docs_result, dict) and 'success' in docs_result:
-                if not docs_result.get('success'):
-                    self.log(f"Failed to list project documents: {docs_result.get('error', 'Unknown error')}", "warning")
-                    return
-                documents = docs_result.get('documents', [])
-            elif isinstance(docs_result, dict) and 'documents' in docs_result:
-                documents = docs_result.get('documents', [])
-            elif isinstance(docs_result, list):
-                documents = docs_result
-            else:
-                self.log(f"Unexpected result format from list_project_docs_json: {type(docs_result)}", "warning")
+            if not documents:
+                self.log(f"No project documents found", "warning")
                 return
             
-            if documents:
-                self.log(f"Found {len(documents)} project documents", "info")
-                
-                for doc in documents:
-                    filename = doc.get('name')
-                    if filename and self._should_process_file(doc):
-                        self._process_single_file(project, None, filename)
+            processable_docs = [doc for doc in documents if self._should_process_file(doc)]
+            self.log(f"Found {len(processable_docs)} processable project documents", "info")
+            
+            # Process each document
+            for doc in processable_docs:
+                filename = doc.get('name')
+                if filename:
+                    self._process_single_file(project, None, filename)
             
         except Exception as e:
             self.log(f"Error processing project documents for {project}: {str(e)}", "error")
@@ -266,13 +322,20 @@ class OfsCommand(BaseCommand):
         Returns:
             True if file should be processed
         """
-        # Check if we should only process uncategorized files
-        if getattr(self.args, 'un', True) and not getattr(self.args, 'overwrite', False):
-            # Only process if file doesn't have metadata or is uncategorized
-            meta = doc.get('meta', {})
-            return not meta or not meta.get('kategorie')
+        # Check if overwrite is enabled - process all files
+        if getattr(self.args, 'overwrite', False):
+            return True
+            
+        # Default behavior: skip files that already have metadata
+        # Check both direct kategorie field and nested meta.kategorie field
+        kategorie = doc.get('kategorie') or (doc.get('meta', {}).get('kategorie') if doc.get('meta') else None)
         
-        # Process all files if overwrite is enabled
+        if kategorie:
+            filename = doc.get('name', 'unknown')
+            self.log(f"Skipping {filename} - already has metadata (kategorie: {kategorie})", "info")
+            return False
+            
+        # Process files without metadata
         return True
     
     def _determine_prompt(self, project: str, bidder: Optional[str]) -> str:
@@ -328,7 +391,7 @@ class OfsCommand(BaseCommand):
             self.log(f"Error generating metadata for {identifier}: {str(e)}", "error")
             return None
     
-    def _inject_metadata(self, metadata: Dict[str, Any], project: str, bidder: Optional[str], filename: str) -> None:
+    def _inject_metadata(self, metadata: Dict[str, Any], project: str, bidder: Optional[str], filename: str) -> bool:
         """Inject metadata into the appropriate JSON index file.
         
         Args:
@@ -336,6 +399,9 @@ class OfsCommand(BaseCommand):
             project: Project name
             bidder: Bidder name (None for project documents)
             filename: Filename
+            
+        Returns:
+            True if injection was successful, False otherwise
         """
         try:
             # Determine the appropriate JSON file path
@@ -349,8 +415,7 @@ class OfsCommand(BaseCommand):
                 base_directory = self._get_project_directory_path(project)
             
             if not json_file_path or not base_directory:
-                self.log(f"Could not determine JSON file path for {filename}", "error")
-                return
+                return False
             
             # Inject metadata using strukt2meta injector
             success = inject_metadata_to_json(
@@ -360,13 +425,10 @@ class OfsCommand(BaseCommand):
                 base_directory=str(base_directory)
             )
             
-            if success:
-                self.log(f"Metadata injected successfully for: {filename}", "success")
-            else:
-                self.log(f"Failed to inject metadata for: {filename}", "error")
+            return success
                 
         except Exception as e:
-            self.log(f"Error injecting metadata for {filename}: {str(e)}", "error")
+            return False
     
     def _get_bidder_index_path(self, project: str, bidder: str) -> Optional[Path]:
         """Get the path to bidder's index file.

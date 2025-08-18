@@ -66,7 +66,6 @@ class JSONInjector:
     def __init__(self, params_file: str):
         self.params_file = params_file
         self.params = self._load_params(params_file)
-        self.backup_path: Optional[str] = None
 
     # --------------------------- Param + IO helpers ---------------------------
     def _load_params(self, params_file: str) -> Dict[str, Any]:
@@ -79,13 +78,7 @@ class JSONInjector:
                 raise ValueError(f"Required parameter missing: {field}")
         return params
 
-    def _create_backup(self, json_file_path: str) -> None:
-        if not os.path.exists(json_file_path):
-            return
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        backup_path = f"{json_file_path}.bak_{timestamp}"
-        shutil.copy2(json_file_path, backup_path)
-        self.backup_path = backup_path
+    # Backup functionality removed to prevent .bak file generation
 
     def _load_target_json(self) -> Dict[str, Any]:
         target = self.params['json_inject_file']
@@ -94,8 +87,6 @@ class JSONInjector:
             data = {"files": [], "created": datetime.now().isoformat(),
                     "last_updated": datetime.now().isoformat()}
             return data
-        if self.params.get('backup_enabled', True):
-            self._create_backup(target)
         with open(target, 'r', encoding='utf-8') as f:
             return json.load(f)
 
@@ -229,11 +220,7 @@ class JSONInjector:
         with open(target, 'w', encoding='utf-8') as f:
             json.dump(json_data, f, indent=4, ensure_ascii=False)
 
-    def rollback(self) -> bool:
-        if self.backup_path and os.path.exists(self.backup_path):
-            shutil.copy2(self.backup_path, self.params['json_inject_file'])
-            return True
-        return False
+    # Rollback functionality removed (no backup files generated)
 
     def inject(self) -> Dict[str, Any]:
         """
@@ -271,8 +258,7 @@ class JSONInjector:
             'success': True,
             'target_file': self.params['target_filename'],
             'sidecar_path': str(sidecar_path),
-            'applied_index_fields': applied,
-            'backup_path': self.backup_path
+            'applied_index_fields': applied
         }
 
 
@@ -309,19 +295,11 @@ def inject_metadata_to_json(source_filename: str, metadata: Dict[str, Any], json
 
         # Load or initialize index JSON
         if os.path.exists(json_file_path):
-            # Backup existing index
-            try:
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                backup_path = f"{json_file_path}.bak_{timestamp}"
-                shutil.copy2(json_file_path, backup_path)
-            except Exception:
-                backup_path = None
             with open(json_file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
         else:
             data = {"files": [], "created": datetime.now().isoformat(),
                     "last_updated": datetime.now().isoformat()}
-            backup_path = None
 
         # Locate / create file entry
         entry = None
@@ -370,12 +348,6 @@ def inject_metadata_to_json(source_filename: str, metadata: Dict[str, Any], json
                     json.dump(data, f, indent=4, ensure_ascii=False)
             except Exception as e:
                 print(f"Error writing index file {json_file_path}: {e}")
-                # attempt restore backup if available
-                if backup_path:
-                    try:
-                        shutil.copy2(backup_path, json_file_path)
-                    except Exception:
-                        pass
                 return False
 
         # Done: sidecar written (even if index unchanged)

@@ -27,6 +27,6 @@
       }
     }
   },
-  "backup_enabled": true,
+  "backup_enabled": false,
   "validation_strict": false
 }
