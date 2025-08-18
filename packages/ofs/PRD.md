@@ -97,6 +97,11 @@ Create a python library to access, edit and navigate the opinionated filesystem 
   - Index updates now log individual file changes with action types: ADDED, REMOVED, MODIFIED
   - Improved user feedback showing exactly which files were affected during index operations
   - Maintains backward compatibility while providing more informative output
+- [x] **Enhanced index update verbosity**:
+  - Added OFS root directory display: `ofs root: <path>`
+  - Added project count: `N projects checked`
+  - Added bidder directory count: `M Bidder dirs checked`
+  - Implemented helper functions `_is_project_directory()` and `_is_bidder_directory()` for accurate counting
 
 ### `read_doc(doc_id, parser=None)`
 

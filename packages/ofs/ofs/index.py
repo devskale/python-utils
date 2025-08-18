@@ -190,6 +190,55 @@ def _calculate_directory_hash(dir_path: str) -> str:
         return ""
 
 
+def _is_project_directory(directory_path: str) -> bool:
+    """Check if a directory is a project directory.
+    
+    A project directory typically contains 'A' and/or 'B' subdirectories
+    and may contain projekt.meta.json.
+    
+    Args:
+        directory_path: Path to check
+        
+    Returns:
+        True if it's a project directory
+    """
+    from pathlib import Path
+    path = Path(directory_path)
+    
+    # Check for A or B subdirectories
+    has_a_dir = (path / "A").exists() and (path / "A").is_dir()
+    has_b_dir = (path / "B").exists() and (path / "B").is_dir()
+    
+    # Check for project metadata
+    has_project_meta = (path / "projekt.meta.json").exists()
+    
+    return has_a_dir or has_b_dir or has_project_meta
+
+
+def _is_bidder_directory(directory_path: str, parent_path: str) -> bool:
+    """Check if a directory is a bidder directory.
+    
+    A bidder directory is typically inside a 'B' directory of a project.
+    
+    Args:
+        directory_path: Path to check
+        parent_path: Parent directory path
+        
+    Returns:
+        True if it's a bidder directory
+    """
+    from pathlib import Path
+    path = Path(directory_path)
+    parent = Path(parent_path)
+    
+    # Check if parent is a 'B' directory and grandparent is a project
+    if parent.name == "B":
+        grandparent = parent.parent
+        return _is_project_directory(str(grandparent))
+    
+    return False
+
+
 def filter_directories(dirs: List[str]) -> List[str]:
     """Filter out hidden directories and specific subdirectories.
     
@@ -320,11 +369,28 @@ def update_index(directory: str, recursive: bool = False, max_age_hours: int = 2
     current_time = time.time()
     max_age_seconds = max_age_hours * 3600
     
+    # Get OFS root for display
+    ofs_root = config.get('BASE_DIR', directory)
+    logger.info(f"ofs root: {ofs_root}")
+    
     try:
         updated_any = False
         dirs_checked = 0
+        projects_checked = 0
+        bidder_dirs_checked = 0
+        
         for root, dirs, files in traverse_directories(directory, recursive):
             dirs_checked += 1
+            
+            # Count project and bidder directories
+            if _is_project_directory(root):
+                projects_checked += 1
+            
+            # Check if this is a bidder directory
+            parent_dir = os.path.dirname(root)
+            if _is_bidder_directory(root, parent_dir):
+                bidder_dirs_checked += 1
+            
             index_path = os.path.join(root, index_file_name)
             
             # If no index exists, create one
@@ -367,7 +433,10 @@ def update_index(directory: str, recursive: bool = False, max_age_hours: int = 2
                 updated_any = True
             # Skip printing "Index up to date" messages
         
-        # Always provide minimal verbosity about operation
+        # Always provide enhanced verbosity about operation
+        logger.info(f"{projects_checked} projects checked")
+        logger.info(f"{bidder_dirs_checked} Bidder dirs checked")
+        
         if updated_any:
             logger.info(f"Index update completed. {dirs_checked} directories checked.")
         else:
