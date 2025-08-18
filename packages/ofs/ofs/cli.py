@@ -427,7 +427,7 @@ def handle_list_docs(project_bidder: str, meta: bool = False) -> None:
                     "Error: Project, bidder, and filename must all be provided.", file=sys.stderr)
                 sys.exit(1)
 
-            result = get_bidder_document_json(project, bidder, filename)
+            result = get_bidder_document_json(project, bidder, filename, include_metadata=meta)
             print(json.dumps(result, indent=2, ensure_ascii=False))
 
             # Exit with error code if there was an error in the result

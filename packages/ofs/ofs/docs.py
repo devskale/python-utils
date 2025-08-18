@@ -291,7 +291,6 @@ def list_bidder_docs_json(project_name: str, bidder_name: str, include_metadata:
                 if ext in allowed_extensions:
                     doc_entry: Dict[str, Any] = {
                         "name": item.name,
-                        "path": str(item),
                     }
 
                     # Add metadata overview
@@ -300,6 +299,7 @@ def list_bidder_docs_json(project_name: str, bidder_name: str, include_metadata:
                     if include_metadata:
                         # Include full metadata
                         doc_entry.update({
+                            "path": str(item),
                             "size": item.stat().st_size if item.exists() else None,
                             "type": ext,
                             "parsers": meta_info.get("parsers"),
@@ -328,12 +328,12 @@ def list_bidder_docs_json(project_name: str, bidder_name: str, include_metadata:
                 if ext in allowed_extensions:
                     doc_entry: Dict[str, Any] = {
                         "name": name,
-                        "path": str(b_dir / name),
                     }
 
                     meta = file_info.get("meta", {})
                     if include_metadata:
                         doc_entry.update({
+                            "path": str(b_dir / name),
                             "size": None,
                             "type": ext,
                             "parsers": file_info.get("parsers"),
@@ -348,6 +348,7 @@ def list_bidder_docs_json(project_name: str, bidder_name: str, include_metadata:
                     result["documents"].append(doc_entry)
 
     result["count"] = len(result["documents"])
+    result["total_documents"] = len(result["documents"])
     return result
 
 
@@ -450,13 +451,13 @@ def list_project_docs_json(project_name: str, include_metadata: bool = False) ->
                 if ext in allowed_extensions:
                     doc_entry: Dict[str, Any] = {
                         "name": item.name,
-                        "path": str(item),
                     }
 
                     meta_info = files_metadata.get(item.name, {})
                     meta = meta_info.get("meta", {})
                     if include_metadata:
                         doc_entry.update({
+                            "path": str(item),
                             "size": item.stat().st_size if item.exists() else None,
                             "type": ext,
                             "parsers": meta_info.get("parsers"),
@@ -483,12 +484,12 @@ def list_project_docs_json(project_name: str, include_metadata: bool = False) ->
                 if ext in allowed_extensions:
                     doc_entry: Dict[str, Any] = {
                         "name": name,
-                        "path": str(a_dir / name),
                     }
 
                     meta = file_info.get("meta", {})
                     if include_metadata:
                         doc_entry.update({
+                            "path": str(a_dir / name),
                             "size": None,
                             "type": ext,
                             "parsers": file_info.get("parsers"),
@@ -503,15 +504,26 @@ def list_project_docs_json(project_name: str, include_metadata: bool = False) ->
                     result["documents"].append(doc_entry)
 
     result["count"] = len(result["documents"])
+    result["total_documents"] = len(result["documents"])
     return result
 
 
-def get_bidder_document_json(project_name: str, bidder_name: str, filename: str) -> Dict[str, Any]:
+def get_bidder_document_json(project_name: str, bidder_name: str, filename: str, include_metadata: bool = True) -> Dict[str, Any]:
     """
     Get detailed information about a specific bidder document.
+    
+    Args:
+        project_name (str): Name of the project (AUSSCHREIBUNGNAME)
+        bidder_name (str): Name of the bidder (BIETERNAME)
+        filename (str): Name of the document file
+        include_metadata (bool): Whether to include full metadata from .ofs.index.json (default: True)
+                                When False, returns minimal view with kategorie and meta_name only
 
     Returns:
-        Dict[str, Any]: Document info including metadata from index files when available
+        Dict[str, Any]: Document info including:
+        - Basic file information (name, path, size, type)
+        - With include_metadata=True: full metadata (parsers, meta, extension, index_size, modified)
+        - With include_metadata=False: minimal metadata (kategorie, meta_name)
     """
     try:
         base_dir = get_base_dir()
@@ -556,15 +568,32 @@ def get_bidder_document_json(project_name: str, bidder_name: str, filename: str)
     # Add metadata from index file if available
     index_data = _load_ofs_index(b_dir)
     if index_data:
+        # Normalize filename for comparison to handle Unicode issues
+        normalized_filename = unicodedata.normalize('NFC', filename)
         for entry in index_data.get("files", []):
-            if entry.get("name") == filename:
-                # Include all available metadata except potential hash fields
-                parsers = entry.get("parsers")
-                meta = entry.get("meta")
-                if parsers is not None:
-                    file_info["parsers"] = parsers
-                if meta is not None:
-                    file_info["meta"] = meta
+            entry_name = entry.get("name")
+            if entry_name and unicodedata.normalize('NFC', entry_name) == normalized_filename:
+                meta = entry.get("meta", {})
+                if include_metadata:
+                    # Include all available metadata except potential hash fields
+                    parsers = entry.get("parsers")
+                    extension = entry.get("extension")
+                    size = entry.get("size")
+                    modified = entry.get("modified")
+                    if parsers is not None:
+                        file_info["parsers"] = parsers
+                    if meta is not None:
+                        file_info["meta"] = meta
+                    if extension is not None:
+                        file_info["extension"] = extension
+                    if size is not None:
+                        file_info["index_size"] = size
+                    if modified is not None:
+                        file_info["modified"] = modified
+                else:
+                    # Include minimal view fields when available
+                    file_info["kategorie"] = meta.get("kategorie")
+                    file_info["meta_name"] = meta.get("name")
                 break
 
     return file_info
