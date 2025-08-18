@@ -91,6 +91,13 @@ Create a python library to access, edit and navigate the opinionated filesystem 
   - Improved CLI index commands to automatically use OFS root when no specific directory provided
   - All OFS commands now properly respect the `BASE_DIR` setting in configuration files
 
+- [x] **Verbose index update logging**:
+  - Enhanced `ofs index update` command to provide detailed logging of file changes
+  - Added `get_detailed_changes()` function in `ofs/index_helper.py` to track specific file operations
+  - Index updates now log individual file changes with action types: ADDED, REMOVED, MODIFIED
+  - Improved user feedback showing exactly which files were affected during index operations
+  - Maintains backward compatibility while providing more informative output
+
 ### `read_doc(doc_id, parser=None)`
 
 This function is the core of the document reading capability. It intelligently selects the appropriate parser based on the document type and available parsers, and extracts content from pre-parsed Markdown files located in `md/` subfolders.

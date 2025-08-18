@@ -12,7 +12,7 @@ import unicodedata
 from pathlib import Path
 from typing import Optional, Dict, List, Any
 from .config import get_config
-from .index_helper import _has_content_changes
+from .index_helper import _has_content_changes, get_detailed_changes
 from .logging import setup_logger
 
 # Module logger
@@ -322,7 +322,9 @@ def update_index(directory: str, recursive: bool = False, max_age_hours: int = 2
     
     try:
         updated_any = False
+        dirs_checked = 0
         for root, dirs, files in traverse_directories(directory, recursive):
+            dirs_checked += 1
             index_path = os.path.join(root, index_file_name)
             
             # If no index exists, create one
@@ -351,13 +353,25 @@ def update_index(directory: str, recursive: bool = False, max_age_hours: int = 2
             existing_data = read_index_file(index_path)
             new_data = _generate_index_data_for_path(root, dirs, files, index_path)
             
-            if _has_content_changes(existing_data, new_data, root):
+            changes = get_detailed_changes(existing_data, new_data)
+            if changes:
                 # Show relative path from the base directory
                 rel_path = os.path.relpath(root, directory)
                 logger.info(f"Content changes {rel_path}")
+                
+                # Log detailed changes
+                for item_type, item_name, change_type in changes:
+                    logger.info(f"  {change_type.upper()}: {item_type} '{item_name}'")
+                
                 write_index_file(index_path, new_data)
                 updated_any = True
             # Skip printing "Index up to date" messages
+        
+        # Always provide minimal verbosity about operation
+        if updated_any:
+            logger.info(f"Index update completed. {dirs_checked} directories checked.")
+        else:
+            logger.info(f"No updates needed. {dirs_checked} directories checked.")
         
         return True
     except Exception as e:

@@ -7,6 +7,84 @@ particularly for detecting content changes between index versions.
 from typing import Optional, Dict
 
 
+from typing import Optional, Dict, List, Tuple
+
+
+def get_detailed_changes(old_data: Optional[Dict], new_data: Dict) -> List[Tuple[str, str, str]]:
+    """Get detailed information about changes between old and new index data.
+    
+    Args:
+        old_data: The old index data dictionary, or None if no old index existed
+        new_data: The new index data dictionary
+        
+    Returns:
+        List of tuples (item_type, item_name, change_type) where:
+        - item_type: 'file' or 'directory'
+        - item_name: name of the changed item
+        - change_type: 'added', 'removed', 'modified'
+    """
+    changes = []
+    
+    if old_data is None:
+        # All items are new
+        for file_data in new_data.get('files', []):
+            changes.append(('file', file_data['name'], 'added'))
+        for dir_data in new_data.get('directories', []):
+            changes.append(('directory', dir_data['name'], 'added'))
+        return changes
+        
+    # Compare files
+    old_files_map = {f['name']: f for f in old_data.get('files', [])}
+    new_files_map = {f['name']: f for f in new_data.get('files', [])}
+    
+    old_file_names = set(old_files_map.keys())
+    new_file_names = set(new_files_map.keys())
+    
+    # Added files
+    for name in new_file_names - old_file_names:
+        changes.append(('file', name, 'added'))
+    
+    # Removed files
+    for name in old_file_names - new_file_names:
+        changes.append(('file', name, 'removed'))
+    
+    # Modified files
+    for name in old_file_names & new_file_names:
+        old_file = old_files_map[name]
+        new_file = new_files_map[name]
+        
+        if (old_file.get('size') != new_file.get('size') or
+            old_file.get('hash') != new_file.get('hash') or
+            old_file.get('parsers') != new_file.get('parsers')):
+            changes.append(('file', name, 'modified'))
+    
+    # Compare directories
+    old_dirs_map = {d['name']: d for d in old_data.get('directories', [])}
+    new_dirs_map = {d['name']: d for d in new_data.get('directories', [])}
+    
+    old_dir_names = set(old_dirs_map.keys())
+    new_dir_names = set(new_dirs_map.keys())
+    
+    # Added directories
+    for name in new_dir_names - old_dir_names:
+        changes.append(('directory', name, 'added'))
+    
+    # Removed directories
+    for name in old_dir_names - new_dir_names:
+        changes.append(('directory', name, 'removed'))
+    
+    # Modified directories
+    for name in old_dir_names & new_dir_names:
+        old_dir = old_dirs_map[name]
+        new_dir = new_dirs_map[name]
+        
+        if (old_dir.get('size') != new_dir.get('size') or
+            old_dir.get('hash') != new_dir.get('hash')):
+            changes.append(('directory', name, 'modified'))
+    
+    return changes
+
+
 def _has_content_changes(old_data: Optional[Dict], new_data: Dict, debug_path: str = "") -> bool:
     """Check if there are actual content changes between old and new index data.
     
@@ -18,60 +96,8 @@ def _has_content_changes(old_data: Optional[Dict], new_data: Dict, debug_path: s
     Returns:
         True if there are content changes, False otherwise
     """
-    if old_data is None:
-        return True
-        
-    # Compare files
-    old_files_map = {f['name']: f for f in old_data.get('files', [])}
-    new_files_map = {f['name']: f for f in new_data.get('files', [])}
-    
-    # Check for added or removed files
-    old_file_names = set(old_files_map.keys())
-    new_file_names = set(new_files_map.keys())
-    if old_file_names != new_file_names:
-        return True
-        
-    # Check for file content changes
-    for name, new_file_meta in new_files_map.items():
-        old_file_meta = old_files_map[name]
-        old_size = old_file_meta.get('size')
-        new_size = new_file_meta.get('size')
-        old_hash = old_file_meta.get('hash')
-        new_hash = new_file_meta.get('hash')
-        old_parsers = old_file_meta.get('parsers')
-        new_parsers = new_file_meta.get('parsers')
-        
-        if old_size != new_size:
-            return True
-        if old_hash != new_hash:
-            return True
-        if old_parsers != new_parsers:
-            return True
-            
-    # Compare directories
-    old_dirs_map = {d['name']: d for d in old_data.get('directories', [])}
-    new_dirs_map = {d['name']: d for d in new_data.get('directories', [])}
-    
-    # Check for added or removed directories
-    old_dir_names = set(old_dirs_map.keys())
-    new_dir_names = set(new_dirs_map.keys())
-    if old_dir_names != new_dir_names:
-        return True
-        
-    # Check for directory content changes
-    for name, new_dir_meta in new_dirs_map.items():
-        old_dir_meta = old_dirs_map[name]
-        old_size = old_dir_meta.get('size')
-        new_size = new_dir_meta.get('size')
-        old_hash = old_dir_meta.get('hash')
-        new_hash = new_dir_meta.get('hash')
-        
-        if old_size != new_size:
-            return True
-        if old_hash != new_hash:
-            return True
-            
-    return False
+    changes = get_detailed_changes(old_data, new_data)
+    return len(changes) > 0
 
 
 def compare_file_metadata(old_file: Dict, new_file: Dict) -> bool:
