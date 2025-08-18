@@ -13,7 +13,7 @@ def test_create_parser():
     """Test that the argument parser is created correctly."""
     parser = create_parser()
     assert parser.prog == 'ofs'
-    
+
     # Test that subcommands exist
     help_text = parser.format_help()
     assert 'get-path' in help_text

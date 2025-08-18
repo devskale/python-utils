@@ -19,7 +19,7 @@ from .paths import _load_ofs_index, _search_in_directory
 def _collect_bidders_structured(b_dir: Path) -> Dict[str, Any]:
     """
     Collect bidders from B directory, distinguishing between directories and files.
-    
+
     This function orchestrates the collection of bidder data by delegating
     specific tasks to focused helper functions.
 
@@ -36,13 +36,13 @@ def _collect_bidders_structured(b_dir: Path) -> Dict[str, Any]:
             "total_bidders": 0,
             "total_files": 0
         }
-    
+
     # Scan filesystem for bidders and files
     bidder_dirs, all_files = _scan_bidder_directories(b_dir)
-    
+
     # Load additional entries from index files
     index_bidders, index_files = _load_bidders_from_index(b_dir)
-    
+
     # Merge filesystem and index data
     return _merge_bidder_data(bidder_dirs, all_files, index_bidders, index_files)
 
@@ -50,7 +50,7 @@ def _collect_bidders_structured(b_dir: Path) -> Dict[str, Any]:
 def _scan_bidder_directories(b_dir: Path) -> tuple[List[str], List[str]]:
     """
     Scan filesystem for bidder directories and files.
-    
+
     This function focuses solely on filesystem scanning, separating
     the concern from index file processing.
 
@@ -61,13 +61,13 @@ def _scan_bidder_directories(b_dir: Path) -> tuple[List[str], List[str]]:
         tuple[List[str], List[str]]: Tuple of (bidder_directories, all_files)
     """
     import unicodedata
-    
+
     # Reserved directory names that should be filtered out
     RESERVED_DIRS = {'md', '.ofs.index.json', 'A', 'B'}
-    
+
     bidder_dirs = []
     all_files = []
-    
+
     try:
         for item in b_dir.iterdir():
             if item.name.startswith('.') or item.name.endswith('.meta.json'):
@@ -87,14 +87,14 @@ def _scan_bidder_directories(b_dir: Path) -> tuple[List[str], List[str]]:
                     all_files.append(normalized_name)
     except PermissionError:
         pass
-    
+
     return bidder_dirs, all_files
 
 
 def _collect_files_from_bidder_dir(bidder_dir: Path) -> List[str]:
     """
     Collect files from within a specific bidder directory.
-    
+
     This function handles the nested file collection logic,
     keeping it separate from the main directory scanning.
 
@@ -105,25 +105,25 @@ def _collect_files_from_bidder_dir(bidder_dir: Path) -> List[str]:
         List[str]: List of normalized file names
     """
     import unicodedata
-    
+
     files = []
     try:
         for sub_item in bidder_dir.iterdir():
             if (sub_item.is_file() and
                 not sub_item.name.startswith('.') and
-                not sub_item.name.endswith('.meta.json')):
+                    not sub_item.name.endswith('.meta.json')):
                 file_name = unicodedata.normalize('NFC', sub_item.name)
                 files.append(file_name)
     except PermissionError:
         pass
-    
+
     return files
 
 
 def _load_bidders_from_index(b_dir: Path) -> tuple[List[str], List[str]]:
     """
     Load bidder information from index files.
-    
+
     This function focuses on extracting bidder and file information
     from index files, separate from filesystem scanning.
 
@@ -134,13 +134,13 @@ def _load_bidders_from_index(b_dir: Path) -> tuple[List[str], List[str]]:
         tuple[List[str], List[str]]: Tuple of (index_bidders, index_files)
     """
     import unicodedata
-    
+
     # Reserved directory names that should be filtered out
     RESERVED_DIRS = {'md', '.ofs.index.json', 'A', 'B'}
-    
+
     index_bidders = []
     index_files = []
-    
+
     index_data = _load_ofs_index(b_dir)
     if index_data:
         # Add directories from index
@@ -158,15 +158,15 @@ def _load_bidders_from_index(b_dir: Path) -> tuple[List[str], List[str]]:
                 normalized_name = unicodedata.normalize('NFC', file_name)
                 if not normalized_name.startswith('.'):
                     index_files.append(normalized_name)
-    
+
     return index_bidders, index_files
 
 
-def _merge_bidder_data(fs_bidders: List[str], fs_files: List[str], 
-                      index_bidders: List[str], index_files: List[str]) -> Dict[str, Any]:
+def _merge_bidder_data(fs_bidders: List[str], fs_files: List[str],
+                       index_bidders: List[str], index_files: List[str]) -> Dict[str, Any]:
     """
     Merge bidder data from filesystem and index sources.
-    
+
     This function handles the final data consolidation and formatting,
     ensuring no duplicates and proper sorting.
 
@@ -181,10 +181,10 @@ def _merge_bidder_data(fs_bidders: List[str], fs_files: List[str],
     """
     # Merge and deduplicate bidders
     all_bidders = list(set(fs_bidders + index_bidders))
-    
+
     # Merge and deduplicate files
     all_files = list(set(fs_files + index_files))
-    
+
     return {
         "bidder_directories": sorted(all_bidders),
         "all_files": sorted(all_files),
@@ -196,10 +196,10 @@ def _merge_bidder_data(fs_bidders: List[str], fs_files: List[str],
 def list_bidder_docs_json(project_name: str, bidder_name: str, include_metadata: bool = False) -> Dict[str, Any]:
     """
     List all documents for a specific bidder in a project in JSON format.
-    
+
     By default, returns a minimal view with document name and basic metadata fields
     (kategorie, meta_name) from .ofs.index.json files when available.
-    
+
     With include_metadata=True, provides full document details including:
     - Complete file information (path, size, type)
     - Full metadata from .ofs.index.json files:
@@ -511,7 +511,7 @@ def list_project_docs_json(project_name: str, include_metadata: bool = False) ->
 def get_bidder_document_json(project_name: str, bidder_name: str, filename: str, include_metadata: bool = True) -> Dict[str, Any]:
     """
     Get detailed information about a specific bidder document.
-    
+
     Args:
         project_name (str): Name of the project (AUSSCHREIBUNGNAME)
         bidder_name (str): Name of the bidder (BIETERNAME)
@@ -604,7 +604,7 @@ def get_bidder_document_json(project_name: str, bidder_name: str, filename: str,
 def get_project_document_json(project_name: str, filename: str, include_metadata: bool = True) -> Dict[str, Any]:
     """
     Get detailed information about a specific project document (from A/ folder).
-    
+
     Args:
         project_name (str): Name of the project (AUSSCHREIBUNGNAME)
         filename (str): Name of the document file
@@ -636,7 +636,7 @@ def get_project_document_json(project_name: str, filename: str, include_metadata
             return {"error": f"Project directory not found: {project_path}"}
     except (OSError, PermissionError) as e:
         return {"error": f"Cannot access project directory {project_path}: {e}"}
-    
+
     a_dir = project_dir / "A"
 
     if not a_dir.exists():
@@ -655,7 +655,7 @@ def get_project_document_json(project_name: str, filename: str, include_metadata
         "size": file_path.stat().st_size if file_path.exists() else None,
         "type": file_path.suffix.lower(),
     }
-    
+
     if include_metadata:
         file_info["path"] = str(file_path)
 
@@ -696,13 +696,13 @@ def get_project_document_json(project_name: str, filename: str, include_metadata
 def _select_parser(requested_parser: Optional[str], available_parsers: Dict[str, Any], default_ranking: List[str] = None) -> str:
     """
     Select the best parser based on request, availability, and default ranking.
-    
+
     Args:
         requested_parser: Explicitly requested parser name
         available_parsers: Parser info from .ofs.index.json with structure:
             {"det": ["parser1", "parser2"], "default": "parser1", "status": "..."}
         default_ranking: Preference order for parser selection
-    
+
     Returns:
         Selected parser name
     """
@@ -712,7 +712,7 @@ def _select_parser(requested_parser: Optional[str], available_parsers: Dict[str,
     # Extract available parsers from 'det' field or fallback to all non-metadata keys
     available = set()
     default_value = available_parsers.get("default")
-    
+
     # Primary: use 'det' field if available (contains list of detected/available parsers)
     det_parsers = available_parsers.get("det")
     if isinstance(det_parsers, list):
@@ -747,18 +747,28 @@ def _select_parser(requested_parser: Optional[str], available_parsers: Dict[str,
 
 def read_doc(identifier: str, parser: Optional[str] = None) -> Dict[str, Any]:
     """
-    Read a document content by identifier 'Project@Bidder@Filename'.
+    Read a document content by identifier.
     
+    Supports two formats:
+    - 'Project@Bidder@Filename' for bidder documents
+    - 'Project@Filename' for tender documents (automatically uses 'A' as bidder)
+
     This function reads from pre-parsed markdown files in the md/ subfolder,
     following the OFS (Opinionated Filesystem) structure.
 
     Returns a JSON-like dict with keys: success, error, warning, content, parser, path
     """
-    # Validate identifier
+    # Validate identifier and handle both 2-part and 3-part formats
     parts = identifier.split('@')
-    if len(parts) != 3:
-        return {"success": False, "error": "Identifier must be 'Project@Bidder@Filename'"}
-    project, bidder, filename = parts
+    if len(parts) == 2:
+        # Project@Filename format - treat as tender document (A directory)
+        project, filename = parts
+        bidder = "A"
+    elif len(parts) == 3:
+        # Project@Bidder@Filename format
+        project, bidder, filename = parts
+    else:
+        return {"success": False, "error": "Identifier must be 'Project@Filename' or 'Project@Bidder@Filename'"}
 
     # Locate project
     try:
@@ -768,7 +778,7 @@ def read_doc(identifier: str, parser: Optional[str] = None) -> Dict[str, Any]:
             return {"success": False, "error": f"Base directory not found: {base_dir}"}
     except (OSError, PermissionError) as e:
         return {"success": False, "error": f"Cannot access base directory {base_dir}: {e}"}
-    
+
     project_path = _search_in_directory(base_path, project)
     if not project_path:
         return {"success": False, "error": f"Project '{project}' not found"}
@@ -788,12 +798,12 @@ def read_doc(identifier: str, parser: Optional[str] = None) -> Dict[str, Any]:
     else:
         # Normal case: reading from bidder documents (B/bidder)
         doc_dir = project_dir / "B" / bidder
-        md_dir = doc_dir / "md" 
+        md_dir = doc_dir / "md"
         identifier_context = "bidder"
-    
+
     if not doc_dir.exists():
         return {"success": False, "error": f"Directory for '{bidder}' not found in project '{project}'"}
-    
+
     if not md_dir.exists():
         return {"success": False, "error": f"Markdown directory (md/) not found for '{bidder}' in project '{project}'"}
 
@@ -822,7 +832,7 @@ def read_doc(identifier: str, parser: Optional[str] = None) -> Dict[str, Any]:
     base_name = Path(filename).stem  # filename without extension
     possible_md_files = [
         f"{base_name}.{selected_parser}.md",      # filename.parser.md
-        f"{base_name}_{selected_parser}.md",      # filename_parser.md  
+        f"{base_name}_{selected_parser}.md",      # filename_parser.md
         f"{filename}.{selected_parser}.md",       # filename.ext.parser.md
         f"{filename}_{selected_parser}.md"        # filename.ext_parser.md
     ]
@@ -830,14 +840,15 @@ def read_doc(identifier: str, parser: Optional[str] = None) -> Dict[str, Any]:
     possible_md_subdir_files = [
         str(Path(base_name) / f"{base_name}.{selected_parser}.md"),
         str(Path(base_name) / f"{base_name}_{selected_parser}.md"),
-        str(Path(filename) / f"{base_name}.{selected_parser}.md"),  # rare, if folder uses full filename
+        # rare, if folder uses full filename
+        str(Path(filename) / f"{base_name}.{selected_parser}.md"),
         str(Path(filename) / f"{base_name}_{selected_parser}.md"),
     ]
-    
+
     # Try to find the markdown file
     md_file_path = None
     actual_parser = selected_parser
-    
+
     for md_filename in possible_md_files:
         candidate_path = md_dir / md_filename
         if candidate_path.exists():
@@ -849,20 +860,22 @@ def read_doc(identifier: str, parser: Optional[str] = None) -> Dict[str, Any]:
             if candidate_path.exists():
                 md_file_path = candidate_path
                 break
-    
+
     # If selected parser not found, try fallback to any available parser
     if not md_file_path:
         # Get list of available parsers from directory (root and subfolder)
         all_md_files = list(md_dir.glob(f"{base_name}*.md"))
         all_md_files.extend(md_dir.glob(f"{filename}*.md"))
-        all_md_files.extend((md_dir / base_name).glob("*.md") if (md_dir / base_name).exists() else [])
-        
+        all_md_files.extend((md_dir / base_name).glob("*.md")
+                            if (md_dir / base_name).exists() else [])
+
         for md_file in all_md_files:
             # Extract parser name from filename
             md_name = md_file.name
             for pattern in [f"{base_name}.", f"{base_name}_", f"{filename}.", f"{filename}_"]:
                 if md_name.startswith(pattern) and md_name.endswith(".md"):
-                    parser_part = md_name[len(pattern):-3]  # strip prefix and .md
+                    # strip prefix and .md
+                    parser_part = md_name[len(pattern):-3]
                     if parser_part:  # non-empty
                         found_parser = parser_part
                         md_file_path = md_file
@@ -873,7 +886,7 @@ def read_doc(identifier: str, parser: Optional[str] = None) -> Dict[str, Any]:
 
     if not md_file_path:
         return {
-            "success": False, 
+            "success": False,
             "error": f"No parsed markdown file found for '{filename}' in md/ directory. Available files: {[f.name for f in md_dir.glob('*.md')][:10]}",
             "path": str(original_file_path)
         }
@@ -888,16 +901,16 @@ def read_doc(identifier: str, parser: Optional[str] = None) -> Dict[str, Any]:
             "path": str(md_file_path),
             "original_path": str(original_file_path)
         }
-        
+
         # Add warning if we had to fall back from requested parser
         if parser and actual_parser != parser:
             result["warning"] = f"Requested parser '{parser}' not found, using '{actual_parser}' instead"
-        
+
         return result
-        
+
     except Exception as e:
         return {
-            "success": False, 
-            "error": f"Failed to read markdown file: {e}", 
+            "success": False,
+            "error": f"Failed to read markdown file: {e}",
             "path": str(md_file_path)
         }

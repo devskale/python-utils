@@ -54,6 +54,13 @@ Create a python library to access, edit and navigate the opinionated filesystem 
   - Fixed CLI test assertions for proper error handling and output format
   - Corrected configuration test expectations for default values
   - All 35 tests now pass successfully
+- [x] **Enhanced read-doc Command**:
+  - Added support for dual identifier formats:
+    - `Project@Filename` for tender documents (automatically uses 'A' directory)
+    - `Project@Bidder@Filename` for bidder documents (existing format)
+  - Maintains full backward compatibility with existing 3-part format
+  - Updated CLI help text and documentation to reflect new capabilities
+  - All tests continue to pass with enhanced functionality
   - Intelligent file discovery (searches for `kriterien.json`, `kriterien.meta.json`, etc.)
   - Status tracking (proven/unproven criteria)
   - Hierarchical categorization and subcategorization
@@ -77,6 +84,9 @@ This function is the core of the document reading capability. It intelligently s
 
 **Features:**
 
+- **Dual Format Support:** 
+  - `Project@Filename` for tender documents (automatically uses 'A' directory)
+  - `Project@Bidder@Filename` for bidder documents
 - **Intelligent Parser Selection:** Uses `_select_parser` to choose the best parser based on the `.ofs.index.json` metadata.
 - **Pre-parsed Markdown Reading:** Prioritizes reading from `md/` subfolders, supporting various naming conventions (e.g., `filename.parser.md`, `filename_parser.md`, and `md/<base_name>/` subfolders).
 - **Multi-format Support:** Handles `.txt`, `.md` (pre-parsed), and `.pdf` (original, for fallback/initial processing if no pre-parsed markdown is found) extensions.
@@ -86,14 +96,14 @@ This function is the core of the document reading capability. It intelligently s
 **Usage:**
 
 ```python
-# Read a document, letting the system select the best parser (will read from pre-parsed Markdown)
+# Read a tender document (2-part format)
+content = ofs.read_doc('Samples@2022_10001_Beilage 03_Formblatt_Verpflichtungserklärung Subunternehmer.docx')
+
+# Read a bidder document (3-part format)
 content = ofs.read_doc('Aufsitzrasenmäher@Bieter1@LSD-BG.pdf')
 
 # Read a document, forcing a specific parser (will read the corresponding pre-parsed Markdown)
 content = ofs.read_doc('Aufsitzrasenmäher@Bieter1@LSD-BG.pdf', parser='pdfplumber')
-
-# Read a tender document (example for tender-specific parsing)
-content = ofs.read_doc('2023_02002_AAB_EV.pdf', parser='docling')
 ```
 
 ### In Progress 🚧

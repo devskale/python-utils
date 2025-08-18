@@ -39,10 +39,10 @@ def test_config_file_loading():
             "BASE_DIR": "custom_dir",
             "INDEX_FILE": "custom_index.json"
         }
-        
+
         with open(config_file, 'w') as f:
             json.dump(test_config, f)
-        
+
         # Change to temp directory and create config
         original_cwd = os.getcwd()
         try:
@@ -62,7 +62,7 @@ def test_environment_variable_override():
     """
     # Set environment variable
     os.environ["OFS_BASE_DIR"] = "env_dir"
-    
+
     try:
         config = OFSConfig()
         assert config.get("BASE_DIR") == "env_dir"
@@ -89,13 +89,13 @@ def test_save_config():
     with tempfile.TemporaryDirectory() as temp_dir:
         config = OFSConfig()
         config.set("BASE_DIR", "saved_dir")
-        
+
         config_file = Path(temp_dir) / "test_config.json"
         config.save_config(config_file)
-        
+
         # Verify file was created and contains correct data
         assert config_file.exists()
         with open(config_file, 'r') as f:
             saved_data = json.load(f)
-        
+
         assert saved_data["BASE_DIR"] == "saved_dir"

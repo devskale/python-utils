@@ -3,15 +3,12 @@
 Provides command-line access to OFS functionality.
 """
 
-import sys
-import json
-import argparse
-from typing import Optional
-from .logging import setup_logger
-
-# Module logger
-logger = setup_logger(__name__)
-
+from .index import (
+    create_index,
+    update_index,
+    clear_index,
+    print_index_stats
+)
 from .core import (
     get_path,
     get_ofs_root,
@@ -33,12 +30,14 @@ from .core import (
     get_kriterien_tree_json,
     get_kriterien_tag_json
 )
-from .index import (
-    create_index,
-    update_index,
-    clear_index,
-    print_index_stats
-)
+import sys
+import json
+import argparse
+from typing import Optional
+from .logging import setup_logger
+
+# Module logger
+logger = setup_logger(__name__)
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -144,11 +143,11 @@ def create_parser() -> argparse.ArgumentParser:
     # read-doc command
     read_doc_parser = subparsers.add_parser(
         "read-doc",
-        help="Read a document by identifier 'Project@Bidder@Filename'"
+        help="Read a document by identifier 'Project@Filename' or 'Project@Bidder@Filename'"
     )
     read_doc_parser.add_argument(
         "identifier",
-        help="Identifier in the form 'Project@Bidder@Filename' or 'Project@A@Filename'"
+        help="Identifier in the form 'Project@Filename' (tender docs) or 'Project@Bidder@Filename' (bidder docs)"
     )
     read_doc_parser.add_argument(
         "--parser",
@@ -409,10 +408,12 @@ def handle_list_docs(project_bidder: str, meta: bool = False) -> None:
                 sys.exit(1)
 
             # Check if second_part looks like a filename (has an extension)
-            if '.' in second_part and len(second_part.split('.')[-1]) <= 5:  # reasonable file extension length
+            # reasonable file extension length
+            if '.' in second_part and len(second_part.split('.')[-1]) <= 5:
                 # Handle project@document format
                 filename = second_part
-                result = get_project_document_json(project, filename, include_metadata=meta)
+                result = get_project_document_json(
+                    project, filename, include_metadata=meta)
                 print(json.dumps(result, indent=2, ensure_ascii=False))
             else:
                 # Handle project@bidder format (existing functionality)
@@ -437,7 +438,8 @@ def handle_list_docs(project_bidder: str, meta: bool = False) -> None:
                     "Error: Project, bidder, and filename must all be provided.", file=sys.stderr)
                 sys.exit(1)
 
-            result = get_bidder_document_json(project, bidder, filename, include_metadata=meta)
+            result = get_bidder_document_json(
+                project, bidder, filename, include_metadata=meta)
             print(json.dumps(result, indent=2, ensure_ascii=False))
 
             # Exit with error code if there was an error in the result
@@ -445,7 +447,8 @@ def handle_list_docs(project_bidder: str, meta: bool = False) -> None:
                 sys.exit(1)
 
         else:
-            logger.error("Invalid format. Use 'project', 'project@bidder', or 'project@bidder@filename' format.")
+            logger.error(
+                "Invalid format. Use 'project', 'project@bidder', or 'project@bidder@filename' format.")
             sys.exit(1)
     else:
         # Handle project-only format (existing functionality)
@@ -491,7 +494,7 @@ def handle_read_doc(identifier: str, parser_name: Optional[str] = None, as_json:
     Handle the read-doc command.
 
     Args:
-        identifier (str): Identifier in the form 'Project@Bidder@Filename' or 'Project@A@Filename'
+        identifier (str): Identifier in the form 'Project@Filename' (tender docs) or 'Project@Bidder@Filename' (bidder docs)
         parser_name (Optional[str]): Optional parser to use
         as_json (bool): Whether to output the full JSON result
     """
@@ -542,8 +545,8 @@ def handle_kriterien(project: str, action: str, limit: Optional[int] = None, tag
         sys.exit(1)
 
 
-def handle_index(action: str, directory: str, recursive: bool = False, force: bool = False, max_age: int = 24, 
-                json_output: bool = False, output_file: str = None) -> None:
+def handle_index(action: str, directory: str, recursive: bool = False, force: bool = False, max_age: int = 24,
+                 json_output: bool = False, output_file: str = None) -> None:
     """
     Handle index management commands.
 
@@ -557,29 +560,30 @@ def handle_index(action: str, directory: str, recursive: bool = False, force: bo
         output_file: Output file path (for un action)
     """
     import os
-    
+
     # Convert relative path to absolute path
     try:
         directory = os.path.abspath(directory)
-        
+
         if not os.path.exists(directory):
             logger.error(f"Directory '{directory}' does not exist.")
             sys.exit(1)
-        
+
         if not os.path.isdir(directory):
             logger.error(f"'{directory}' is not a directory.")
             sys.exit(1)
     except (OSError, PermissionError) as e:
         logger.error(f"Error accessing directory '{directory}': {e}")
         sys.exit(1)
-    
+
     try:
         if action == "create":
             success = create_index(directory, recursive=recursive, force=force)
             if not success:
                 sys.exit(1)
         elif action == "update":
-            success = update_index(directory, recursive=recursive, max_age_hours=max_age)
+            success = update_index(
+                directory, recursive=recursive, max_age_hours=max_age)
             if not success:
                 sys.exit(1)
         elif action == "clear":
@@ -590,7 +594,8 @@ def handle_index(action: str, directory: str, recursive: bool = False, force: bo
             print_index_stats(directory)
         elif action == "un":
             from .index import generate_un_items_list
-            generate_un_items_list(directory, output_file, json_output, recursive)
+            generate_un_items_list(
+                directory, output_file, json_output, recursive)
         else:
             logger.error(f"Unknown index action: {action}")
             sys.exit(1)
@@ -637,29 +642,33 @@ def main(argv: Optional[list[str]] = None) -> int:
             handle_read_doc(args.identifier, args.parser, args.json)
         elif args.command == "kriterien":
             if not args.kriterien_action:
-                logger.error("kriterien command requires an action (pop, tree, tag)")
+                logger.error(
+                    "kriterien command requires an action (pop, tree, tag)")
                 return 1
             limit = getattr(args, 'limit', None)
             tag_id = getattr(args, 'tag_id', None)
-            handle_kriterien(args.project, args.kriterien_action, limit, tag_id)
+            handle_kriterien(
+                args.project, args.kriterien_action, limit, tag_id)
         elif args.command == "index":
             if not args.index_action:
-                logger.error("index command requires an action (create, update, clear, stats)")
+                logger.error(
+                    "index command requires an action (create, update, clear, stats)")
                 return 1
             directory = getattr(args, 'directory', '.')
             recursive = getattr(args, 'recursive', False)
             force = getattr(args, 'force', False)
             max_age = getattr(args, 'max_age', 24)
-            
+
             # Handle 'un' action specific parameters
             json_output = getattr(args, 'json', False)
             output_file = getattr(args, 'output', None)
-            
+
             # Handle --no-recursive flag for 'un' action
             if args.index_action == 'un' and getattr(args, 'no_recursive', False):
                 recursive = False
-            
-            handle_index(args.index_action, directory, recursive, force, max_age, json_output, output_file)
+
+            handle_index(args.index_action, directory, recursive,
+                         force, max_age, json_output, output_file)
         else:
             logger.error(f"Unknown command: {args.command}")
             return 1
