@@ -90,7 +90,7 @@ class GeminiProvider(ChatProvider):
                 elif msg.role == "assistant":
                     content.append(
                         {"role": "model", "parts": [{"text": msg.content}]})
-        
+
         if system_message:
             # Prepend system message to the first user message, or add it as the first message
             if content and content[0]['role'] == 'user':
@@ -98,10 +98,12 @@ class GeminiProvider(ChatProvider):
                     content[0]['parts'][0]['text'] = f"{system_message}\n\n{content[0]['parts'][0]['text']}"
                 else:
                     # Fallback if structure is not as expected
-                    content.insert(0, {"role": "user", "parts": [{"text": system_message}]})
+                    content.insert(0, {"role": "user", "parts": [
+                                   {"text": system_message}]})
             else:
                 # if no user message, add system message as user message
-                content.insert(0, {"role": "user", "parts": [{"text": system_message}]})
+                content.insert(0, {"role": "user", "parts": [
+                               {"text": system_message}]})
 
         return content, config
 
@@ -154,22 +156,24 @@ class GeminiProvider(ChatProvider):
             content = ""
             if response.parts:
                 try:
-                    content = response.text # Preferred way, handles multi-part correctly if applicable
-                except ValueError: # Handles cases where .text might raise ValueError (e.g. no parts with text)
+                    content = response.text  # Preferred way, handles multi-part correctly if applicable
+                # Handles cases where .text might raise ValueError (e.g. no parts with text)
+                except ValueError:
                     # Fallback to iterating parts if .text fails or parts exist but .text is empty.
                     # Concatenate text from all text-bearing parts in the response.
                     all_parts_text_list = []
                     for part in response.parts:
                         # Check if the part has a 'text' attribute and if it's not None or empty
                         part_text_content = getattr(part, 'text', None)
-                        if part_text_content: # This ensures part_text_content is not None and not an empty string
+                        if part_text_content:  # This ensures part_text_content is not None and not an empty string
                             all_parts_text_list.append(part_text_content)
                     if all_parts_text_list:
                         content = "".join(all_parts_text_list)
-            
+
             if not content and not (response.prompt_feedback and response.prompt_feedback.block_reason):
                 # If content is still empty and not blocked, it might be an empty generation
-                print("Warning: Gemini response has no text content and no explicit block reason.")
+                print(
+                    "Warning: Gemini response has no text content and no explicit block reason.")
 
             # Create a ChatMessage from the response
             message = ChatMessage(
@@ -289,19 +293,19 @@ class GeminiProvider(ChatProvider):
                 chunk_text = ""
                 if chunk.parts:
                     try:
-                        chunk_text = chunk.text # Preferred way
-                    except ValueError: # Handles cases where .text might raise ValueError
+                        chunk_text = chunk.text  # Preferred way
+                    except ValueError:  # Handles cases where .text might raise ValueError
                         # Fallback to iterating parts if .text fails.
                         # Concatenate text from all text-bearing parts in the chunk.
                         all_parts_text_list = []
                         for part in chunk.parts:
                             # Check if the part has a 'text' attribute and if it's not None or empty
                             part_text_content = getattr(part, 'text', None)
-                            if part_text_content: # This ensures part_text_content is not None and not an empty string
+                            if part_text_content:  # This ensures part_text_content is not None and not an empty string
                                 all_parts_text_list.append(part_text_content)
                         if all_parts_text_list:
                             chunk_text = "".join(all_parts_text_list)
-                
+
                 if chunk_text:
                     # Create a message for this chunk
                     message = ChatMessage(

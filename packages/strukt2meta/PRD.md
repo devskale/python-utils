@@ -156,6 +156,7 @@ The unlist command now provides clean, simplified output showing only essential 
 ```
 
 Format explanation:
+
 - **Source file**: Shows the file being processed with "(sourcefile)" indicator
 - **Prompt @ Source**: Shows the prompt used and the chosen markdown file (or "content extracted directly" if no markdown file found)
 - **Status**: Shows "ok (json inserted)" for success or "not ok" for failure
@@ -544,6 +545,7 @@ The kriterien command generates structured JSON output with the following format
 ### Validation Results
 
 Successfully tested with:
+
 - German tender documents
 - Various document formats (PDF, DOCX, MD)
 - Both overwrite and insert modes
@@ -565,6 +567,7 @@ The unlist command now automatically adds an "Autor" field to all generated meta
 ```
 
 Example:
+
 ```
 "Autor": "KI-generiert tu@mistral-small-3.1-24b@bdok@llamaparse 2025-08-07"
 ```
@@ -581,6 +584,7 @@ Example:
 ### Automatic Prompt Selection
 
 The system uses opinionated directory structure for automatic prompt selection:
+
 - Files in `/A/` directories automatically use the `adok` prompt
 - Files in `/B/` directories automatically use the `bdok` prompt
 - Other files use the specified `--prompt` parameter as fallback
@@ -599,6 +603,7 @@ The system uses opinionated directory structure for automatic prompt selection:
 After analysis and production usage, the `dirmeta` command has proven to be the superior approach for metadata processing:
 
 ### dirmeta (Recommended)
+
 - **Modern Architecture**: Uses OFS-compatible `.ofs.index.json` format
 - **Intelligent Processing**: Checks existing metadata to avoid unnecessary reprocessing
 - **Flexible Overwrite**: `--overwrite` flag for controlled re-processing
@@ -607,12 +612,14 @@ After analysis and production usage, the `dirmeta` command has proven to be the 
 - **Production Ready**: Successfully deployed in multiple projects
 
 ### batch (Legacy/Technical Debt)
+
 - **Outdated Approach**: Requires separate JSON file specification
 - **No Intelligence**: Always processes all files regardless of existing metadata
 - **Complex Workflow**: Multi-step process with manual file management
 - **Limited Flexibility**: Fixed schema and processing approach
 
 ### Migration Path
+
 - New projects should use `dirmeta` exclusively
 - Existing `batch` workflows can be migrated to `dirmeta` with minimal changes
 - `batch` command maintained for backward compatibility but not recommended for new use
@@ -620,23 +627,30 @@ After analysis and production usage, the `dirmeta` command has proven to be the 
 ## OFS File Filtering Enhancement
 
 ### Overview
+
 Implemented intelligent file filtering for OFS command to prevent processing of markdown variants and metadata files, eliminating duplicate processing and read errors.
 
 ### Problem Solved
+
 Previously, the OFS command would process both original PDF files and their generated markdown variants (.docling.md, .llamaparse.md, .marker.md), leading to:
+
 - Duplicate processing of the same content
 - Read errors when trying to process markdown variants
 - Inefficient resource usage
 - Confusing progress output
 
 ### Solution
+
 Added file filtering logic in `_should_process_file()` method to:
+
 - Skip markdown variants: `.docling.md`, `.llamaparse.md`, `.marker.md`
 - Skip metadata files: `.json` (including sync conflict files)
 - Only process original source files (primarily PDFs)
 
 ### Example Output
+
 Before fix:
+
 ```
 📊 11 files to process
 ✅ 1/11 05 Fuhrungsbestatigung ANKO.pdf @ docling @ adok (OK)
@@ -646,6 +660,7 @@ Before fix:
 ```
 
 After fix:
+
 ```
 📊 7 files to process
 ✅ 1/7 05 Fuhrungsbestatigung ANKO.pdf @ docling @ adok (OK)
@@ -654,6 +669,7 @@ After fix:
 ```
 
 ### Benefits
+
 - **Cleaner Processing**: Only processes meaningful source files
 - **No Read Errors**: Eliminates failures from markdown variants
 - **Better Performance**: Reduces processing time and resource usage
@@ -703,6 +719,7 @@ The enhanced progress tracking shows:
 - Error details still require verbose mode for full stack traces
 
 ### TODO
+
 - [x] Add deprecation warning to batch command
 - [x] Update documentation to promote dirmeta as primary command
 - [x] Enhanced verbosity for OFS command progress tracking
@@ -717,11 +734,13 @@ Implemented specialized kriterien mode for the OFS command to automatically extr
 ### Features Implemented
 
 #### Command Line Interface
+
 - Added `--mode` parameter with options: `standard` (default), `kriterien`
 - Added `--step` parameter with options: `meta`, `bdoks`, `ids` (required when using kriterien mode)
 - Maintains backward compatibility with existing OFS functionality
 
 #### AAB Document Auto-Detection
+
 - Automatically searches for AAB documents using keyword matching
 - Keywords: 'AAB', 'Ausschreibung', 'Bedingungen', 'Allgemeine'
 - Falls back to documents in 'Ausschreibung' category if no keyword match
@@ -729,6 +748,7 @@ Implemented specialized kriterien mode for the OFS command to automatically extr
 - Filters out non-processable files (markdown variants, etc.)
 
 #### Prompt Selection Logic
+
 - Automatically selects appropriate prompt based on step parameter
 - Tries multiple prompt naming conventions:
   - `kriterien.{step}` (e.g., kriterien.meta)
@@ -736,6 +756,7 @@ Implemented specialized kriterien mode for the OFS command to automatically extr
 - Validates prompt existence before processing
 
 #### Output Management
+
 - Saves results to `kriterien.json` in project root directory
 - Merges with existing kriterien data if file already exists
 - Organizes data by step (meta, bdoks, ids)
@@ -757,6 +778,7 @@ strukt2meta ofs "2025-04 Lampen" --mode kriterien --step ids
 ### Output Structure
 
 The kriterien.json file structure:
+
 ```json
 {
   "meta": {
@@ -786,8 +808,9 @@ The kriterien.json file structure:
 ### Implementation Details
 
 #### Files Modified
+
 - `main.py`: Added --mode and --step parameters to ofs_parser
-- `strukt2meta/commands/ofs.py`: 
+- `strukt2meta/commands/ofs.py`:
   - Added kriterien mode processing logic
   - Implemented AAB document detection
   - Added prompt selection and validation
@@ -795,6 +818,7 @@ The kriterien.json file structure:
   - Enhanced error handling and logging
 
 #### Key Methods Added
+
 - `_run_kriterien_mode()`: Main kriterien processing logic
 - `_find_aab_document()`: AAB document auto-detection
 - `_process_kriterien_document()`: Document processing and metadata generation
@@ -837,6 +861,7 @@ The `config.json` file now includes a dedicated `kriterien` section for task-spe
 ```
 
 #### Model Configuration by Task Type
+
 - **Default Tasks**: Uses global configuration from `config.json` (provider: "tu", model: "mistral-small-3.1-24b")
 - **Kriterien Tasks**: Uses dedicated `kriterien` section from `config.json` with configurable parameters:
   - Provider: Configurable (default: "tu")
@@ -847,10 +872,11 @@ The `config.json` file now includes a dedicated `kriterien` section for task-spe
   - Safety Margin: Configurable (default: 5,000 characters)
 
 #### Modified Files
+
 - `config.json`: Added `kriterien` section with configurable model parameters
 - `apicall.py`: Updated to read kriterien configuration from config.json instead of hardcoded values
 - `base.py`: Updated query_ai_model method to accept task_type parameter
-- `ofs.py`: Modified _generate_metadata to pass "kriterien" task_type
+- `ofs.py`: Modified \_generate_metadata to pass "kriterien" task_type
 
 #### Configuration Options
 

@@ -30,7 +30,8 @@ def call_ai_model(prompt, input_text, verbose=False, json_cleanup=False, task_ty
         provider_name = kriterien_config.get("provider", "tu")
         model_name = kriterien_config.get("model", "deepseek-r1")
         max_context_tokens = kriterien_config.get("max_context_tokens", 32768)
-        max_response_tokens = kriterien_config.get("max_response_tokens", 16000)
+        max_response_tokens = kriterien_config.get(
+            "max_response_tokens", 16000)
     else:
         # Default configuration for other tasks
         provider_name = config.get("provider", "tu")
@@ -55,7 +56,8 @@ def call_ai_model(prompt, input_text, verbose=False, json_cleanup=False, task_ty
     if task_type == "kriterien":
         # Use kriterien-specific limits from config.json
         kriterien_config = config.get("kriterien", {})
-        max_safe_input_chars = kriterien_config.get("max_safe_input_chars", 400000)
+        max_safe_input_chars = kriterien_config.get(
+            "max_safe_input_chars", 400000)
         safety_margin = kriterien_config.get("safety_margin", 5000)
     else:
         max_safe_input_chars = 40000  # Conservative limit for default tasks
