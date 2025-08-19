@@ -1,0 +1,1 @@
+"""Tests for strukt2meta commands."""
