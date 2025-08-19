@@ -935,3 +935,27 @@ The `kriterien` section in `config.json` supports the following configurable par
 - **Cost Efficiency**: Use appropriate models based on task complexity
 - **Reliability**: Conservative token limits prevent API errors
 - **Scalability**: Easy to add new task-specific configurations
+
+## Kriterien bdoks schema update
+
+- context
+  - bdoks prompt improved to separate requirement dimension from document purpose
+  - rationale: Pflichtdokument vs Bedarfsfall is orthogonal to document type (Angebot, Nachweis, etc)
+
+- change
+  - prompt: kriterien.bdoks.3.2.md updated to v3.3 schema_version
+  - fields: introduced anforderungstyp (Pflichtdokument | Bedarfsfall) and dokumenttyp (Angebot | Nachweis | Zusatzdokument | Formblatt)
+  - legacy: add kategorie (combined) as legacy compatibility field
+
+- output guidance
+  - model should also set kategorie in format "{anforderungstyp}:{dokumenttyp}" if a combined field is expected by downstream
+
+- impact
+  - ofs kriterien mode tries kriterien.{step} then kriterien.{step}.3.2, current file name remains kriterien.bdoks.3.2.md to keep compatibility
+  - injector and other places still reference kategorie; legacy field keeps these working for now
+
+- next steps
+  - [ ] update ofs prompt selection to also try kriterien.{step}.3.3 before 3.2
+  - [ ] plan migration away from kategorie in consumers (injector index fields, samples)
+  - [ ] update examples and docs for ids/meta to reflect consistent terminology if needed
+  - [ ] consider adding automated post-processing to compute legacy kategorie if missing

@@ -1,4 +1,4 @@
-# KI-Agent Prompt: Bieterdokumente-Extraktion (v3.2)
+# KI-Agent Prompt: Bieterdokumente-Extraktion (v3.3)
 
 ## BESCHREIBUNG
 
@@ -8,10 +8,11 @@ Dieser Prompt extrahiert die erforderlichen Bieterdokumente aus Ausschreibungsun
 
 ```json
 {
-  "schema_version": "3.2-ai-optimized",
+  "schema_version": "3.3-ai-optimized",
   "bieterdokumente": [
     {
-      "kategorie": "Pflichtdokument|Bedarfsfall|Nachweis|Zusatzdokument",
+      "anforderungstyp": "Pflichtdokument|Bedarfsfall",
+      "dokumenttyp": "Angebot|Nachweis|Zusatzdokument|Formblatt",
       "bezeichnung": "string",
       "beilage_nummer": "string|null",
       "beschreibung": "string",
@@ -27,14 +28,19 @@ Dieser Prompt extrahiert die erforderlichen Bieterdokumente aus Ausschreibungsun
 Extrahiere alle erforderlichen Bieterdokumente aus dem Abschnitt "INHALT UND FORM DES ANGEBOTES" oder ähnlichen Kapiteln mit folgenden Feldern:
 
 ### Dokumentenstruktur:
-- **kategorie**: 
+
+- **anforderungstyp**:
   - "Pflichtdokument" = Immer erforderlich
   - "Bedarfsfall" = Nur bei bestimmten Umständen erforderlich
-  - "Nachweis" = Eignungsnachweis oder Qualifikationsbeleg
-  - "Zusatzdokument" = Ergänzende Unterlagen
+- **dokumenttyp**:
+
+  - "Angebot" = Angebotsbestandteil (z. B. Angebotshauptteil, Preisblatt)
+  - "Nachweis" = Eignungs- oder Qualifikationsnachweis (z. B. Firmenbuch, Referenzen)
+  - "Zusatzdokument" = Ergänzende Unterlagen (z. B. ISO-Zertifizierungen, Lieferfrist)
+  - "Formblatt" = Spezifische Formblätter der Ausschreibung
 
 - **bezeichnung**: Vollständige Bezeichnung des Dokuments
-- **beilage_nummer**: Referenznummer (z.B. "Beilage 01", "Beilage 04")
+- **beilage_nummer**: Referenznummer (z. B. "Beilage 01", "Beilage 04")
 - **beschreibung**: Detaillierte Beschreibung des Dokuments und seiner Funktion
 - **unterzeichnung_erforderlich**: Ob das Dokument signiert werden muss
 - **fachliche_pruefung**: Ob fachliche Prüfung durch Steuerberater/Wirtschaftsprüfer erforderlich
@@ -42,26 +48,31 @@ Extrahiere alle erforderlichen Bieterdokumente aus dem Abschnitt "INHALT UND FOR
 ## TYPISCHE BIETERDOKUMENTE
 
 ### Standarddokumente:
+
 - Angebotshauptteil der Vergabeplattform
 - Leistungsverzeichnis und Preisblatt
 - Firmenbuchauszug
 - Erklärung SanktionenVO
 
 ### Bedarfsfälle:
+
 - Erklärung für Bieter- und Arbeitsgemeinschaften
 - Subunternehmerliste
 - Verpflichtungserklärung Subunternehmer
 
 ### Eignungsnachweise:
+
 - Leistungsfähigkeit Dienstnehmer und Umsätze
 - Leistungsfähigkeit Referenzen
 - Nachweise der Eignung gemäß Punkt 5
 
 ### Zuschlagskriterien:
+
 - ISO-Zertifizierungen
 - Lieferfrist-Verkürzung
 
 ### Produktbezogene Dokumente:
+
 - Datenblätter zu angebotenen Produkten
 - Sicherheitsdatenblätter
 - Zertifikate
@@ -70,10 +81,11 @@ Extrahiere alle erforderlichen Bieterdokumente aus dem Abschnitt "INHALT UND FOR
 
 ```json
 {
-  "schema_version": "3.2-ai-optimized",
+  "schema_version": "3.3-ai-optimized",
   "bieterdokumente": [
     {
-      "kategorie": "Pflichtdokument",
+      "anforderungstyp": "Pflichtdokument",
+      "dokumenttyp": "Angebot",
       "bezeichnung": "Angebotshauptteil der Vergabeplattform",
       "beilage_nummer": null,
       "beschreibung": "Ausgefüllter und signierter Hauptteil des Angebots über die elektronische Vergabeplattform",
@@ -81,7 +93,8 @@ Extrahiere alle erforderlichen Bieterdokumente aus dem Abschnitt "INHALT UND FOR
       "fachliche_pruefung": false
     },
     {
-      "kategorie": "Bedarfsfall",
+      "anforderungstyp": "Bedarfsfall",
+      "dokumenttyp": "Formblatt",
       "bezeichnung": "Erklärung für Bieter- und Arbeitsgemeinschaften",
       "beilage_nummer": "Beilage 01",
       "beschreibung": "Erforderlich bei Bieter- oder Arbeitsgemeinschaften zur Darstellung der Zusammenarbeit",
@@ -89,7 +102,8 @@ Extrahiere alle erforderlichen Bieterdokumente aus dem Abschnitt "INHALT UND FOR
       "fachliche_pruefung": false
     },
     {
-      "kategorie": "Pflichtdokument",
+      "anforderungstyp": "Pflichtdokument",
+      "dokumenttyp": "Formblatt",
       "bezeichnung": "Leistungsverzeichnis und Preisblatt",
       "beilage_nummer": "Beilage 04",
       "beschreibung": "Ausgefülltes Formblatt mit Preisangaben für alle ausgeschriebenen Leistungen",
@@ -97,7 +111,8 @@ Extrahiere alle erforderlichen Bieterdokumente aus dem Abschnitt "INHALT UND FOR
       "fachliche_pruefung": false
     },
     {
-      "kategorie": "Nachweis",
+      "anforderungstyp": "Pflichtdokument",
+      "dokumenttyp": "Nachweis",
       "bezeichnung": "Leistungsfähigkeit Dienstnehmer und Umsätze",
       "beilage_nummer": "Beilage 05",
       "beschreibung": "Von Steuerberater oder Wirtschaftsprüfer bestätigtes Formblatt zur finanziellen Leistungsfähigkeit",
