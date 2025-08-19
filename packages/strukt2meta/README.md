@@ -194,9 +194,23 @@ strukt2meta ofs "PROJECT_NAME@BIDDER_NAME@FILENAME"
 
 The injection preserves the original document structure while adding searchable, structured metadata that can be used by other OFS-compatible tools.
 
-## Project status
+## Project Status
 
-Core features implemented: prompts handling, AI integration, JSON schema & cleanup, injection/insert modes, `unlist` batch flow, `kriterien` extraction, CLI, OFS integration. Ongoing: refinements, additional prompt templates, more parser adapters.
+**Current Version:** 0.0.6
+
+**Core Features Implemented:**
+- ✅ Prompt-driven metadata generation with template system
+- ✅ AI integration via uniinfer with multiple provider support
+- ✅ JSON schema validation and cleanup
+- ✅ Intelligent file discovery with parser ranking
+- ✅ Sidecar metadata files with selective index injection
+- ✅ OFS (Opinionated File System) integration
+- ✅ Specialized German tender document processing (`kriterien`)
+- ✅ Comprehensive CLI with 10 commands
+- ✅ Batch processing with automatic markdown selection
+- ✅ Configuration-driven architecture
+
+**Production Ready:** Successfully deployed and tested with real-world German procurement documents (Lampen project with 22+ documents).
 
 ## Contributing
 

@@ -1,63 +1,214 @@
-strukt2meta
+# strukt2meta - Product Requirements Document
 
-takes structured data or images and generates metadata using AI.
+## Overview
 
-## features
+strukt2meta is an AI-powered metadata generation and management tool designed to analyze structured and unstructured text files (primarily Markdown) and generate metadata using AI models. The tool can inject this metadata back into a structured JSON file system, making it particularly suited for document management workflows.
 
-- Can work with OFS (opinionated file system).
-- Analyzes markdown and converts it into metadata (based on a prompt).
-  - Can insert this metadata into JSON of OFS.
-- Can work on OFS files, directories, and file trees recursively.
-- Retrieves a file path (strukt context).
-- Accepts a prompt (e.g., from a template).
-- queries an AI model with context (strukt) and the provided prompt.
-- Typically returns a JSON response.
-- Injects the JSON response into a JSON file.
+## Key Features
 
-## architecture
+- **Prompt-driven metadata generation**: Uses customizable prompt templates for different document types
+- **OFS-compatible**: Integrates with Opinionated File System for structured document management
+- **Automatic prompt selection**: Intelligently selects appropriate prompts based on file content and context
+- **Configurable index fields**: Allows selective metadata injection into index files
+- **Specialized extraction**: Includes specialized processing for German tender documents (Ausschreibungsunterlagen)
 
-uses credgoo for retrieving APIKEYS, github.com/devskale/python-utils
-uses uniinfer to access ai models from provider tu (setup via a config file), github.com/devskale/python-utils
-python
+## Architecture
+
+The tool follows a modular command-based architecture:
+
+- **Commands**: Individual operations (generate, inject, discover, analyze, etc.)
+- **Base Command**: Common functionality shared across all commands
+- **API Integration**: Handles AI model calls via uniinfer
+- **Injector**: Manages metadata injection into JSON structures
+- **File Discovery**: Intelligent file ranking and selection
+- **Prompt System**: Template-based prompt management
+
+## Dependencies
+
+- **credgoo**: API key management
+- **uniinfer**: AI model inference
+- **json-repair**: JSON cleanup and validation
+- **ofs**: Opinionated File System integration
+- **pdf2md**: PDF to Markdown conversion
+
+## Current Status
+
+Version 0.0.6 - Core functionality implemented and tested with real-world German procurement documents.
+
+## Comprehensive Code Review Report
+
+### Strengths
+
+#### Architecture & Design
+- **Excellent modular design**: Clean separation between commands, utilities, and core functionality
+- **Command pattern implementation**: Well-structured base command with consistent inheritance
+- **Configuration-driven approach**: Centralized config.json for all settings
+- **Separation of concerns**: Clear distinction between AI calls, injection, and file processing
+- **OFS integration**: Proper delegation to specialized OFS package rather than reimplementation
+
+#### Code Quality
+- **Consistent error handling**: Proper exception management across modules
+- **Type hints**: Good use of type annotations for better code maintainability
+- **Documentation**: Well-documented functions and clear docstrings
+- **JSON validation**: Robust JSON cleanup and repair mechanisms
+- **Flexible prompt system**: Template-based approach allows easy customization
+
+#### Production Readiness
+- **Real-world testing**: Successfully deployed with German procurement documents
+- **Comprehensive CLI**: 10 well-designed commands covering all use cases
+- **Sidecar metadata**: Smart approach to metadata storage without modifying source files
+- **Selective indexing**: Configurable fields for index vs sidecar storage
+
+### Areas for Improvement
+
+#### Testing & Quality Assurance
+- **Limited test coverage**: Only one test file (test_injector_sidecar.py) found
+- **Missing integration tests**: No tests for command interactions or end-to-end workflows
+- **No CI/CD pipeline**: Missing automated testing and deployment
+- **Lack of performance tests**: No benchmarks for large document processing
+
+#### Documentation & Developer Experience
+- **Missing API documentation**: No comprehensive API docs for developers
+- **Limited examples**: Could benefit from more usage examples and tutorials
+- **No development guide**: Missing contributor guidelines and development setup
+- **Incomplete error messages**: Some error cases could provide more helpful guidance
+
+#### Code Organization & Maintenance
+- **Placeholder functions**: utils.py contains unimplemented functions (analyze_markdown, process_ofs)
+- **Hardcoded values**: Some configuration values could be more flexible
+- **Missing logging**: Limited logging for debugging and monitoring
+- **Version management**: No automated version bumping or changelog
+
+#### Performance & Scalability
+- **No async processing**: Could benefit from async operations for large batches
+- **Memory optimization**: Large documents might cause memory issues
+- **Caching mechanisms**: No caching for repeated AI calls or file processing
+- **Rate limiting**: No built-in rate limiting for AI API calls
+
+### Recommendations
+
+#### High Priority
+1. **Expand test suite**: Add comprehensive unit and integration tests
+2. **Implement missing functions**: Complete utils.py placeholder functions
+3. **Add logging framework**: Implement structured logging for better debugging
+4. **Create development documentation**: Add contributor guide and API docs
+
+#### Medium Priority
+1. **Performance optimization**: Add async processing for batch operations
+2. **Error handling improvements**: More descriptive error messages and recovery
+3. **Configuration validation**: Validate config.json schema on startup
+4. **Add caching layer**: Cache AI responses and file processing results
+
+#### Low Priority
+1. **CI/CD pipeline**: Automated testing and deployment
+2. **Monitoring and metrics**: Usage analytics and performance monitoring
+3. **Plugin system**: Allow custom prompt templates and processors
+4. **Web interface**: Optional web UI for non-technical users
+
+### Technical Debt Assessment
+
+#### Low Risk
+- Code structure is solid and maintainable
+- Dependencies are well-managed
+- Configuration system is flexible
+
+#### Medium Risk
+- Limited test coverage could lead to regressions
+- Missing functions in utils.py indicate incomplete features
+- No performance benchmarks for large-scale usage
+
+#### Action Items
+- [ ] Implement comprehensive test suite
+- [ ] Complete utils.py functions
+- [ ] Add structured logging
+- [ ] Create API documentation
+- [ ] Add performance benchmarks
+- [ ] Implement async batch processing
+- [ ] Add configuration validation
+- [ ] Create development setup guide
+
+## Review Conclusion
+
+strukt2meta is a well-architected, production-ready tool that successfully addresses its core mission of AI-powered metadata generation. The codebase demonstrates excellent design principles with clean separation of concerns, modular architecture, and thoughtful integration with external systems.
+
+**Key Strengths:**
+- Solid architectural foundation with command pattern
+- Production-proven with real German procurement documents
+- Excellent OFS integration without code duplication
+- Flexible configuration and prompt system
+- Smart sidecar approach to metadata storage
+
+**Primary Improvement Areas:**
+- Test coverage needs significant expansion
+- Missing utility functions should be implemented
+- Logging and monitoring capabilities need development
+- Performance optimization for large-scale usage
+
+**Overall Assessment:** The project is in excellent shape for a 0.0.6 release. The core functionality is solid and the architecture supports future growth. The main focus should be on expanding test coverage and completing the utility functions to ensure long-term maintainability.
 
 ## STATUS / TODO
 
-[x] Setup basic package structure
-[x] Basic Setup
-[x] install uniinfer, credgoo
-[x] config (provider, model, tokens)
-[x] prompts file
-[x] calling api with uniinfer
-[x] JSON cleanify routine to handle AI-generated JSON
-[x] JSON Injection Feature
-[x] Create parameter file schema for injection operations
-[x] Implement JSON file reader/writer with safe backup
-[x] Add filename matching logic for target file identification
-[x] Create metadata injection engine
-[x] Add CLI interface for injection operations
-[x] Add validation for injection schema
-[x] Error handling and rollback mechanisms
-[x] Lampen Project Integration
-[x] Create specialized prompt for German lighting documents
-[x] Configure injection parameters for Lampen project
-[x] Implement centralized model configuration
-[x] Test and validate metadata injection for real documents
-[x] Debug and fix prompt-schema alignment issues
-[x] Successful metadata injection into production JSON file
-[x] Autor Field Enhancement
-[x] Implement automatic "Autor" field generation with AI traceability
-[x] Include provider, model, prompt, and date information in metadata
-[x] Support for opinionated directory structure prompt selection
-[x] OFS File Filtering Enhancement
-[x] Skip markdown variants (.docling.md, .llamaparse.md, .marker.md) when processing OFS files
-[x] Skip metadata files (.json) to avoid processing errors
-[x] Only process original source files (PDFs) to prevent duplicate processing and read errors
-[x] Kriterien Extraction Feature
-[x] Create KriterienCommand for extracting criteria from tender documents
-[x] Integrate kriterien command into main CLI interface
-[x] Support for both overwrite and insert modes for JSON output
-[x] Disable streaming response for consistent output behavior
-[x] Test and validate criteria extraction functionality
+### DONE
+
+- [x] Setup basic package structure
+- [x] Basic Setup
+- [x] Implement BaseCommand class with common functionality
+- [x] Create command structure with individual command classes
+- [x] Implement GenerateCommand for metadata generation
+- [x] Implement InjectCommand for JSON injection
+- [x] Implement DiscoverCommand for file discovery
+- [x] Implement AnalyzeCommand for directory analysis
+- [x] Implement BatchCommand for batch processing
+- [x] Implement DirmetaCommand for directory metadata
+- [x] Implement ClearmetaCommand for metadata cleanup
+- [x] Implement UnlistCommand for uncategorized processing
+- [x] Implement KriterienCommand for criteria extraction
+- [x] Implement OfsCommand for OFS integration
+- [x] Set up API integration with uniinfer
+- [x] Implement JSON cleanup with json-repair
+- [x] Create prompt template system
+- [x] Implement sidecar metadata file creation
+- [x] Add selective index field injection
+- [x] Implement file discovery with parser ranking
+- [x] Set up configuration management
+- [x] Integrate with credgoo for API keys
+- [x] Integrate with OFS package
+- [x] Add spinner for long operations
+- [x] Implement error handling
+- [x] Create setup.py for distribution
+- [x] Set up requirements.txt
+- [x] Add basic test coverage
+- [x] Disable streaming response for consistent output behavior
+- [x] Test and validate criteria extraction functionality
+- [x] Comprehensive code review completed
+
+### HIGH PRIORITY TODO
+
+- [ ] Implement comprehensive test suite for all commands
+- [ ] Complete utils.py placeholder functions (analyze_markdown, process_ofs)
+- [ ] Add structured logging framework
+- [ ] Create API documentation and developer guide
+
+### MEDIUM PRIORITY TODO
+
+- [ ] Add async processing for batch operations
+- [ ] Implement configuration validation
+- [ ] Add caching mechanisms for AI calls
+- [ ] Improve error messages and recovery
+- [ ] Performance benchmarks and optimization
+- [ ] Integration tests for end-to-end workflows
+
+### LOW PRIORITY TODO
+
+- [ ] CI/CD pipeline setup
+- [ ] Rate limiting for API requests
+- [ ] Version management automation
+- [ ] Plugin system for custom processors
+- [ ] Web interface (optional)
+- [ ] Monitoring and analytics
+- [ ] Memory optimization for large documents
+- [ ] More prompt templates for different document types
+- [ ] Enhanced file type support
 
 ## JSON Injection Analysis
 
