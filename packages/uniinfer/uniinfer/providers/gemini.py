@@ -70,10 +70,6 @@ class GeminiProvider(ChatProvider):
         if request.max_tokens is not None:
             config_params["max_output_tokens"] = request.max_tokens
 
-        # Add system message to config if present
-        if system_message:
-            config_params["system_instruction"] = system_message
-
         # Create the config object
         config = types.GenerationConfig(**config_params)
 
@@ -94,6 +90,18 @@ class GeminiProvider(ChatProvider):
                 elif msg.role == "assistant":
                     content.append(
                         {"role": "model", "parts": [{"text": msg.content}]})
+        
+        if system_message:
+            # Prepend system message to the first user message, or add it as the first message
+            if content and content[0]['role'] == 'user':
+                if isinstance(content[0]['parts'], list) and content[0]['parts'] and 'text' in content[0]['parts'][0]:
+                    content[0]['parts'][0]['text'] = f"{system_message}\n\n{content[0]['parts'][0]['text']}"
+                else:
+                    # Fallback if structure is not as expected
+                    content.insert(0, {"role": "user", "parts": [{"text": system_message}]})
+            else:
+                # if no user message, add system message as user message
+                content.insert(0, {"role": "user", "parts": [{"text": system_message}]})
 
         return content, config
 

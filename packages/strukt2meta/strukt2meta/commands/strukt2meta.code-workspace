@@ -1,13 +1,19 @@
 {
-	"folders": [
-		{
-			"path": "../.."
-		},
-		{
-			"path": "../../../ofs"
-		}
-	],
-	"settings": {
-		"python.languageServer": "None"
-	}
+  "folders": [
+    {
+      "path": "../.."
+    },
+    {
+      "path": "../../../ofs"
+    },
+    {
+      "path": "../../../../../Inference/inference_hub/kriterien"
+    },
+    {
+      "path": "../../../uniinfer"
+    }
+  ],
+  "settings": {
+    "python.languageServer": "None"
+  }
 }

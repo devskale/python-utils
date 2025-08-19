@@ -707,3 +707,205 @@ The enhanced progress tracking shows:
 - [x] Update documentation to promote dirmeta as primary command
 - [x] Enhanced verbosity for OFS command progress tracking
 - [ ] Consider removing batch from main CLI help in future version
+
+## Kriterien Mode for OFS Command - COMPLETED
+
+### Overview
+
+Implemented specialized kriterien mode for the OFS command to automatically extract criteria metadata from tender documents (Ausschreibungsunterlagen). This mode focuses on AAB (Allgemeine Ausschreibungsbedingungen) documents and generates structured metadata for different processing steps.
+
+### Features Implemented
+
+#### Command Line Interface
+- Added `--mode` parameter with options: `standard` (default), `kriterien`
+- Added `--step` parameter with options: `meta`, `bdoks`, `ids` (required when using kriterien mode)
+- Maintains backward compatibility with existing OFS functionality
+
+#### AAB Document Auto-Detection
+- Automatically searches for AAB documents using keyword matching
+- Keywords: 'AAB', 'Ausschreibung', 'Bedingungen', 'Allgemeine'
+- Falls back to documents in 'Ausschreibung' category if no keyword match
+- Returns first available document if no specific match found
+- Filters out non-processable files (markdown variants, etc.)
+
+#### Prompt Selection Logic
+- Automatically selects appropriate prompt based on step parameter
+- Tries multiple prompt naming conventions:
+  - `kriterien.{step}` (e.g., kriterien.meta)
+  - `kriterien.{step}.3.2` (e.g., kriterien.meta.3.2)
+- Validates prompt existence before processing
+
+#### Output Management
+- Saves results to `kriterien.json` in project root directory
+- Merges with existing kriterien data if file already exists
+- Organizes data by step (meta, bdoks, ids)
+- Preserves existing data when adding new steps
+
+### Usage Examples
+
+```bash
+# Extract meta criteria from AAB document
+strukt2meta ofs "2025-04 Lampen" --mode kriterien --step meta
+
+# Extract bidding documents criteria
+strukt2meta ofs "2025-04 Lampen" --mode kriterien --step bdoks --verbose
+
+# Extract IDs criteria
+strukt2meta ofs "2025-04 Lampen" --mode kriterien --step ids
+```
+
+### Output Structure
+
+The kriterien.json file structure:
+```json
+{
+  "meta": {
+    "schema_version": "3.2-ai-optimized",
+    "meta": {
+      "auftraggeber": "...",
+      "aktenzeichen": "...",
+      "lose": [...]
+    }
+  },
+  "bdoks": {
+    "schema_version": "3.2-ai-optimized",
+    "bdoks": [...]
+  }
+}
+```
+
+### Testing Results
+
+- Successfully tested with "2025-04 Lampen" project
+- AAB document "2024_06001_AAB_EV.pdf" correctly identified and processed
+- Meta step extracted: Auftraggeber, Aktenzeichen, and 4 Lose with details
+- Bdoks step extracted: 12 bidding documents with categories and requirements
+- Output files correctly saved to project root
+- Verbose logging provides clear progress tracking
+
+### Implementation Details
+
+#### Files Modified
+- `main.py`: Added --mode and --step parameters to ofs_parser
+- `strukt2meta/commands/ofs.py`: 
+  - Added kriterien mode processing logic
+  - Implemented AAB document detection
+  - Added prompt selection and validation
+  - Added JSON output management
+  - Enhanced error handling and logging
+
+#### Key Methods Added
+- `_run_kriterien_mode()`: Main kriterien processing logic
+- `_find_aab_document()`: AAB document auto-detection
+- `_process_kriterien_document()`: Document processing and metadata generation
+- `_save_kriterien_json()`: Output file management with merging
+
+### Benefits
+
+- **Automated Processing**: No manual document selection required
+- **Structured Output**: Consistent JSON format for downstream processing
+- **Flexible Steps**: Support for different extraction phases
+- **Data Preservation**: Merges with existing kriterien data
+- **Error Resilience**: Comprehensive error handling and logging
+- **OFS Integration**: Leverages existing OFS infrastructure
+
+## Task-Specific LLM Configuration
+
+### Overview
+
+The system now supports configurable task-specific LLM model settings through `config.json`, allowing different AI models and parameters to be used for different types of processing tasks. This enables optimization of model selection based on task requirements such as context length, processing speed, and output quality.
+
+### Implementation
+
+#### Configurable Model Settings via config.json
+
+The `config.json` file now includes a dedicated `kriterien` section for task-specific configuration:
+
+```json
+{
+  "provider": "tu",
+  "model": "mistral-small-3.1-24b",
+  "kriterien": {
+    "provider": "tu",
+    "model": "deepseek-r1",
+    "max_context_tokens": 32768,
+    "max_response_tokens": 16000,
+    "max_safe_input_chars": 400000,
+    "safety_margin": 5000
+  }
+}
+```
+
+#### Model Configuration by Task Type
+- **Default Tasks**: Uses global configuration from `config.json` (provider: "tu", model: "mistral-small-3.1-24b")
+- **Kriterien Tasks**: Uses dedicated `kriterien` section from `config.json` with configurable parameters:
+  - Provider: Configurable (default: "tu")
+  - Model: Configurable (default: "deepseek-r1")
+  - Context Window: Configurable (default: 32,768 tokens)
+  - Max Response: Configurable (default: 16,000 tokens)
+  - Input Character Limit: Configurable (default: 400,000 characters)
+  - Safety Margin: Configurable (default: 5,000 characters)
+
+#### Modified Files
+- `config.json`: Added `kriterien` section with configurable model parameters
+- `apicall.py`: Updated to read kriterien configuration from config.json instead of hardcoded values
+- `base.py`: Updated query_ai_model method to accept task_type parameter
+- `ofs.py`: Modified _generate_metadata to pass "kriterien" task_type
+
+#### Configuration Options
+
+The `kriterien` section in `config.json` supports the following configurable parameters:
+
+- `provider`: AI provider to use (e.g., "tu", "openai")
+- `model`: Specific model name (e.g., "deepseek-r1", "gpt-4")
+- `max_context_tokens`: Maximum context window size in tokens
+- `max_response_tokens`: Maximum response length in tokens
+- `max_safe_input_chars`: Maximum input character limit for safety
+- `safety_margin`: Character buffer to prevent context overflow
+
+#### Key Features
+
+- **Flexible Configuration**: All kriterien model parameters can be adjusted via config.json
+- **Task-Specific Optimization**: Different models and limits for different processing tasks
+- **Fallback Defaults**: Sensible defaults ensure functionality even with minimal configuration
+- **Runtime Configuration**: Changes take effect immediately without code modifications
+- **Provider Independence**: Can switch between different AI providers as needed
+- **Automatic Task Detection**: Kriterien mode automatically uses optimized model configuration
+- **Backward Compatibility**: Existing functionality continues to use default configuration
+
+#### Benefits
+
+- **Easy Customization**: Users can adjust model settings without code changes
+- **Performance Tuning**: Optimize token limits based on specific use cases
+- **Cost Control**: Configure response limits to manage API costs
+- **Model Flexibility**: Switch between different AI models as needed
+- **Environment-Specific Settings**: Different configurations for development/production
+
+#### Testing Results
+
+- Successfully tested kriterien functionality with configurable settings
+- Model configuration properly loaded from config.json
+- All kriterien steps (meta, bdoks, ids) working with new configuration
+- No breaking changes to existing functionality
+- **Conservative Token Management**: Prevents API errors with appropriate safety margins
+- **Flexible Architecture**: Easy to add new task types and model configurations
+
+#### Compatibility Issues Resolved
+
+- **Gemini Provider Issue**: Fixed `GenerationConfig.__init__() got an unexpected keyword argument 'system_instruction'` error
+- **Solution**: Changed kriterien provider from 'gemini' to 'tu' with 'deepseek-r1' model
+- **Root Cause**: uniinfer library compatibility issue with Gemini's GenerationConfig parameters
+- **Alternative**: Use 'tu' provider which supports all required parameters correctly
+
+### Testing Results
+
+- Successfully tested kriterien mode with task-specific model configuration
+- Proper handling of large documents within context window limits
+- Maintained functionality while using optimized model for document analysis tasks
+
+### Benefits
+
+- **Optimized Performance**: Different models for different task requirements
+- **Cost Efficiency**: Use appropriate models based on task complexity
+- **Reliability**: Conservative token limits prevent API errors
+- **Scalability**: Easy to add new task-specific configurations

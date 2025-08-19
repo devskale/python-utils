@@ -254,6 +254,17 @@ It offers a suite of commands for various operations:
         help='OFS parameter: projectname[@biddername][@filename] - specify project, optional bidder, and optional filename'
     )
     ofs_parser.add_argument(
+        '--mode',
+        choices=['standard', 'kriterien'],
+        default='standard',
+        help='Processing mode: standard (default metadata extraction) or kriterien (criteria extraction)'
+    )
+    ofs_parser.add_argument(
+        '--step',
+        choices=['meta', 'bdoks', 'ids'],
+        help='Kriterien step to execute (only used with --mode kriterien): meta, bdoks, or ids'
+    )
+    ofs_parser.add_argument(
         '--overwrite',
         action='store_true',
         help='Process all files, including those that already have metadata (default: skip files with existing metadata)'
