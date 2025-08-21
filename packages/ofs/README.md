@@ -412,6 +412,13 @@ except RuntimeError as e:
 
 > Tip: For long-running services prefer `ofs.api` for stability, and fall back to core functions only when you need deeper control (e.g., custom audit mutation logic).
 
+#### Interactive Explorer Example
+An interactive curses-based browser of the OFS structure is provided in `examples/ofsExplorer.py`:
+```bash
+python examples/ofsExplorer.py
+```
+Controls: arrows (or h/j/k/l), Enter/Right to drill in, Left/Backspace to go up, i=info, r=reload, q=quit.
+
 ---
 
 ## OFS Structure
