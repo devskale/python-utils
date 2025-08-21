@@ -225,7 +225,8 @@ def create_parser() -> argparse.ArgumentParser:
     )
     kriterien_sync_parser.add_argument(
         "project",
-        help="Project name whose kriterien.json will be synchronized"
+        nargs="?",
+        help="Project name whose kriterien.json will be synchronized (omit to sync ALL projects)"
     )
     kriterien_sync_parser.add_argument(
         "bidder",
@@ -610,20 +611,54 @@ def _sync_single_bidder(project_path: str, project: str, bidder: str) -> dict:
     audit = load_or_init_audit(project_path, bidder)
     stats = reconcile_full(audit, source)
     write_audit_if_changed(project_path, bidder, audit, stats.wrote_file)
-    return {
+    base = stats.as_dict()
+    base.update({
         "bidder": bidder,
-        "created": stats.created,
-        "unchanged": stats.unchanged,
-        "wrote_file": stats.wrote_file,
         "total_entries": len(audit.get("kriterien", [])),
-    }
+    })
+    return base
 
 
-def handle_kriterien_sync(project: str, bidder: Optional[str] = None) -> None:
+def handle_kriterien_sync(project: Optional[str], bidder: Optional[str] = None) -> None:
     """Synchronize kriterien into bidder audit file(s).
 
-    If bidder is None, iterate all bidders of the project. Currently only create/idempotent logic.
+    Modes:
+      1. project + optional bidder → existing behavior
+      2. project only → all bidders in that project
+      3. no project (None) → all projects & all bidders (global)
     """
+    if project is None:
+        # Global sync across all projects
+        all_projects = list_projects()
+        global_results = []
+        for proj in all_projects:
+            proj_path = get_path(proj)
+            if not proj_path or not os.path.isdir(proj_path):
+                global_results.append({"project": proj, "error": "not found"})
+                continue
+            bidders = list_bidders(proj)
+            proj_res = []
+            for b in bidders:
+                try:
+                    proj_res.append(_sync_single_bidder(proj_path, proj, b))
+                except Exception as e:
+                    proj_res.append({"bidder": b, "error": str(e)})
+            global_results.append({
+                "project": proj,
+                "count_bidders": len(proj_res),
+                "results": proj_res,
+            })
+        summary = {
+            "mode": "global",
+            "count_projects": len(global_results),
+            "projects": global_results,
+        }
+        print(json.dumps(summary, indent=2, ensure_ascii=False))
+        if any(any(r.get("error") for r in p.get("results", [])) for p in global_results):
+            sys.exit(1)
+        return
+
+    # Project-level modes
     project_path = get_path(project)
     if not project_path or not os.path.isdir(project_path):
         logger.error(f"Projekt '{project}' nicht gefunden")
@@ -650,7 +685,6 @@ def handle_kriterien_sync(project: str, bidder: Optional[str] = None) -> None:
         "results": results,
     }
     print(json.dumps(summary, indent=2, ensure_ascii=False))
-    # Non-zero exit if any error present
     if any(r.get("error") for r in results):
         sys.exit(1)
 

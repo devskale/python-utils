@@ -208,4 +208,5 @@ Persist Phase
 Sortieren + atomar schreiben, aber nur wenn tatsächlich Änderungen.
 Reporting Phase
 
-Sammeln einer kurzen Statistik (created / updated / removed / unchanged) → Log.
+Sammeln einer kurzen Statistik (created / updated / removed / changed) → Log.
+Hinweis: "changed" fasst created+updated+removed zusammen und ersetzt das vorherige Feld "unchanged" in der externen Ausgabe.

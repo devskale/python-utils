@@ -49,11 +49,20 @@ class SyncStats:
     wrote_file: bool = False
 
     def as_dict(self) -> Dict[str, Any]:
+        """Return public stats representation.
+
+        External JSON output (CLI/API) now uses a derived field 'changed'
+        instead of exposing the large 'unchanged' count the user found
+        less useful.  'changed' aggregates created + updated + removed.
+        The internal 'unchanged' counter is kept for test assertions
+        and potential future diagnostics but is intentionally omitted
+        here.
+        """
         return {
             "created": self.created,
             "updated": self.updated,
             "removed": self.removed,
-            "unchanged": self.unchanged,
+            "changed": self.created + self.updated + self.removed,
             "wrote_file": self.wrote_file,
         }
 

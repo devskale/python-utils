@@ -177,8 +177,9 @@ ofs kriterien "2025-04 Lampen" tag "EIG_001"
 ofs kriterien "2025-04 Lampen" tag
 
 # Synchronize project criteria into bidder audit files (create/update/remove)
-ofs kriterien-sync "2025-04 Lampen"                 # all bidders of project
-ofs kriterien-sync "2025-04 Lampen" "Lampion GmbH"  # single bidder only
+ofs kriterien-sync                                  # synchronisiert alle Projekte & alle Bieter (global)
+ofs kriterien-sync "2025-04 Lampen"                 # synchronisiert alle Bieter des Projekts
+ofs kriterien-sync "2025-04 Lampen" "Lampion GmbH"  # nur ein Bieter
 
 # Append audit events (Review / Final / Reset)
 # (Requires prior sync so that the criterion exists in audit.json)
@@ -310,6 +311,7 @@ from ofs.api import (
 | `ofs kriterien <proj> pop --bidder B` | Next unreviewed bidder audit entries | `kriterien_pop(project, bidder=B, limit=N)` |
 | `ofs kriterien <proj> tree` | Criteria tree summary | `get_kriterien_tree_json(project)` |
 | `ofs kriterien <proj> tag [ID]` | Criteria tag(s) | `get_kriterien_tag_json(project, tag_id=None|ID)` |
+| `ofs kriterien-sync` | Sync ALL projects & bidders | `kriterien_sync_all()` |
 | `ofs kriterien-sync <proj> [bidder]` | Sync criteria → audit | `kriterien_sync(project, bidder=None)` |
 | `ofs kriterien-audit <event>` | Append / show audit events | `kriterien_audit_event(event, project, bidder, kriterium_id, ...)` |
 | `ofs index create|update|clear|stats|un` | Index management | `create_index`, `update_index`, `clear_index`, `print_index_stats`, `generate_un_items_list` (direct in `ofs`) |
@@ -392,7 +394,8 @@ except RuntimeError as e:
 ```
 
 #### Stable Return Shapes (Selected)
-- `kriterien_sync()` → `{ project, mode, count_bidders, results:[ {bidder, created, updated, removed, unchanged, wrote_file, total_entries} ] }`
+- `kriterien_sync()` → `{ project, mode, count_bidders, results:[ {bidder, created, updated, removed, changed, wrote_file, total_entries} ] }`
+  - `changed` = `created + updated + removed` (replaces previous `unchanged` field for clearer focus on modifications)
 - `kriterien_pop(project)` (project scope) → uses original source schema entries (unmodified)
 - `kriterien_pop(project, bidder=...)` (bidder scope) → each entry: `{ id, status, prio, zustand }`
 - `kriterien_audit_event('show', ...)` → `{ project, bidder, id, zustand, status, prio, bewertung, events_total, verlauf:[...] }`

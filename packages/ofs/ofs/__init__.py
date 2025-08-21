@@ -39,28 +39,19 @@ from .interfaces import (
     TreeGenerator,
     KriterienManager,
 )
-from .container import (
-    DIContainer,
-    OFSContainer,
-    get_container,
-    set_container,
-    reset_container,
+from .api import (
+    get_path_info,
+    list_items,
+    list_projects as api_list_projects,
+    list_bidders_for_project,
+    find_bidder,
+    docs_list,
+    read_document,
+    kriterien_pop,
+    kriterien_sync,
+    kriterien_sync_all,
+    kriterien_audit_event,
 )
-from .services import (
-    OFSService,
-    get_ofs_service,
-    set_ofs_service,
-    reset_ofs_service,
-)
-from .implementations import (
-    DefaultIndexManager,
-    DefaultPathResolver,
-    DefaultDocumentManager,
-    DefaultTreeGenerator,
-    DefaultKriterienManager,
-)
-
-# Index management functions (exposed for programmatic use mirroring CLI)
 from .index import (
     create_index,
     update_index,
@@ -149,4 +140,5 @@ __all__ = [
     "write_audit_if_changed",
     "append_event",
     "derive_zustand",
+    "kriterien_sync_all",
 ]

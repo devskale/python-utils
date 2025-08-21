@@ -53,22 +53,8 @@ from .kriterien_sync import (
 def kriterien_sync(project: str, bidder: Optional[str] = None) -> Dict[str, Any]:
     """Synchronize project criteria into bidder audit file(s).
 
-    Args:
-        project: Project name (AUSSCHREIBUNGNAME)
-        bidder: Optional bidder name. If omitted, all bidders are processed.
-
-    Returns:
-        Dict with summary: {
-          'project': str,
-          'mode': 'single'|'all',
-          'count_bidders': int,
-          'results': [ { 'bidder': str, 'created': int, 'updated': int,
-                         'removed': int, 'unchanged': int,
-                         'wrote_file': bool, 'total_entries': int } OR { 'bidder': str, 'error': str } ]
-        }
-
-    Raises:
-        RuntimeError: if project or kriterien file not found.
+    Legacy / focused API: only a single project (optionally a single bidder).
+    For global multi-project sync use kriterien_sync_all().
     """
     project_path = get_path(project)
     if not project_path or not os.path.isdir(project_path):
@@ -83,15 +69,12 @@ def kriterien_sync(project: str, bidder: Optional[str] = None) -> Dict[str, Any]
         audit = load_or_init_audit(project_path, b)
         stats = reconcile_full(audit, source)
         write_audit_if_changed(project_path, b, audit, stats.wrote_file)
-        return {
+        base = stats.as_dict()
+        base.update({
             'bidder': b,
-            'created': stats.created,
-            'updated': stats.updated,
-            'removed': stats.removed,
-            'unchanged': stats.unchanged,
-            'wrote_file': stats.wrote_file,
             'total_entries': len(audit.get('kriterien', [])),
-        }
+        })
+        return base
 
     results: List[Dict[str, Any]] = []
     if bidder:
@@ -109,6 +92,31 @@ def kriterien_sync(project: str, bidder: Optional[str] = None) -> Dict[str, Any]
         'mode': 'single' if bidder else 'all',
         'count_bidders': len(results),
         'results': results,
+    }
+
+
+def kriterien_sync_all() -> Dict[str, Any]:
+    """Synchronize criteria for ALL projects and bidders.
+
+    Returns structure:
+    {
+      mode: 'global',
+      count_projects: N,
+      projects: [ { project, count_bidders, results:[ ... per bidder stats ... ] } ]
+    }
+    """
+    projects = list_projects()
+    aggregate: List[Dict[str, Any]] = []
+    for proj in projects:
+        try:
+            summary = kriterien_sync(proj)  # project-level all bidders
+            aggregate.append(summary)
+        except Exception as e:
+            aggregate.append({'project': proj, 'error': str(e), 'results': []})
+    return {
+        'mode': 'global',
+        'count_projects': len(aggregate),
+        'projects': aggregate,
     }
 
 
