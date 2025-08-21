@@ -179,3 +179,33 @@ Entfernt-Szenario (Historie bleibt, bewertung unverändert):
 
 ---
 
+High-Level Phasen
+Discovery Phase
+
+Finde alle Projektverzeichnisse (bereits Teil des Index-Updates).
+Prüfe Vorhandensein von kriterien.json.
+Source Load Phase
+
+Lade einmal kriterien.json.
+Extrahiere Liste: source_kriterien = { id -> {status, prio?, ...} }.
+Optional: berechne Hash (z.B. SHA256 der Datei) für späteres Skipping.
+Bieter Enumeration Phase
+
+Liste Verzeichnisse unter {PROJECT}/B/ (nur echte Bieternamen, keine archive/ oder versteckte Ordner).
+Audit Sync Phase (pro Bieter)
+
+Lade oder initialisiere audit.json.
+Baue ein Mapping audit_index = { id -> entry }.
+Reconcile Phase
+
+Für jede id in source_kriterien: APPLY (Create / Update).
+Für jede id im Audit, die NICHT in source_kriterien: MARK_REMOVED.
+State Derivation Phase
+
+Nach jedem Entry-Update Zustand gemäß Variante B neu bestimmen.
+Persist Phase
+
+Sortieren + atomar schreiben, aber nur wenn tatsächlich Änderungen.
+Reporting Phase
+
+Sammeln einer kurzen Statistik (created / updated / removed / unchanged) → Log.

@@ -33,8 +33,16 @@ from .core import (
 import sys
 import json
 import argparse
+import os
 from typing import Optional
 from .logging import setup_logger
+from .kriterien_sync import (
+    load_kriterien_source,
+    load_or_init_audit,
+    reconcile_full,
+    write_audit_if_changed,
+)
+from .kriterien import find_kriterien_file
 
 # Module logger
 logger = setup_logger(__name__)
@@ -202,6 +210,21 @@ def create_parser() -> argparse.ArgumentParser:
         "tag_id",
         nargs="?",
         help="Specific tag ID to show (e.g., F_SUB_001). If omitted, shows all available tags"
+    )
+
+    # New: kriterien-sync as dedicated top-level (allows order: ofs kriterien sync <project> <bidder?>)
+    kriterien_sync_parser = subparsers.add_parser(
+        "kriterien-sync",
+        help="Synchronize project criteria into bidder audit files (create/idempotent)"
+    )
+    kriterien_sync_parser.add_argument(
+        "project",
+        help="Project name whose kriterien.json will be synchronized"
+    )
+    kriterien_sync_parser.add_argument(
+        "bidder",
+        nargs="?",
+        help="Optional bidder name. If omitted, all bidders of the project are synchronized"
     )
 
     # index command
@@ -545,6 +568,61 @@ def handle_kriterien(project: str, action: str, limit: Optional[int] = None, tag
         sys.exit(1)
 
 
+def _sync_single_bidder(project_path: str, project: str, bidder: str) -> dict:
+    """Run create/idempotent sync for a single bidder and return stats dict."""
+    # Load source
+    kriterien_file = find_kriterien_file(project)
+    if not kriterien_file:
+        raise RuntimeError(f"Keine kriterien.json für Projekt '{project}' gefunden")
+    source = load_kriterien_source(kriterien_file)
+    audit = load_or_init_audit(project_path, bidder)
+    stats = reconcile_full(audit, source)
+    write_audit_if_changed(project_path, bidder, audit, stats.wrote_file)
+    return {
+        "bidder": bidder,
+        "created": stats.created,
+        "unchanged": stats.unchanged,
+        "wrote_file": stats.wrote_file,
+        "total_entries": len(audit.get("kriterien", [])),
+    }
+
+
+def handle_kriterien_sync(project: str, bidder: Optional[str] = None) -> None:
+    """Synchronize kriterien into bidder audit file(s).
+
+    If bidder is None, iterate all bidders of the project. Currently only create/idempotent logic.
+    """
+    project_path = get_path(project)
+    if not project_path or not os.path.isdir(project_path):
+        logger.error(f"Projekt '{project}' nicht gefunden")
+        sys.exit(1)
+
+    results = []
+    if bidder:
+        results.append(_sync_single_bidder(project_path, project, bidder))
+    else:
+        bidders = list_bidders(project)
+        if not bidders:
+            logger.error(f"Keine Bieter im Projekt '{project}' gefunden (B/ leer?)")
+            sys.exit(1)
+        for b in bidders:
+            try:
+                results.append(_sync_single_bidder(project_path, project, b))
+            except Exception as e:  # continue, aggregate errors later maybe
+                results.append({"bidder": b, "error": str(e)})
+
+    summary = {
+        "project": project,
+        "mode": "single" if bidder else "all",
+        "count_bidders": len(results),
+        "results": results,
+    }
+    print(json.dumps(summary, indent=2, ensure_ascii=False))
+    # Non-zero exit if any error present
+    if any(r.get("error") for r in results):
+        sys.exit(1)
+
+
 def handle_index(action: str, directory: str, recursive: bool = False, force: bool = False, max_age: int = 24,
                  json_output: bool = False, output_file: str = None) -> None:
     """
@@ -654,10 +732,19 @@ def main(argv: Optional[list[str]] = None) -> int:
                 logger.error(
                     "kriterien command requires an action (pop, tree, tag)")
                 return 1
+            # Legacy request pattern: ofs kriterien sync <project> <bidder?>
+            if args.kriterien_action == "sync":
+                # transform into kriterien-sync top-level usage
+                bidder = None
+                # If an extra positional was provided after project, argparse would not parse it; so we just inform user.
+                logger.error("Nutzen Sie bitte: ofs kriterien-sync <projekt> [<bieter>] (neuer Befehl)")
+                return 1
             limit = getattr(args, 'limit', None)
             tag_id = getattr(args, 'tag_id', None)
             handle_kriterien(
                 args.project, args.kriterien_action, limit, tag_id)
+        elif args.command == "kriterien-sync":
+            handle_kriterien_sync(args.project, getattr(args, 'bidder', None))
         elif args.command == "index":
             if not args.index_action:
                 logger.error(
