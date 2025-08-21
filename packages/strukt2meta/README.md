@@ -69,6 +69,55 @@ strukt2meta inject --params injection_params.json --dry-run
 
 - `batch` — Deprecated. Use `dirmeta`.
 
+### `ofs` — Opinionated File System processing
+
+Process project and bidder documents that live in an Opinionated File System (OFS) layout and automatically generate & inject metadata. It wraps together: discovery (via the external `ofs` package), automatic prompt selection (`adok` for project docs in A/, `bdok` for bidder docs in B/), AI generation, sidecar writing, and selective index updates.
+
+Usage patterns (CLI argument `<ofs>`):
+
+```
+strukt2meta ofs PROJECT            # Process all project (A/) and bidder (B/) docs
+strukt2meta ofs PROJECT@FILENAME   # Process a single project (A/) file
+strukt2meta ofs PROJECT@BIDDER     # Process all docs for one bidder (BIDDER in B/)
+strukt2meta ofs PROJECT@BIDDER@FILENAME  # Process one bidder file
+```
+
+Additional options:
+```
+--overwrite          Re-process files even if index already has metadata fields
+-v / --verbose       Verbose logging (streams more progress info)
+--mode kriterien --step <meta|bdoks|ids>   Run criteria extraction workflow (writes/updates kriterien.json)
+```
+
+Behavior summary:
+- Counts and reports total files before processing.
+- For each file: determines prompt (adok vs bdok), loads structured text via `ofs.read_doc()`, queries AI, writes `<filename>.meta.json` sidecar and selectively updates the nearest `.ofs.index.json` (project A/ or bidder directory) with configured index fields.
+- Skips files that already have metadata (presence of at least one configured index field) unless `--overwrite` is supplied.
+- Unsupported or unreadable files (e.g. images without OCR text) produce a simple FAIL line but do not abort the batch.
+
+Output line format (standard mode):
+```
+<icon> <n>/<total> <filename> @ <parser> @ <prompt> (OK|FAIL - reason)
+```
+
+Kriterien mode (`--mode kriterien`):
+- Resolves the AAB / tender base document heuristically (keywords or first document) and runs step-specific prompts (meta, bdoks, ids) if available (looks for `prompts/kriterien.<step>.md`).
+- Writes/updates `kriterien.json` in the project root, merging each step under its own key.
+
+Supported content types (via `ofs`): pdf / docx / markdown that resolve to readable text. Image-only files (jpg/png) will typically show `FAIL - read error` unless an upstream OCR/markdown conversion pipeline populates text for them.
+
+Troubleshooting:
+- `FAIL - read error` for images: convert images to markdown or enable OCR in the OFS ingestion pipeline so `read_doc()` returns text.
+- No `.ofs.index.json` created: ensure the project/bidder path is writable and at least one configured index field (default: name, kategorie, begründung) appears in the AI output; otherwise only sidecars are written.
+- Wrong prompt used: check directory naming (A/ vs B/) and that you didn't supply a bidder part when intending a project file.
+- Slow processing: enable verbose to see streaming and consider reducing document size or adjusting model/provider in `config.json`.
+
+Environment influences:
+- `config.json` may define `index_meta_fields` and model/provider choices (including separate `kriterien` section).
+- `STRUKT2META_INDEX_FIELDS` environment variable (comma-separated) overrides which metadata fields are pushed into indices for helper-based injections.
+
+Programmatic note: There is currently no single high-level function mirroring the full `ofs` CLI workflow in the API module; if needed you can replicate it using the `ofs` package plus `generate_metadata_from_text` & `inject_metadata` primitives.
+
 ## Behavior notes
 
 - Automatic prompt selection:
