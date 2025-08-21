@@ -276,8 +276,8 @@ The root directory (e.g., `.dir/`) contains active tender project folders and an
       - Original bidder files
       - **md/**: Markdown conversions of bidder documents
       - **archive/**: Holds archived versions of bidder directories
-  - **projekt.meta.json**: Project metadata file
-  - **kriterien.meta.json** (optional): Criteria metadata
+  - **projekt.json**: Project metadata file
+  - **kriterien.json** (optional): Criteria metadata
 - **archive/**: Directory for archived projects
   - Contains moved project folders (e.g., archived `Ausschreibungsname`)
 
@@ -310,6 +310,7 @@ These directories have specific purposes and should not be used for other conten
 │   │           └── 2024_06001_AAB_EV.marker.md    # Marker conversion
 │   ├── B/                             # Bidder documents
 │   │   ├── .ofs.index.json          # Bidder directory index
+│   │   ├── audit.json               # Bidder kriterien audit
 │   │   ├── Lampion/                   # Specific bidder folder
 │   │   │   ├── 1completed-austrian-document.pdf   # Original bidder document
 │   │   │   └── md/                    # Markdown conversions
@@ -318,12 +319,12 @@ These directories have specific purposes and should not be used for other conten
 │   │   │           └── 1completed-austrian-document.marker.md
 │   │   └── archive/                   # Archived bidder folders
 │   │       └── Lampion2/              # Archived version of bidder
-│   ├── projekt.meta.json              # Project metadata
-│   └── kriterien.meta.json            # Extracted criteria
+│   ├── projekt.json              # Project metadata
+│   └── kriterien.json            # Extracted criteria
 ├── A-TEST/                            # Another project
 │   ├── A/
 │   ├── B/
-│   └── projekt.meta.json
+│   └── projekt.json
 └── archive/                           # Archived projects
     └── OldProject/                    # Archived project folder
 ```
@@ -381,9 +382,9 @@ Certain filenames are reserved for system-generated content:
 
 ### Core Metadata Files
 
-#### 1. projekt.meta.json (Project-Level Metadata)
+#### 1. projekt.json (Project-Level Metadata)
 
-**Location**: Project root (e.g., `2025-04 Lampen/projekt.meta.json`)
+**Location**: Project root (e.g., `2025-04 Lampen/projekt.json`)
 
 **Purpose**: Stores comprehensive metadata about the project and its documents. Used for UI, search, and enrichment context.
 
@@ -415,32 +416,130 @@ Certain filenames are reserved for system-generated content:
 - `beschreibung`: Short summary (<= 600 chars)
 - `schlagworte`: Comma-separated keywords
 
-#### 2. kriterien.meta.json (Extracted Criteria)
+#### 2. kriterien.json (Projekt-Kriterien & Bieterdokument-Anforderungen)
 
-**Location**: Project root (optional; created when criteria extraction runs successfully)
+**Location**: Project root (created when criteria & bidder document extraction runs successfully)
 
-**Purpose**: Central structured representation of award & suitability criteria for scoring, compliance checking, and bid guidance.
+**Purpose**: Einheitliche, normalisierte Darstellung aller formal / eignungs- / zuschlagsrelevanten Anforderungen sowie der geforderten Bieterdokumente. Dient als Grundlage für:
+- Compliance-Checks (Pflicht vs. Bedarfsfall)
+- Angebots-Guidance (Welche Dokumente sind einzureichen?)
+- Automatisierte Priorisierung / Prüf-Workflows
+- Los-spezifische Auswertung (z.B. unterschiedliche Bewertung je Los)
 
-**Example Structure**:
+**Top-Level Keys**:
+1. `meta` – Metadaten & lose
+2. `bdoks` – Strukturierte Liste geforderter Bieterdokumente
+3. `ids` – Kanonische Kriterien-/Anforderungs-IDs (formal, eignung, zuschlag)
+
+**Detailed Structure**:
+
 ```json
 {
-  "extractedCriteria": {
-    "eignungskriterien": { },
-    "zuschlagskriterien": [ ],
-    "subunternehmerregelung": [ ],
-    "formale_anforderungen": [ ]
+  "meta": {
+    "schema_version": "<string>",
+    "meta": {
+      "auftraggeber": "<string>",
+      "aktenzeichen": "<string>
+      ", "lose": [
+        {
+          "nummer": "Los 1",
+          "bezeichnung": "<Kurzname>",
+          "beschreibung": "<Beschreibung>",
+          "bewertungsprinzip": "Bestbieter|Billigstbieter|…"
+        }
+        /* weitere Lose */
+      ]
+    }
   },
-  "extractionTimestamp": "2025-07-31T14:09:10.449Z",
-  "extractionMethod": "KRITERIEN_EXTRAKTION",
-  "aabFileName": "2023_02002_AAB_EV.pdf",
-  "lastModified": "2025-07-31T14:09:10.449Z",
-  "version": "1.0",
-  "reviewStatus": {
-    "aiReviewed": true,
-    "humanReviewed": false
+  "bdoks": {
+    "schema_version": "<string>",
+    "bieterdokumente": [
+      {
+        "anforderungstyp": "Pflichtdokument|Bedarfsfall",
+        "dokumenttyp": "Formblatt|Nachweis|Angebot|Zusatzdokument|…",
+        "bezeichnung": "<Sprechender Titel>",
+        "beilage_nummer": "Beilage 01" ,
+        "beschreibung": "<Zweck / Inhalt>",
+        "unterzeichnung_erforderlich": true,
+        "fachliche_pruefung": false
+      }
+      /* weitere Dokumentanforderungen */
+    ]
+  },
+  "ids": {
+    "schema_version": "<string>",
+    "kriterien": [
+      {
+        "id": "F_FORM_001",        
+        "typ": "Formal|Eignung|Zuschlag",
+        "kategorie": "Formale Anforderungen|Dokumentation|Fristen|…",
+        "name": "<Kurzname>",
+        "anforderung": "<Volltext / normative Anforderung>",
+        "schwellenwert": "<z.B. 6 Monate|EUR 300.000,00|… oder null>",
+        "gewichtung_punkte": 700,    // nur bei Zuschlagskriterien
+        "dokumente": [ "Beilage 04", "Strafregisterbescheinigung" ],
+        "geltung_lose": [ "alle" | "Los 1" ],
+        "pruefung": {
+          "status": "ja|ja.int|ja.ki|nein|halt|erfüllt|null",
+          "bemerkung": null,
+          "pruefer": null,
+          "datum": null
+        },
+        "quelle": "Punkt 5.1. (3)"
+      }
+      /* weitere Kriterien */
+    ]
   }
 }
 ```
+
+**Semantik der Bereiche**:
+- `meta.meta.lose[]`: Definition & Bewertungsprinzip je Los (steuert spätere Scoring-Algorithmen)
+- `bdoks.bieterdokumente[]`: Atomare Einreichungs-Anforderungen; kann 1:n zu Kriterien stehen (z.B. ein Formular deckt mehrere Kriterien ab)
+- `ids.kriterien[]`: Normalisierte fachliche / formale / zuschlagsrelevante Anforderungen (einmalig referenzierbar über `id`)
+
+**Feld-Erklärungen (Kriterien)**:
+- `id`: Stabiler, kanonischer Schlüssel (präfix kodiert Bereich: F_=Formal, E_=Eignung, Z_=Zuschlag)
+- `typ`: Grobklassifikation (steuert Auswertungspfade)
+- `kategorie`: Feinere Gruppierung (z.B. "Nachweise", "Preis", "Fristen")
+- `schwellenwert`: Numerischer oder textueller Schwellen-/Gültigkeitsparameter (oder `null`)
+- `gewichtung_punkte`: Nur für Zuschlagskriterien (Preis/Qualität etc.); `null` sonst
+- `dokumente[]`: Erwartete unterstützende Dokumente (Abgleich mit `bdoks.bieterdokumente.bezeichnung` oder Beilage-Nummern)
+- `geltung_lose[]`: `alle` oder Liste konkreter Lose; bestimmt Filterung bei Los-spezifischer Ansicht
+- `pruefung.status`: Aktueller (extrahierter / interim) Status (siehe Status-Matrix unten) – kann später von KI / Mensch überschrieben werden
+- `quelle`: Textuelle Referenz auf Ursprungspassus (Rückverfolgbarkeit)
+
+**Status-Werte (aktuell beobachtet)**:
+| Wert      | Bedeutung Kurz | Typische Nutzung |
+|-----------|----------------|------------------|
+| `ja`      | Anforderung positiv erfüllt / zutreffend / muss eingehalten werden | Basis-Kennzeichnung Pflicht |
+| `ja.int`  | Intern vorgeprüft (Interimszustand) | Kennzeichnung für menschliche Nachprüfung |
+| `ja.ki`   | KI-basiert vorläufig als zutreffend markiert | Automatisches Pre-Labeling |
+| `erfüllt` | Bereits nachweislich erfüllt | Abschluss einer Erfüllungsprüfung |
+| `nein`    | Negativ / nicht zulässig / verletzt | Trigger für Risiko / Ausschluss |
+| `halt`    | Angehalten / benötigt Klärung | Wartet auf zusätzliche Info |
+| `null`    | Noch nicht klassifiziert | Default nach Extraktion |
+
+Anmerkung: Die Statusdomäne ist bewusst textuell offen gehalten, um spätere Verfeinerung (z.B. `ja.doc`, `ja.rev1`) ohne Schema-Migration zu ermöglichen.
+
+**Verknüpfungsmuster**:
+- `dokumente[]` in Kriterien dienen als logische Erwartung; tatsächliche Einreichung erfolgt über den Bestand in `B/<Bieter>/` und kann mit Namen / Beilage-Nummern gematcht werden.
+- Mehrere Kriterien können auf dasselbe Dokument verweisen (Reduktion Doppeleinreichungen).
+
+**Validierungsideen (Future)**:
+- Cross-Check: Jede `Beilage XX` in `kriterien.dokumente` sollte auch in `bdoks.bieterdokumente.bezeichnung` oder `beilage_nummer` vorkommen.
+- Scoring: Summe aller `gewichtung_punkte` je Los ergibt maximale erreichbare Punktzahl für Qualitäts-/Preisdimensionen.
+- Vollständigkeit: Für Pflicht-Kriterien ohne `pruefung.status` ∈ {`ja`, `erfüllt`} Warnung generieren.
+
+**Minimal API Patterns** (Python):
+```python
+data = ofs.load_kriterien("/path/to/project/kriterien.json")
+alle_kriterien = data["ids"]["kriterien"]
+pflicht_docs = [d for d in data["bdoks"]["bieterdokumente"] if d["anforderungstyp"] == "Pflichtdokument"]
+offene = [k for k in alle_kriterien if (k["pruefung"]["status"] in (None, "halt") )]
+```
+
+Diese aktualisierte Struktur ersetzt die frühere, vereinfachte `extractedCriteria`-Repräsentation.
 
 #### 3. .ofs.index.json (Directory-Level Index)
 
@@ -512,9 +611,9 @@ Certain filenames are reserved for system-generated content:
 
 1. Raw documents enter `A/` or `B/<Bidder>/`
 2. Conversions populate `md/` and update `.ofs.index.json` (parser coverage)
-3. Project-level synthesis produces/updates `projekt.meta.json`
-4. Criteria extraction pipeline outputs `kriterien.meta.json` referencing authoritative source documents
-5. Downstream enrichment augments `meta` blocks inside the index and/or adds structured objects to `projekt.meta.json`
+3. Project-level synthesis produces/updates `projekt.json`
+4. Criteria extraction pipeline outputs `kriterien.json` referencing authoritative source documents
+5. Downstream enrichment augments `meta` blocks inside the index and/or adds structured objects to `projekt.json`
 
 ## Advanced Configuration
 
@@ -567,9 +666,9 @@ Before deploying or archiving projects, ensure:
 
 | Check | File | Condition |
 |-------|------|-----------|
-| Project identity present | projekt.meta.json | `projektName` & `referenznummer` non-empty |
-| Core deadlines consistent | projekt.meta.json | `bieterabgabe` >= today or flagged archived |
-| AAB reference resolvable | kriterien.meta.json | `aabFileName` exists in index `files` list |
+| Project identity present | projekt.json | `projektName` & `referenznummer` non-empty |
+| Core deadlines consistent | projekt.json | `bieterabgabe` >= today or flagged archived |
+| AAB reference resolvable | kriterien.json | `aabFileName` exists in index `files` list |
 | Parser coverage threshold | .ofs.index.json | Required minimum parser(s) executed |
 | Categorization completeness | .ofs.index.json | All `meta.kategorie` populated (or queued) |
 

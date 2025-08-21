@@ -442,7 +442,18 @@ def get_kriterien_pop_json(project_name: str, limit: int = 1) -> Dict[str, Any]:
         unproven = get_unproven_kriterien_from_list(k_list)
         total = len(k_list)
         proven_count = total - len(unproven)
-        displayed = unproven[:limit] if limit is not None else unproven
+
+        # Sort unproven criteria by priority ('prio') descending so highest priority appears first.
+        # Support both 'pruefung.prio' and top-level 'prio' and default to 0 when missing.
+        def _prio_key(k):
+            try:
+                return int((k.get("pruefung") or {}).get("prio") or k.get("prio") or 0)
+            except Exception:
+                return 0
+
+        sorted_unproven = sorted(unproven, key=_prio_key, reverse=True)
+        displayed = sorted_unproven[:limit] if limit is not None else sorted_unproven
+
         return {
             "project": project_name,
             "kriterien_file": k_file,
