@@ -128,6 +128,52 @@ strukt2meta inject --params injection_params.json --dry-run
 - See `requirements.txt` (includes `uniinfer`, `credgoo`)
 - Valid AI credentials are required (managed via `credgoo`)
 
+## Programmatic API Usage
+
+In addition to the CLI you can import `strukt2meta` and call high‑level functions directly (since version 0.1.1).
+
+### Quick Start
+
+```python
+from strukt2meta import generate_metadata_from_file, dirmeta_process
+
+# Generate metadata for a single markdown file
+meta = generate_metadata_from_file("sample_document.md", "zusammenfassung", json_cleanup=True)
+print(meta)
+
+# Process an entire directory (writes sidecars + selective index updates)
+summary = dirmeta_process("./mydocs", prompt="metadata_extraction")
+print(summary)
+```
+
+### Available Functions
+
+- `generate_metadata_from_text(prompt_name, text, json_cleanup=False, verbose=False)` → dict
+- `generate_metadata_from_file(file_path, prompt_name, ...)` → dict
+- `discover_files(directory)` → list[FileMapping]
+- `analyze_file(directory, source_filename, prompt='metadata_extraction', json_file=None)` → dict with metadata & status
+- `dirmeta_process(directory, prompt, json_file=None, overwrite=False)` → summary dict
+- `inject_with_params(params_file)` → result dict (advanced schema-driven flow)
+- `inject_metadata(source_filename, metadata, json_index_path, base_directory=None)` → bool
+- `Strukt2Meta` facade class offering object-oriented convenience wrappers.
+
+All functions raise standard exceptions (e.g. `FileNotFoundError`) on fatal issues instead of exiting the process so you can handle errors gracefully.
+
+### Facade Example
+
+```python
+from strukt2meta import Strukt2Meta
+
+s2m = Strukt2Meta(verbose=True)
+result = s2m.generate_from_file("sample_document.md", "zusammenfassung", json_cleanup=True)
+print(result["meta"])  # or any keys returned by the prompt
+
+summary = s2m.dirmeta("./project_docs", prompt="metadata_extraction", overwrite=False)
+print(summary)
+```
+
+Sidecar + selective index behavior is preserved exactly like the CLI: each processed file gets `<filename>.meta.json` with full metadata; only configured `index_meta_fields` are pushed to the index file.
+
 ## Developer Guide
 
 ### OFS Integration and Metadata Injection
