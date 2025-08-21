@@ -172,6 +172,10 @@ ofs kriterien "2025-04 Lampen" tag "EIG_001"
 
 # List all available criterion tags
 ofs kriterien "2025-04 Lampen" tag
+
+# Synchronize project criteria into bidder audit files (create/update/remove)
+ofs kriterien-sync "2025-04 Lampen"                 # all bidders of project
+ofs kriterien-sync "2025-04 Lampen" "Lampion GmbH"  # single bidder only
 ```
 
 ### Index Management
@@ -540,6 +544,108 @@ offene = [k for k in alle_kriterien if (k["pruefung"]["status"] in (None, "halt"
 ```
 
 Diese aktualisierte Struktur ersetzt die frühere, vereinfachte `extractedCriteria`-Repräsentation.
+
+### Bidder Audit / Kriterien-Sync
+
+Der Synchronisationsprozess kopiert alle Kriterien-IDs aus `kriterien.json` in eine pro Bieter geführte Audit-Datei:  
+`<Projekt>/B/<Bieter>/audit.json`
+
+Ziele:
+- Vollständige, idempotente Spiegelung aller IDs (auch solche ohne Status)
+- Ereignisbasierter Verlauf statt starrer Statusfelder
+- Nicht-destruktive Markierung entfernter IDs
+- Grundlage für KI- / Mensch-Prüfungen und finale Entscheidungen
+
+#### CLI
+```
+ofs kriterien-sync <Projekt>            # synchronisiert alle Bieter
+ofs kriterien-sync <Projekt> <Bieter>   # nur ein Bieter
+```
+Mehrfacher Aufruf ohne Quelländerung ist idempotent (keine neuen Events / keine Dateiänderung).
+
+#### audit.json – Schema (vereinfacht)
+```json
+{
+  "meta": { "schema_version": "1.0-bieter-kriterien", "projekt": "2025-04 Lampen", "bieter": "Lampion GmbH" },
+  "kriterien": [
+    {
+      "id": "F_FORM_001",
+      "status": "ja",            // letzter übernommener Source-Status oder "entfernt"
+      "prio": 5,                  // optional aus Quelle
+      "bewertung": null,          // später: ok/fail/score/review-needed
+      "audit": {
+        "zustand": "geprueft",   // abgeleitet (siehe Algorithmus)
+        "verlauf": [
+          {"zeit": "...", "ereignis": "kopiert", "quelle_status": "ja"},
+          {"zeit": "...", "ereignis": "ki_pruefung"},
+          {"zeit": "...", "ereignis": "mensch_pruefung"},
+          {"zeit": "...", "ereignis": "freigabe"}
+        ]
+      }
+    }
+  ]
+}
+```
+
+#### Ereignisse
+| Ereignis           | Bedeutung | Wirkung auf zustand |
+|--------------------|-----------|---------------------|
+| `kopiert`          | Erstmalige oder aktualisierte Übernahme aus Quelle | nur Basis (falls nichts Weiteres) → synchronisiert |
+| `ki_pruefung`      | KI hat Kriterium vorbewertet | kann zustand zu geprueft heben |
+| `mensch_pruefung`  | Menschliche Prüfung durchgeführt | kann zustand zu geprueft heben |
+| `freigabe`         | Fachlich/final akzeptiert | zustand → freigegeben |
+| `ablehnung`        | Final abgelehnt | zustand → abgelehnt |
+| `reset`            | Finaler Zustand invalidiert (z.B. Source-Status geändert) | Segment neu ⇒ zurück auf synchronisiert/geprueft abhängig nachfolg. Events |
+| `entfernt`         | Kriterium nicht mehr in Quelle vorhanden | keine Änderung des vorhandenen zustand |
+
+#### Zustandsableitung (finale Logik)
+Der Zustand wird nicht direkt gespeichert, sondern nach jedem Event aus dem Verlauf abgeleitet:
+
+1. Der Verlauf wird in Segmente geteilt – ein `reset` beginnt ein neues Segment und löscht die Wirkung vorheriger Events.
+2. Innerhalb des aktuellen Segments gilt Priorität:
+   - Letztes finales Event (`freigabe` oder `ablehnung`) gewinnt → `freigegeben` / `abgelehnt`.
+   - Sonst wenn mindestens ein Prüfungs-Event (`ki_pruefung` oder `mensch_pruefung`) vorkam → `geprueft`.
+   - Sonst → `synchronisiert`.
+3. `entfernt` beeinflusst den Zustand nicht; `reset` löscht vorangegangene final/review-Wirkungen.
+
+Pseudocode (vereinfacht):
+```text
+state = synchronisiert
+segment: track last_final, last_review
+for event in events:
+  if event == reset: clear segment trackers
+  elif event in {freigabe, ablehnung}: last_final = event
+  elif event in {ki_pruefung, mensch_pruefung}: last_review = event
+if last_final: state = (freigabe→freigegeben | ablehnung→abgelehnt)
+elif last_review: state = geprueft
+else: state = synchronisiert
+```
+
+#### Updates & Removals
+- Status-/Prio-Änderung in Quelle → neues `kopiert` Event; falls zuvor final (freigegeben/abgelehnt) → zusätzlich `reset` davor.
+- Kriterium fehlt in Quelle → `status` wird auf `entfernt` gesetzt + einmaliges `entfernt` Event (bewertung bleibt erhalten).
+
+#### Idempotenz
+Ein erneuter Lauf ohne Quelländerungen erzeugt:
+- Keine zusätzlichen Events
+- Keine Dateiänderung (Write-Skip)
+
+#### Erweiterungs-Pfade (geplant / optional)
+- `bewertung` Ausdifferenzierung (score, flag review-needed)
+- Hash-basierter Skip (Performance)
+- CLI-Unterkommandos zum Hinzufügen manueller Events (`freigabe`, `ablehnung`, etc.)
+
+#### Beispiel CLI Flow
+```bash
+# Initial sync aller Bieter
+ofs kriterien-sync "2025-04 Lampen"
+
+# Einzelnen Bieter erneut synchronisieren (nur Änderungen geschrieben)
+ofs kriterien-sync "2025-04 Lampen" "Lampion GmbH"
+
+# Nach Änderung in kriterien.json (Statuswechsel) erneut sync → reset + kopiert Events bei betroffenen IDs
+ofs kriterien-sync "2025-04 Lampen" "Lampion GmbH"
+```
 
 #### 3. .ofs.index.json (Directory-Level Index)
 

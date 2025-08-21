@@ -67,11 +67,13 @@ def _now_iso() -> ISOFormat:
 
 
 def append_event(entry: Dict[str, Any], ereignis: str, quelle_status: Optional[str] = None,
-                 ergebnis: Optional[Any] = None, akteur: str = "system", dedupe: bool = True) -> bool:
+                 ergebnis: Optional[Any] = None, akteur: str = "system", dedupe: bool = True,
+                 update_state: bool = True) -> bool:
     """Append an event to an audit entry.
 
     Returns True if event appended, False if skipped by dedupe.
-    Dedupe rule: If last event has same ereignis AND gleiche quelle_status → skip.
+    Dedupe rule: If last event has same ereignis AND same quelle_status → skip.
+    If update_state=True the audit.zustand is recalculated immediately.
     """
     audit = entry.setdefault("audit", {})
     verlauf: List[Dict[str, Any]] = audit.setdefault("verlauf", [])
@@ -86,6 +88,8 @@ def append_event(entry: Dict[str, Any], ereignis: str, quelle_status: Optional[s
         "ergebnis": ergebnis,
         "akteur": akteur,
     })
+    if update_state:
+        audit["zustand"] = derive_zustand(entry)
     return True
 
 
@@ -93,31 +97,46 @@ FINAL_ZUSTAENDE = {"freigegeben", "abgelehnt"}
 
 
 def derive_zustand(entry: Dict[str, Any]) -> str:
-    """Ableitung des Zustand (vereinfachte Interim-Version).
+    """Finale Ableitung des Zustands aus dem Ereignisverlauf.
 
-    Regeln (Interim):
-    - Letztes Final-Ereignis (freigabe -> freigegeben, ablehnung -> abgelehnt)
-    - Sonst wenn mensch_pruefung / ki_pruefung vorhanden -> geprueft
-    - Sonst synchronisiert
-    (Event 'entfernt' ändert zustand nicht eigenständig.)
+    Regeln (Segment-Logik mit Reset):
+    - reset: löscht Bedeutung aller vorherigen Events
+    - freigabe / ablehnung: letzter Final-Event im aktuellen Segment entscheidet
+    - mensch_pruefung / ki_pruefung (nach letztem reset, ohne Final danach): geprueft
+    - sonst synchronisiert
+    - entfernt beeinflusst Zustand nicht
     """
     verlauf: List[Dict[str, Any]] = entry.get("audit", {}).get("verlauf", [])
-    last_final = None
-    has_pruefung = False
-    for ev in verlauf:
+
+    last_final_state: Optional[str] = None
+    last_final_index = -1
+    last_review_index = -1
+
+    def do_reset():
+        nonlocal last_final_state, last_final_index, last_review_index
+        last_final_state = None
+        last_final_index = -1
+        last_review_index = -1
+
+    do_reset()
+    for idx, ev in enumerate(verlauf):
         e = ev.get("ereignis")
+        if e == "reset":
+            do_reset()
+            continue
         if e == "freigabe":
-            last_final = "freigegeben"
+            last_final_state = "freigegeben"
+            last_final_index = idx
         elif e == "ablehnung":
-            last_final = "abgelehnt"
-        elif e in ("mensch_pruefung", "ki_pruefung"):
-            has_pruefung = True
-        elif e == "reset":
-            # reset löscht Finalzustand
-            last_final = None
-    if last_final:
-        return last_final
-    if has_pruefung:
+            last_final_state = "abgelehnt"
+            last_final_index = idx
+        elif e in ("ki_pruefung", "mensch_pruefung"):
+            last_review_index = idx
+        # kopiert / entfernt / andere: keine direkte Auswirkung
+
+    if last_final_index != -1:
+        return last_final_state or "synchronisiert"
+    if last_review_index != -1:
         return "geprueft"
     return "synchronisiert"
 
@@ -301,7 +320,7 @@ def reconcile_full(audit: Dict[str, Any], source: Dict[str, SourceKriterium]) ->
                 continue
             entry["status"] = "entfernt"
             # Keep bewertung as-is
-            appended = append_event(entry, "entfernt", quelle_status=None)
+            appended = append_event(entry, "entfernt", quelle_status=None, update_state=False)
             if appended:
                 # Zustand nicht neu berechnen – behält alten (oder könnte optional gesetzt werden)
                 stats.removed += 1
@@ -316,7 +335,7 @@ def reconcile_full(audit: Dict[str, Any], source: Dict[str, SourceKriterium]) ->
             prio_key = prio if isinstance(prio, int) else -1
             return (-prio_key, e.get("id") or "")
         audit["kriterien"].sort(key=_sort_key)
-        # Update zustand values for all (cheap) to reflect resets
+        # Update zustand values for all (cheap) to reflect any resets or final changes
         for e in audit.get("kriterien", []):
             e.setdefault("audit", {})["zustand"] = derive_zustand(e)
 
