@@ -41,6 +41,8 @@ from .kriterien_sync import (
     load_or_init_audit,
     reconcile_full,
     write_audit_if_changed,
+    append_event,
+    derive_zustand,
 )
 from .kriterien import find_kriterien_file
 
@@ -194,6 +196,10 @@ def create_parser() -> argparse.ArgumentParser:
         default=1,
         help="Number of criteria to show (default: 1)"
     )
+    pop_parser.add_argument(
+        "--bidder",
+        help="If provided, operate on bidder audit file (zustand==synchronisiert) instead of project source"
+    )
 
     # kriterien tree command
     tree_parser = kriterien_subparsers.add_parser(
@@ -225,6 +231,28 @@ def create_parser() -> argparse.ArgumentParser:
         "bidder",
         nargs="?",
         help="Optional bidder name. If omitted, all bidders of the project are synchronized"
+    )
+
+    # kriterien-audit command (record review/final events)
+    audit_parser = subparsers.add_parser(
+        "kriterien-audit",
+        help="Append audit events (ki_pruefung, mensch_pruefung, freigabe, ablehnung, reset) to a bidder's criterion"
+    )
+    audit_parser.add_argument(
+        "ereignis",
+        choices=["ki", "mensch", "freigabe", "ablehnung", "reset", "show"],
+        help="Event or action: ki|mensch|freigabe|ablehnung|reset|show"
+    )
+    audit_parser.add_argument("project", help="Project name")
+    audit_parser.add_argument("bidder", help="Bidder name")
+    audit_parser.add_argument("kriterium_id", help="Criterion ID (z.B. F_FORM_001)")
+    audit_parser.add_argument(
+        "--akteur", default="cli", help="Actor/author of the event (default: cli)"
+    )
+    audit_parser.add_argument(
+        "--ergebnis", help="Optional result payload (score / note)")
+    audit_parser.add_argument(
+        "--force-duplicate", action="store_true", help="Disable dedupe (force append even if last event identical)"
     )
 
     # index command
@@ -538,7 +566,7 @@ def handle_read_doc(identifier: str, parser_name: Optional[str] = None, as_json:
     print(content)
 
 
-def handle_kriterien(project: str, action: str, limit: Optional[int] = None, tag_id: Optional[str] = None) -> None:
+def handle_kriterien(project: str, action: str, limit: Optional[int] = None, tag_id: Optional[str] = None, bidder: Optional[str] = None) -> None:
     """
     Handle the kriterien command.
 
@@ -549,7 +577,11 @@ def handle_kriterien(project: str, action: str, limit: Optional[int] = None, tag
         tag_id (Optional[str]): Tag ID for tag action
     """
     if action == "pop":
-        result = get_kriterien_pop_json(project, limit or 1)
+        if bidder:
+            from .kriterien import get_kriterien_pop_json_bidder
+            result = get_kriterien_pop_json_bidder(project, bidder, limit or 1)
+        else:
+            result = get_kriterien_pop_json(project, limit or 1)
         print(json.dumps(result, indent=2, ensure_ascii=False))
         if "error" in result:
             sys.exit(1)
@@ -621,6 +653,77 @@ def handle_kriterien_sync(project: str, bidder: Optional[str] = None) -> None:
     # Non-zero exit if any error present
     if any(r.get("error") for r in results):
         sys.exit(1)
+
+
+def handle_kriterien_audit(ereignis: str, project: str, bidder: str, kriterium_id: str,
+                           akteur: str = "cli", ergebnis: Optional[str] = None, force_duplicate: bool = False) -> None:
+    """Append a review/final/reset event to a specific criterion in a bidder audit file."""
+    project_path = get_path(project)
+    if not project_path or not os.path.isdir(project_path):
+        logger.error(f"Projekt '{project}' nicht gefunden")
+        sys.exit(1)
+    audit = load_or_init_audit(project_path, bidder)
+    entries = audit.get("kriterien", [])
+    entry = next((e for e in entries if e.get("id") == kriterium_id), None)
+    if not entry:
+        logger.error(f"Kriterium '{kriterium_id}' nicht in Audit von Bieter '{bidder}' gefunden (vorher sync ausführen?)")
+        sys.exit(1)
+
+    if ereignis == "show":
+        verlauf = entry.get("audit", {}).get("verlauf", [])
+        print(json.dumps({
+            "project": project,
+            "bidder": bidder,
+            "id": kriterium_id,
+            "zustand": entry.get("audit", {}).get("zustand"),
+            "status": entry.get("status"),
+            "prio": entry.get("prio"),
+            "bewertung": entry.get("bewertung"),
+            "events_total": len(verlauf),
+            "verlauf": verlauf,
+        }, indent=2, ensure_ascii=False))
+        return
+
+    # Map short tokens to event names (excluding show)
+    mapping = {
+        "ki": "ki_pruefung",
+        "mensch": "mensch_pruefung",
+        "freigabe": "freigabe",
+        "ablehnung": "ablehnung",
+        "reset": "reset",
+    }
+    full_event = mapping[ereignis]
+
+    appended = append_event(
+        entry,
+        full_event,
+        quelle_status=entry.get("status"),
+        ergebnis=ergebnis,
+        akteur=akteur,
+        dedupe=not force_duplicate,
+        update_state=True,
+    )
+    if not appended:
+        print(json.dumps({
+            "project": project,
+            "bidder": bidder,
+            "id": kriterium_id,
+            "event": full_event,
+            "skipped": True,
+            "reason": "duplicate"
+        }, indent=2, ensure_ascii=False))
+        return
+
+    # Persist
+    write_audit_if_changed(project_path, bidder, audit, True)
+    print(json.dumps({
+        "project": project,
+        "bidder": bidder,
+        "id": kriterium_id,
+        "event": full_event,
+        "zustand": entry.get("audit", {}).get("zustand"),
+        "events_total": len(entry.get("audit", {}).get("verlauf", [])),
+    }, indent=2, ensure_ascii=False))
 
 
 def handle_index(action: str, directory: str, recursive: bool = False, force: bool = False, max_age: int = 24,
@@ -740,11 +843,22 @@ def main(argv: Optional[list[str]] = None) -> int:
                 logger.error("Nutzen Sie bitte: ofs kriterien-sync <projekt> [<bieter>] (neuer Befehl)")
                 return 1
             limit = getattr(args, 'limit', None)
+            bidder = getattr(args, 'bidder', None)
             tag_id = getattr(args, 'tag_id', None)
             handle_kriterien(
-                args.project, args.kriterien_action, limit, tag_id)
+                args.project, args.kriterien_action, limit, tag_id, bidder)
         elif args.command == "kriterien-sync":
             handle_kriterien_sync(args.project, getattr(args, 'bidder', None))
+        elif args.command == "kriterien-audit":
+            handle_kriterien_audit(
+                args.ereignis,
+                args.project,
+                args.bidder,
+                args.kriterium_id,
+                akteur=getattr(args, 'akteur', 'cli'),
+                ergebnis=getattr(args, 'ergebnis', None),
+                force_duplicate=getattr(args, 'force_duplicate', False),
+            )
         elif args.command == "index":
             if not args.index_action:
                 logger.error(

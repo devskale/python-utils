@@ -468,6 +468,58 @@ def get_kriterien_pop_json(project_name: str, limit: int = 1) -> Dict[str, Any]:
         return {"error": str(e), "project": project_name}
 
 
+def get_kriterien_pop_json_bidder(project_name: str, bidder: str, limit: int = 1) -> Dict[str, Any]:
+    """Return next unreviewed (zustand == synchronisiert) criteria for a bidder audit file.
+
+    Definition bidder-level unproven/unreviewed:
+      - audit.zustand == 'synchronisiert'
+      - status != 'entfernt'
+
+    Sorting: prio desc (None last) then id asc.
+    """
+    try:
+        from .kriterien_sync import load_or_init_audit  # local import to avoid cycle
+        project_path = get_path(project_name)
+        if not project_path or not os.path.isdir(project_path):
+            return {"error": f"Project '{project_name}' not found", "project": project_name, "bidder": bidder}
+        audit = load_or_init_audit(project_path, bidder)
+        entries = audit.get("kriterien", [])
+        total = len(entries)
+        # Filter synchronisiert & not entfernt
+        unreviewed = [e for e in entries if e.get("audit", {}).get("zustand") == "synchronisiert" and e.get("status") != "entfernt"]
+
+        def _sort_key(e: Dict[str, Any]):
+            prio = e.get("prio")
+            prio_key = prio if isinstance(prio, int) else -1
+            return (-prio_key, e.get("id") or "")
+
+        unreviewed_sorted = sorted(unreviewed, key=_sort_key)
+        displayed = unreviewed_sorted[:limit] if limit is not None else unreviewed_sorted
+
+        # Reduce entries to a stable public shape
+        def _public(e: Dict[str, Any]):
+            return {
+                "id": e.get("id"),
+                "status": e.get("status"),
+                "prio": e.get("prio"),
+                "zustand": e.get("audit", {}).get("zustand"),
+            }
+
+        return {
+            "scope": "bidder",
+            "project": project_name,
+            "bidder": bidder,
+            "total_kriterien": total,
+            "unreviewed_count": len(unreviewed),
+            "displayed_count": len(displayed),
+            "limit": limit,
+            "definition": "zustand == synchronisiert AND status != entfernt",
+            "kriterien": [_public(e) for e in displayed],
+        }
+    except Exception as e:
+        return {"error": str(e), "project": project_name, "bidder": bidder}
+
+
 def get_kriterien_tree_json(project_name: str) -> Dict[str, Any]:
     try:
         k_file = find_kriterien_file(project_name)
@@ -538,5 +590,6 @@ format_kriterien_tree = format_kriterien_tree
 format_kriterien_tags = format_kriterien_tags
 format_kriterium_by_tag = format_kriterium_by_tag
 get_kriterien_pop_json = get_kriterien_pop_json
+get_kriterien_pop_json_bidder = get_kriterien_pop_json_bidder
 get_kriterien_tree_json = get_kriterien_tree_json
 get_kriterien_tag_json = get_kriterien_tag_json

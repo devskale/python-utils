@@ -176,6 +176,15 @@ ofs kriterien "2025-04 Lampen" tag
 # Synchronize project criteria into bidder audit files (create/update/remove)
 ofs kriterien-sync "2025-04 Lampen"                 # all bidders of project
 ofs kriterien-sync "2025-04 Lampen" "Lampion GmbH"  # single bidder only
+
+# Append audit events (Review / Final / Reset)
+# (Requires prior sync so that the criterion exists in audit.json)
+ofs kriterien-audit ki "2025-04 Lampen" "Lampion GmbH" F_FORM_001          # KI-Prüfung
+ofs kriterien-audit mensch "2025-04 Lampen" "Lampion GmbH" F_FORM_001      # Menschliche Prüfung
+ofs kriterien-audit freigabe "2025-04 Lampen" "Lampion GmbH" F_FORM_001    # Freigabe (final)
+ofs kriterien-audit ablehnung "2025-04 Lampen" "Lampion GmbH" F_FORM_001   # Ablehnung (final)
+ofs kriterien-audit reset "2025-04 Lampen" "Lampion GmbH" F_FORM_001       # Reset Segment (z.B. nach Statusänderung)
+ofs kriterien-audit show  "2025-04 Lampen" "Lampion GmbH" F_FORM_001       # Verlauf & Zustand anzeigen
 ```
 
 ### Index Management
