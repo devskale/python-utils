@@ -20,7 +20,19 @@ from __future__ import annotations
 from typing import Optional, Dict, Any, List
 import os
 
-from .core import get_path, list_bidders
+from .core import (
+    get_path,
+    list_bidders,
+    get_paths_json,
+    list_ofs_items,
+    list_projects_json,
+    find_bidder_in_project,
+    list_bidder_docs_json,
+    list_project_docs_json,
+    get_bidder_document_json,
+    get_project_document_json,
+    read_doc,
+)
 from .kriterien import (
     find_kriterien_file,
     get_kriterien_pop_json_bidder,
@@ -208,4 +220,78 @@ __all__ = [
     'kriterien_sync',
     'kriterien_audit_event',
     'kriterien_pop',
+]
+
+# ---------------------------------------------------------------------------
+# Additional high-level wrappers mirroring CLI (non-kriterien sections)
+# ---------------------------------------------------------------------------
+
+def get_path_info(name: str) -> Dict[str, Any]:
+    """Return JSON path resolution (CLI: ofs get-path <name>)."""
+    return get_paths_json(name)
+
+
+def list_items() -> list[str]:
+    """List all items in OFS root (CLI: ofs list)."""
+    return list_ofs_items()
+
+
+def list_projects() -> Dict[str, Any]:
+    """Return projects JSON (CLI: ofs list-projects)."""
+    return list_projects_json()
+
+
+def list_bidders_for_project(project: str) -> list[str]:
+    """List bidder names for a project (CLI: ofs list-bidders <project>)."""
+    return list_bidders(project)
+
+
+def find_bidder(project: str, bidder: str) -> Optional[str]:
+    """Find bidder directory path (CLI: ofs find-bidder <project> <bidder>)."""
+    return find_bidder_in_project(project, bidder)
+
+
+def docs_list(identifier: str, meta: bool = False) -> Dict[str, Any]:
+    """Unified document listing analogous to CLI list-docs parsing.
+
+    Accepts:
+      project
+      project@bidder
+      project@filename
+      project@bidder@filename
+    """
+    if '@' not in identifier:
+        # project only
+        return list_project_docs_json(identifier, include_metadata=meta)
+    parts = identifier.split('@')
+    if len(parts) == 2:
+        project, second = parts
+        # heuristic: second contains dot -> treat as filename
+        if '.' in second and len(second.split('.')[-1]) <= 5:
+            return get_project_document_json(project, second, include_metadata=meta)
+        return list_bidder_docs_json(project, second, include_metadata=meta)
+    if len(parts) == 3:
+        project, bidder, filename = parts
+        return get_bidder_document_json(project, bidder, filename, include_metadata=meta)
+    raise ValueError("Unsupported identifier format (expected project[@bidder][@filename])")
+
+
+def read_document(identifier: str, parser: Optional[str] = None, as_json: bool = False) -> Dict[str, Any] | str:
+    """Read a document (CLI: ofs read-doc). Returns content or full JSON if as_json=True."""
+    result = read_doc(identifier, parser=parser)
+    if as_json:
+        return result
+    if not result.get('success', False):
+        raise RuntimeError(result.get('error', 'Unknown error'))
+    return result.get('content', '')
+
+# Add new symbols to __all__
+__all__ += [
+    'get_path_info',
+    'list_items',
+    'list_projects',
+    'list_bidders_for_project',
+    'find_bidder',
+    'docs_list',
+    'read_document',
 ]

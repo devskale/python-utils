@@ -164,6 +164,9 @@ ofs tree -d
 # Show next unproven criterion
 ofs kriterien "2025-04 Lampen" pop
 
+# Show next unreviewed criterion for a bidder audit (zustand==synchronisiert)
+ofs kriterien "2025-04 Lampen" pop --bidder "Lampion GmbH"
+
 # Display criteria organized by category and type
 ofs kriterien "2025-04 Lampen" tree
 
@@ -270,6 +273,146 @@ config = ofs.get_config()
 base_dir = ofs.get_base_dir()
 print(f"Base directory: {base_dir}")
 ```
+
+### Programmatic API Parity & High-Level Wrappers
+
+The module `ofs.api` provides friendly, idempotent wrapper functions that mirror the CLI semantics. They return structured Python data (dicts / lists) and raise exceptions for hard errors instead of printing.
+
+#### Quick Import
+```python
+from ofs.api import (
+  get_path_info,
+  list_items,
+  list_projects,
+  list_bidders_for_project,
+  find_bidder,
+  docs_list,
+  read_document,
+  kriterien_pop,
+  kriterien_sync,
+  kriterien_audit_event,
+)
+```
+
+#### CLI → API Mapping
+
+| CLI Command | Purpose | API Wrapper (ofs.api) |
+|-------------|---------|------------------------|
+| `ofs get-path <name>` | Resolve project / bidder paths & variants | `get_path_info(name)` |
+| `ofs list` | List mixed items (projects / bidders / files) | `list_items()` |
+| `ofs list-projects` | List all project names | `list_projects()` |
+| `ofs list-bidders <project>` | List bidder names | `list_bidders_for_project(project)` |
+| `ofs find-bidder <project> <bidder>` | Locate bidder directory | `find_bidder(project, bidder)` |
+| `ofs list-docs <identifier>` | List documents (project / bidder / single) | `docs_list(identifier, meta=False)` |
+| `ofs read-doc <identifier>` | Read document (content or JSON) | `read_document(identifier, parser=None, as_json=False)` |
+| `ofs tree` | Structure (string / model) | `generate_tree_structure()`, `print_tree_structure()` (direct in `ofs`) |
+| `ofs kriterien <proj> pop` | Next unproven project criteria | `kriterien_pop(project, limit)` |
+| `ofs kriterien <proj> pop --bidder B` | Next unreviewed bidder audit entries | `kriterien_pop(project, bidder=B, limit=N)` |
+| `ofs kriterien <proj> tree` | Criteria tree summary | `get_kriterien_tree_json(project)` |
+| `ofs kriterien <proj> tag [ID]` | Criteria tag(s) | `get_kriterien_tag_json(project, tag_id=None|ID)` |
+| `ofs kriterien-sync <proj> [bidder]` | Sync criteria → audit | `kriterien_sync(project, bidder=None)` |
+| `ofs kriterien-audit <event>` | Append / show audit events | `kriterien_audit_event(event, project, bidder, kriterium_id, ...)` |
+| `ofs index create|update|clear|stats|un` | Index management | `create_index`, `update_index`, `clear_index`, `print_index_stats`, `generate_un_items_list` (direct in `ofs`) |
+
+#### Criteria Pop (Project vs Bidder)
+```python
+from ofs.api import kriterien_pop
+
+# Project-level: shows source criteria whose pruefung.status is None
+proj_pop = kriterien_pop("2025-04 Lampen", limit=3)
+for k in proj_pop["kriterien"]:
+  print("PROJECT OPEN:", k["id"], k.get("pruefung", {}).get("status"))
+
+# Bidder-level: shows audit entries with zustand == synchronisiert (not yet reviewed)
+bid_pop = kriterien_pop("2025-04 Lampen", bidder="Lampion GmbH", limit=2)
+for k in bid_pop["kriterien"]:
+  print("BIDDER OPEN:", k["id"], k["zustand"])  # fields reduced to stable surface
+```
+
+#### Full Kriterien Sync & Audit Flow
+```python
+from ofs.api import kriterien_sync, kriterien_audit_event, kriterien_pop
+
+# 1. Ensure bidder audit has all criteria
+sync_summary = kriterien_sync("2025-04 Lampen", bidder="Lampion GmbH")
+print(sync_summary)
+
+# 2. Get the next two unreviewed (bidder-level) criteria
+next_two = kriterien_pop("2025-04 Lampen", bidder="Lampion GmbH", limit=2)
+first_id = next_two["kriterien"][0]["id"]
+
+# 3. Record KI review
+ki_result = kriterien_audit_event("ki", "2025-04 Lampen", "Lampion GmbH", first_id, akteur="ki-pipeline", ergebnis="score:0.82")
+print(ki_result)
+
+# 4. Human review & final decision
+mensch_result = kriterien_audit_event("mensch", "2025-04 Lampen", "Lampion GmbH", first_id, akteur="reviewer")
+final_result = kriterien_audit_event("freigabe", "2025-04 Lampen", "Lampion GmbH", first_id, akteur="reviewer")
+
+# 5. Inspect full timeline
+timeline = kriterien_audit_event("show", "2025-04 Lampen", "Lampion GmbH", first_id)
+print(timeline["zustand"], timeline["events_total"])  # freigegeben
+```
+
+#### Handling Status Changes (Reset Logic)
+If the source `kriterien.json` changes the status of a criterion after it was final (freigegeben/abgelehnt), a subsequent sync will automatically insert a `reset` + new `kopiert` event pair before further processing.
+
+```python
+# After editing kriterien.json (e.g., status change) run another sync:
+resync = kriterien_sync("2025-04 Lampen", bidder="Lampion GmbH")
+# The impacted audit entry's verlauf now contains ... freigabe, reset, kopiert
+```
+
+#### Document Lookup Convenience
+```python
+from ofs.api import docs_list, read_document
+
+# Project-level documents summary
+project_docs = docs_list("2025-04 Lampen")
+
+# Bidder-level documents with metadata
+bidder_docs = docs_list("2025-04 Lampen@Lampion GmbH", meta=True)
+
+# Single document (bidder)
+single = docs_list("2025-04 Lampen@Lampion GmbH@angebot.pdf")
+
+# Read content (best parser auto-selected) or JSON detail
+content = read_document("2025-04 Lampen@Lampion GmbH@angebot.pdf")
+detail = read_document("2025-04 Lampen@Lampion GmbH@angebot.pdf", as_json=True)
+```
+
+#### Error Handling Pattern
+All high-level API wrappers raise `RuntimeError` or `ValueError` for invalid state (e.g., missing project, bidder, or criterion). Wrap calls in try/except for robust pipelines:
+```python
+try:
+  sync_summary = kriterien_sync("2025-04 Lampen", bidder="Lampion GmbH")
+except RuntimeError as e:
+  # log / fallback
+  print("Sync failed:", e)
+```
+
+#### Stable Return Shapes (Selected)
+- `kriterien_sync()` → `{ project, mode, count_bidders, results:[ {bidder, created, updated, removed, unchanged, wrote_file, total_entries} ] }`
+- `kriterien_pop(project)` (project scope) → uses original source schema entries (unmodified)
+- `kriterien_pop(project, bidder=...)` (bidder scope) → each entry: `{ id, status, prio, zustand }`
+- `kriterien_audit_event('show', ...)` → `{ project, bidder, id, zustand, status, prio, bewertung, events_total, verlauf:[...] }`
+- `kriterien_audit_event(<event>, ...)` → `{ project, bidder, id, event, zustand, events_total }` or `{ ..., skipped: True, reason: 'duplicate' }`
+
+#### Idempotence Guarantees
+- Re-running `kriterien_sync` without source changes writes nothing (`wrote_file=False`).
+- `kriterien_audit_event` dedupes identical consecutive events unless `force_duplicate=True` (CLI: `--force-duplicate`).
+- Bidder-level `kriterien_pop` only surfaces entries still at `zustand == synchronisiert`.
+
+#### When to Use Which Layer
+| Layer | Use Case | Pros | Cons |
+|-------|----------|------|------|
+| CLI | Manual ops, shell scripting | Fast to try, human-friendly | Parsing output for automation |
+| `ofs` (core exports) | Low-level integration, custom processing | Full flexibility | Some assembly required |
+| `ofs.api` | Rapid orchestration, service endpoints | Stable shapes, less boilerplate | Slight abstraction overhead |
+
+> Tip: For long-running services prefer `ofs.api` for stability, and fall back to core functions only when you need deeper control (e.g., custom audit mutation logic).
+
+---
 
 ## OFS Structure
 
