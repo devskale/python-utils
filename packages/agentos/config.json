@@ -1,0 +1,48 @@
+{
+  "provider": "tu",
+  "model": "mistral-small-3.1-24b",
+  "default_input_file": "./default_input.md",
+  "index_file_name": ".ofs.index.json",
+  "kriterien": {
+    "provider": "gemini",
+    "model": "gemini-2.5-flash",
+    "max_context_tokens": 1000000,
+    "max_response_tokens": 64000,
+    "max_safe_input_chars": 100000,
+    "safety_margin": 10000
+  },
+  "file_discovery": {
+    "parser_rankings": {
+      "pdf": [
+        "pdfplumber",
+        "llmparse",
+        "docling",
+        "marker"
+      ],
+      "docx": [
+        "pdfplumber",
+        "llmparse",
+        "marker",
+        "docling"
+      ],
+      "xlsx": [
+        "pdfplumber",
+        "llmparse",
+        "marker",
+        "docling"
+      ]
+    },
+    "source_extensions": {
+      "pdf": "*.pdf",
+      "docx": "*.docx",
+      "xlsx": "*.xlsx"
+    },
+    "markdown_pattern": "{basename}.{parser}.md",
+    "confidence_weights": {
+      "parser_rank": 0.7,
+      "file_size": 0.2,
+      "file_age": 0.1
+    },
+    "minimum_confidence": 0.3
+  }
+}

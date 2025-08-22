@@ -37,6 +37,8 @@ from .kriterien import (
     find_kriterien_file,
     get_kriterien_pop_json_bidder,
     get_kriterien_pop_json,
+    load_kriterien,
+    extract_kriterien_list,
 )
 from .kriterien_sync import (
     load_kriterien_source,
@@ -303,3 +305,102 @@ __all__ += [
     'docs_list',
     'read_document',
 ]
+
+# ---------------------------------------------------------------------------
+# Zusatz: Audit Helper
+# ---------------------------------------------------------------------------
+
+def list_kriterien_audit_ids(project: str, bidder: str) -> Dict[str, Any]:
+    """Return all criterion IDs contained in the bidder's audit file.
+
+    Structure:
+        { project, bidder, count, ids:[...], zustand_counts:{zustand: n} }
+
+    Raises RuntimeError if project path is missing.
+    """
+    project_path = get_path(project)
+    if not project_path or not os.path.isdir(project_path):
+        raise RuntimeError(f"Projekt '{project}' nicht gefunden")
+    audit = load_or_init_audit(project_path, bidder)
+    entries = audit.get('kriterien', [])
+    ids: List[str] = []
+    zustand_counts: Dict[str, int] = {}
+    for e in entries:
+        _id = e.get('id')
+        if _id:
+            ids.append(_id)
+        zustand = e.get('audit', {}).get('zustand')
+        if zustand:
+            zustand_counts[zustand] = zustand_counts.get(zustand, 0) + 1
+    return {
+        'project': project,
+        'bidder': bidder,
+        'count': len(ids),
+        'ids': ids,
+        'zustand_counts': zustand_counts,
+    }
+
+__all__ += ['list_kriterien_audit_ids']
+
+def get_kriterien_audit_json(project: str, bidder: str, must_exist: bool = False) -> Dict[str, Any]:
+    """Return the complete audit.json structure for a bidder.
+
+    Args:
+        project: Project name
+        bidder: Bidder name
+        must_exist: If True, raises RuntimeError if audit.json file does not yet exist.
+
+    Behavior:
+        Uses existing loader (load_or_init_audit). If must_exist is False and file is
+        missing, you'll get a freshly initialized empty structure (same as after first sync).
+    """
+    project_path = get_path(project)
+    if not project_path or not os.path.isdir(project_path):
+        raise RuntimeError(f"Projekt '{project}' nicht gefunden")
+    if must_exist:
+        audit_path = os.path.join(project_path, 'B', bidder, 'audit.json')
+        if not os.path.isfile(audit_path):
+            raise RuntimeError(f"audit.json für Bieter '{bidder}' in Projekt '{project}' nicht vorhanden (vorher sync ausführen?)")
+    return load_or_init_audit(project_path, bidder)
+
+__all__ += ['get_kriterien_audit_json']
+
+def get_kriterium_description(project: str, kriterium_id: str) -> Dict[str, Any]:
+    """Return a minimal description object for a criterion from the project source.
+
+    Looks up kriterien.json (or equivalent) and searches for the matching id/tag.
+    Returns { id, name, raw } where name may be derived from known fields; raw is the full dict.
+    Raises RuntimeError if project or file not found; returns empty structure if ID missing.
+    """
+    project_path = get_path(project)
+    if not project_path or not os.path.isdir(project_path):
+        raise RuntimeError(f"Projekt '{project}' nicht gefunden")
+    k_file = find_kriterien_file(project)
+    if not k_file:
+        raise RuntimeError(f"Keine kriterien.json für Projekt '{project}' gefunden")
+    data = load_kriterien(k_file)
+    k_list = extract_kriterien_list(data)
+    for k in k_list:
+        kid = k.get('id') or k.get('tag')
+        if kid == kriterium_id:
+            name = k.get('name') or k.get('kriterium') or k.get('bezeichnung') or ''
+            beschreibung = k.get('beschreibung') or k.get('description') or ''
+            # Try to derive a requirement/"Anforderung" text if present in source
+            anforderung = (
+                k.get('anforderung')
+                or k.get('anforderungen')
+                or k.get('requirement')
+                or k.get('requirements')
+                or k.get('forderung')
+                or k.get('forderungen')
+            )
+            return {
+                'id': kriterium_id,
+                'name': name,
+                'beschreibung': beschreibung,
+                'anforderung': anforderung,
+                'raw': k,
+            }
+    return {'id': kriterium_id, 'missing': True}
+
+__all__ += ['get_kriterium_description']
