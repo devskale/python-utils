@@ -177,6 +177,8 @@ class UnlistCommand(BaseCommand):
         num_to_process = len(items) if (num_arg is None or num_arg <= 0) else min(num_arg, len(items))
         items_to_process = items[:num_to_process]
 
+        # Print N/M info: N=processing, M=total uncategorized found
+        print(f"⏱️ {num_to_process}/{len(items)} (processing/total uncategorized)")
         self.log(f"Found {len(items)} uncategorized/missing-metadata docs, processing {num_to_process}")
 
         if self.args.dry_run:
@@ -247,12 +249,13 @@ class UnlistCommand(BaseCommand):
         """Process all selected items."""
         successful = 0
         failed = 0
+        total = len(items_to_process)
 
         for i, item in enumerate(items_to_process, 1):
             path = item.get('path') or item.get('file_path') or item.get('file', '')
 
             try:
-                if self._process_single_item(item, json_file_path):
+                if self._process_single_item(item, json_file_path, i, total):
                     successful += 1
                 else:
                     failed += 1
@@ -265,7 +268,7 @@ class UnlistCommand(BaseCommand):
         # Summary
         self._print_summary(successful, failed, len(items_to_process))
 
-    def _process_single_item(self, item: dict, json_file_path: Optional[Path]) -> bool:
+    def _process_single_item(self, item: dict, json_file_path: Optional[Path], index: int, total: int) -> bool:
         """Process a single item from the un_items list."""
         path = item.get('path') or item.get('file_path') or item.get('file', '')
 
@@ -288,7 +291,7 @@ class UnlistCommand(BaseCommand):
 
         if not full_path.exists():
             self.log(f"File not found: {full_path}", "warning")
-            self._print_categorization_result(path, None, "unknown", None, None, False)
+            self._print_categorization_result(path, None, "unknown", None, None, False, index=index, total=total)
             return False
 
         # Determine the appropriate prompt based on file structure
@@ -340,7 +343,7 @@ class UnlistCommand(BaseCommand):
             
         if not content:
             self.log(f"Could not extract content from: {path}", "warning")
-            self._print_categorization_result(path, None, prompt_name, chosen_md_file, parser_used, False)
+            self._print_categorization_result(path, None, prompt_name, chosen_md_file, parser_used, False, index=index, total=total)
             return False
 
         # Generate metadata using AI
@@ -363,12 +366,12 @@ class UnlistCommand(BaseCommand):
                 success = success and target_success
 
             # Print simplified result
-            self._print_categorization_result(path, result, prompt_name, chosen_md_file, parser_used, success)
+            self._print_categorization_result(path, result, prompt_name, chosen_md_file, parser_used, success, index=index, total=total)
             return success
 
         except Exception as e:
             self.log(f"AI processing failed for {path}: {str(e)}", "warning")
-            self._print_categorization_result(path, None, prompt_name, chosen_md_file, parser_used, False)
+            self._print_categorization_result(path, None, prompt_name, chosen_md_file, parser_used, False, index=index, total=total)
             return False
 
     # -----------------------------
@@ -644,10 +647,11 @@ class UnlistCommand(BaseCommand):
             self.log(f"Injection failed: {str(e)}", "warning")
             return False
 
-    def _print_categorization_result(self, file_path: str, result, prompt_name: str, chosen_md_file: Optional[str] = None, parser_used: Optional[str] = None, success: bool = True) -> None:
+    def _print_categorization_result(self, file_path: str, result, prompt_name: str, chosen_md_file: Optional[str] = None, parser_used: Optional[str] = None, success: bool = True, index: Optional[int] = None, total: Optional[int] = None) -> None:
         """Print simplified categorization result for a file."""
         # Show source file
-        print(f"📄 {file_path} (sourcefile)")
+        progress = f" [{index}/{total}]" if (index is not None and total is not None) else ""
+        print(f"📄 {file_path} (sourcefile){progress}")
         
         # Show prompt and parser type
         if chosen_md_file and parser_used:
