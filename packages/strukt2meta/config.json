@@ -14,10 +14,10 @@
   "file_discovery": {
     "parser_rankings": {
       "pdf": [
-        "pdfplumber",
-        "llmparse",
         "docling",
-        "marker"
+        "marker",
+        "pdfplumber",
+        "llmparse"
       ],
       "docx": [
         "pdfplumber",

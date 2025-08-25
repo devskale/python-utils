@@ -61,7 +61,9 @@ ofs index update .dir
 categorizing files of ausschreibungen and bieter, using LLMs.
 ```bash
 strukt2meta unlist .dir
-strukt2meta ofs 
+strukt2meta .dir ofs --mode kriterien --step meta
+strukt2meta .dir ofs --mode kriterien --step bdoks
+strukt2meta .dir ofs --mode kriterien --step ids
 ```
 
 
