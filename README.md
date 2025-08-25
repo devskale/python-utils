@@ -56,12 +56,12 @@ pdf2md .dir --parsers pdfplumber --recursive
 updating index. generating list of uncategorized or unparsed files
 ```bash
 ofs index update .dir
-ofs index un .dir --json
 ```
 
-categorizing files of ausschreibungen and bieter.
+categorizing files of ausschreibungen and bieter, using LLMs.
 ```bash
-strukt2meta .dir --recursive
+strukt2meta unlist .dir
+strukt2meta ofs 
 ```
 
 

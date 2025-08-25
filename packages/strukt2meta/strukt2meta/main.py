@@ -15,6 +15,21 @@ from strukt2meta.commands import (
 
 
 def main():
+    # Pre-parse: allow optional leading basedir before the subcommand, e.g.:
+    #   strukt2meta .klark0 ofs "Project" --mode kriterien --step meta
+    # We detect if the first CLI arg is not a known subcommand and not an option,
+    # then treat it as an OFS BASE_DIR and remove it before argparse processes subcommands.
+    known_commands = {
+        'generate', 'inject', 'discover', 'analyze', 'batch',
+        'dirmeta', 'clearmeta', 'unlist', 'kriterien', 'ofs'
+    }
+    argv = sys.argv[1:]
+    leading_basedir = None
+    if argv and not argv[0].startswith('-') and argv[0] not in known_commands:
+        # Consider first arg a candidate basedir
+        leading_basedir = argv[0]
+        argv = argv[1:]
+
     parser = argparse.ArgumentParser(
         description="""strukt2meta: AI-powered metadata generation and management.
 
@@ -280,7 +295,24 @@ It offers a suite of commands for various operations:
         help='Enable verbose output for detailed logging'
     )
 
-    args = parser.parse_args()
+    # Use our adjusted argv (potentially without the leading basedir)
+    args = parser.parse_args(argv)
+
+    # Apply leading basedir override for OFS-based commands
+    if leading_basedir is not None and args.command in {'ofs', 'unlist'}:
+        # Normalize to absolute path
+        import os as _os
+        from pathlib import Path as _Path
+        base_dir = str(_Path(leading_basedir).expanduser().resolve())
+        # Set environment variable so new OFS config instances pick it up
+        _os.environ['OFS_BASE_DIR'] = base_dir
+        # Also update the live OFS config singleton if available
+        try:
+            from ofs.config import get_config as _ofs_get_config
+            _ofs_get_config().set('BASE_DIR', base_dir)
+        except Exception:
+            # If ofs isn't available or fails to import here, commands that need it will handle it
+            pass
 
     if args.command is None:
         parser.print_help()

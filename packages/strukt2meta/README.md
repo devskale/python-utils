@@ -45,6 +45,9 @@ strukt2meta inject --params injection_params.json --dry-run
 
 ## Commands (concise)
 
+#### OFS Command Usage
+You can optionally prefix commands with a base directory for OFS discovery. This sets OFS_BASE_DIR just for the command run:
+
 - `generate` — Create metadata from a single source file and write JSON.
   - Key options: `--i/--inpath`, `--p/--prompt`, `--o/--outfile`, `--j/--json-cleanup`, `-v/--verbose`.
 
@@ -53,6 +56,11 @@ strukt2meta inject --params injection_params.json --dry-run
   - Defaults to `<directory>/un_items.json`; `--num` limits how many to process (all by default).
   - Auto-selects `adok`/`bdok` by path; can update the OFS index and optionally inject results elsewhere.
   - Example: `strukt2meta unlist .klark0 --num 25` will process up to 25 non-image files from `.klark0/un_items.json`.
+
+Examples with optional leading basedir:
+
+strukt2meta .klark0 ofs "PROJECT_NAME" --mode kriterien --step meta -v
+strukt2meta /Volumes/data/ofs unlist --num 10 -v
 
 - `kriterien` — Extract structured qualification criteria from tender documents.
   - Supports `--insert` to merge results into an existing JSON key.
