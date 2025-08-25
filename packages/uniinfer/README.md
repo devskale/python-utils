@@ -286,9 +286,14 @@ print(f"Response from {provider_used}: {response.message.content}")
 | **StepFun**       | Step-1 models             | ✅        | API Key (credgoo) |
 | **Upstage**       | Solar models              | ✅        | API Key (credgoo) |
 | **NGC**           | NVIDIA GPU Cloud          | ✅        | API Key (credgoo) |
+| **Moonshot**      | Kimi, Moonshot            | ✅        | API Key (credgoo) |
+| **Sambanove**     | Sambanova models          | ✅        | API Key (credgoo) |
 | **Cloudflare**    | Workers AI models         | ✅        | API Key (credgoo) |
 | **Chutes**        | Deepseek, Qwen AI models  | ✅        | API Key (credgoo) |
 | **Pollinations**  | APIFree AI models         | ✅        | API Key (credgoo) |
+| **arli**          |free models         | ✅        | API Key (credgoo) |
+| **z.ai bigmodel** | glm-4.5-flash free model  | ✅        | API Key (credgoo) |
+
 
 Below are examples for some of our newer providers (all using automatic API key management with credgoo):
 

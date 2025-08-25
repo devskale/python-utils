@@ -170,26 +170,31 @@ It offers a suite of commands for various operations:
     # Unlist command
     unlist_parser = subparsers.add_parser(
         'unlist',
-        help='Process NUM uncategorized files from a JSON list for categorization.',
-        description='Processes a specified number of uncategorized files from an un_items.json file, excluding image files, to generate metadata and categorize them.'
+        help='Process uncategorized files from <directory>/un_items.json.',
+        description=(
+            'Processes uncategorized files listed in "un_items.json" inside the given directory. '
+            'Use --num to limit the number of files; by default all suitable files are processed.'
+        )
     )
     unlist_parser.add_argument(
-        'num',
+        'directory',
+        help='Directory containing un_items.json and the referenced files'
+    )
+    unlist_parser.add_argument(
+        '--num',
         type=int,
-        help='Number of files to process from the uncategorized list'
+        default=None,
+        help='Number of files to process (default: all)'
     )
     unlist_parser.add_argument(
-        'json_file',
-        help='Path to the JSON file containing un_items array (e.g., un_items.json)'
+        '--json-file',
+        dest='json_file',
+        help='Optional path to a custom JSON file containing the un_items array (defaults to <directory>/un_items.json)'
     )
     unlist_parser.add_argument(
         '-p', '--prompt',
         default='metadata_extraction',
         help='Name of the prompt to use for categorization (default: metadata_extraction)'
-    )
-    unlist_parser.add_argument(
-        '-d', '--directory',
-        help='Base directory where the files are located (if not specified, uses JSON file directory)'
     )
     unlist_parser.add_argument(
         '-t', '--target-json',

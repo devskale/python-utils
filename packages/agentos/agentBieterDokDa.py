@@ -269,7 +269,7 @@ def draw_list(stdscr, items: List[Dict[str, Any]], idx: int, top: int, projekt: 
     if j >= len(items):
       break
     it = items[j]
-    id_part = str(it['id'])[:10].ljust(10)
+    id_part = str(it['id'])[:12].ljust(12)
     name_part = (it['name'] or '')[:28].ljust(28)
     short_part = it['short']
     line = f"{id_part}  {name_part}  {short_part}"
@@ -331,66 +331,141 @@ def show_results(stdscr, crit: Dict[str, Any]):
   except Exception:
     pass
 
+  # Interactive results view with selection and evaluation
+  sel_idx = 0
+  while True:
+    stdscr.clear()
+    y = 0
+    stdscr.addnstr(y, 0, f"Ergebnis – Kriterium {crit['id']}: {crit['name']}", w-1, curses.A_BOLD); y += 1
+    # Wrap the long description for display
+    long_desc = crit.get('beschreibung') or crit.get('anforderung') or ''
+    for line in textwrap.wrap(long_desc, width=max(20, w-2)):
+      stdscr.addnstr(y, 0, line, w-1); y += 1
+    y += 1
+    # Show Begründung (summary) if available
+    stdscr.addnstr(y, 0, "Begründung:", w-1, curses.A_UNDERLINE); y += 1
+    if summary:
+      for line in textwrap.wrap(str(summary), width=max(20, w-2)):
+        if y >= h-3:
+          break
+        stdscr.addnstr(y, 0, line, w-1); y += 1
+    else:
+      stdscr.addnstr(y, 0, "(keine Zusammenfassung vom Modell)", w-1); y += 1
+    y += 1
+    stdscr.addnstr(y, 0, "Gefundene Dokumente:", w-1, curses.A_UNDERLINE); y += 1
+    list_start_y = y
+    if rel_list:
+      for i, item in enumerate(rel_list):
+        if y >= h-2:
+          break
+        fname = item.get('filename') or '(unbekannt)'
+        rel = item.get('relevance') if item.get('relevance') is not None else item.get('score')
+        rel_str = f"{rel:.2f}" if isinstance(rel, (int,float)) else str(rel)
+        meta = doc_meta_map.get(fname, {}) if isinstance(doc_meta_map, dict) else {}
+        m_name = str(meta.get('name') or '') if isinstance(meta, dict) else ''
+        m_kat = str(meta.get('kategorie') or meta.get('category') or '') if isinstance(meta, dict) else ''
+        m_begr = str(meta.get('begründung') or meta.get('begruendung') or meta.get('reason') or '') if isinstance(meta, dict) else ''
+        meta_parts = []
+        if m_name:
+          meta_parts.append(m_name)
+        if m_kat:
+          meta_parts.append(f"Kat: {m_kat}")
+        if m_begr:
+          meta_parts.append(f"Grund: {m_begr}")
+        meta_desc = " | ".join(meta_parts)
+        line_txt = f"{i+1}. {fname}  relevance={rel_str}"
+        if meta_desc:
+          line_txt += f"  – {meta_desc}"
+        attr = curses.A_REVERSE if i == sel_idx else curses.A_NORMAL
+        stdscr.addnstr(y, 0, line_txt, w-1, attr); y += 1
+    else:
+      stdscr.addnstr(y, 0, "KEINE DOKUMENTE", w-1); y += 1
+    stdscr.addnstr(h-1, 0, "↑/↓ wählen, b: bewerten, Enter/ESC/q: zurück", w-1, curses.A_DIM)
+    stdscr.refresh()
+
+    ch = stdscr.getch()
+    if ch in (ord('q'), ord('Q'), 27, 10, 13):  # q/Q, ESC, Enter
+      break
+    elif ch in (curses.KEY_UP, 65):
+      if rel_list:
+        sel_idx = (sel_idx - 1) % len(rel_list)
+    elif ch in (curses.KEY_DOWN, 66):
+      if rel_list:
+        sel_idx = (sel_idx + 1) % len(rel_list)
+    elif ch in (ord('b'), ord('B')):
+      if rel_list and 0 <= sel_idx < len(rel_list):
+        fname = rel_list[sel_idx].get('filename')
+        if fname:
+          evaluate_and_show(stdscr, crit, fname)
+    else:
+      # ignore
+      pass
+
+
+def evaluate_and_show(stdscr, crit: Dict[str, Any], filename: str):
+  """Read the selected document, ask the LLM to evaluate the criterion, and show the result."""
+  stdscr.clear()
+  h, w = stdscr.getmaxyx()
+  stdscr.addnstr(0, 0, f"Bewertung läuft für {filename} …", w-1, curses.A_BOLD)
+  stdscr.refresh()
+
+  content = load_document_content(filename, max_chars=20000)
+  # Build evaluation prompt
+  crit_public = {
+    'id': crit.get('id'),
+    'name': crit.get('name'),
+    'beschreibung': crit.get('beschreibung'),
+    'anforderung': crit.get('anforderung'),
+  }
+  try:
+    full = crit.get('desc_full') or {}
+    docs_hint = full.get('dokumente') if isinstance(full, dict) else None
+    if isinstance(docs_hint, list) and docs_hint:
+      crit_public['dokumente'] = docs_hint
+  except Exception:
+    pass
+  eval_context = {
+    'projektbeschreibung': Projektinfo.strip(),
+    'kriterium': crit_public,
+    'dokument': {
+      'filename': filename,
+      'inhalt': content,
+    }
+  }
+  user_payload = _json.dumps(eval_context, ensure_ascii=False, indent=2)
+  system_prompt = (
+    "Bewerte, ob das angegebene Dokument das Kriterium erfüllt.\n"
+    "Vorgehen: Prüfe inhaltlich gegen die 'anforderung' bzw. 'beschreibung' des Kriteriums.\n"
+    "Antworte NUR als JSON mit: { 'bewertung': ('erfüllt'|'teilweise erfüllt'|'nicht erfüllt'|'unbekannt'), 'begruendung': string }.\n"
+    "Nutze kurze prägnante Begründung; keine zusätzlichen Felder. Sprache: Deutsch."
+  )
+  try:
+    result = call_ai_model(system_prompt, user_payload, verbose=False, json_cleanup=True, task_type="kriterien")
+  except Exception as e:
+    result = { 'error': str(e) }
+
+  # Parse simple result
+  parsed: Dict[str, Any] = result if isinstance(result, dict) else {}
+  if not parsed and isinstance(result, str):
+    try:
+      parsed = json.loads(result)
+    except Exception:
+      parsed = { 'raw': result }
+  bewertung = parsed.get('bewertung') or parsed.get('ergebnis') or parsed.get('status') or '(unbekannt)'
+  begr = parsed.get('begruendung') or parsed.get('begründung') or parsed.get('begruendung_text') or parsed.get('reason') or ''
+
   stdscr.clear()
   y = 0
-  stdscr.addnstr(y, 0, f"Ergebnis – Kriterium {crit['id']}: {crit['name']}", w-1, curses.A_BOLD); y += 1
-  # Wrap the long description for display
-  long_desc = crit.get('beschreibung') or crit.get('anforderung') or ''
-  for line in textwrap.wrap(long_desc, width=max(20, w-2)):
-    stdscr.addnstr(y, 0, line, w-1); y += 1
-  y += 1
-  # Show Begründung (summary) if available
+  stdscr.addnstr(y, 0, f"Bewertung – {crit.get('id')}: {crit.get('name')} – Dok: {filename}", w-1, curses.A_BOLD); y += 1
+  stdscr.addnstr(y, 0, f"Bewertung: {bewertung}", w-1); y += 1
   stdscr.addnstr(y, 0, "Begründung:", w-1, curses.A_UNDERLINE); y += 1
-  if summary:
-    for line in textwrap.wrap(str(summary), width=max(20, w-2)):
+  if begr:
+    for line in textwrap.wrap(str(begr), width=max(20, w-2)):
       if y >= h-2:
         break
       stdscr.addnstr(y, 0, line, w-1); y += 1
   else:
-    stdscr.addnstr(y, 0, "(keine Zusammenfassung vom Modell)", w-1); y += 1
-  y += 1
-  stdscr.addnstr(y, 0, "Gefundene Dokumente:", w-1, curses.A_UNDERLINE); y += 1
-  if rel_list:
-    for i, item in enumerate(rel_list, 1):
-      if y >= h-2:
-        break
-      fname = item.get('filename') or '(unbekannt)'
-      rel = item.get('relevance') if item.get('relevance') is not None else item.get('score')
-      rel_str = f"{rel:.2f}" if isinstance(rel, (int,float)) else str(rel)
-      # Prepare compact meta description: meta.name | Kat: meta.kategorie | Grund: meta.begründung
-      meta = doc_meta_map.get(fname, {}) if isinstance(doc_meta_map, dict) else {}
-      m_name = ''
-      m_kat = ''
-      m_begr = ''
-      if isinstance(meta, dict):
-        m_name = str(meta.get('name') or '')
-        m_kat = str(meta.get('kategorie') or meta.get('category') or '')
-        m_begr = str(meta.get('begründung') or meta.get('begruendung') or meta.get('reason') or '')
-      meta_parts = []
-      if m_name:
-        meta_parts.append(m_name)
-      if m_kat:
-        meta_parts.append(f"Kat: {m_kat}")
-      if m_begr:
-        meta_parts.append(f"Grund: {m_begr}")
-      meta_desc = " | ".join(meta_parts)
-      # Also show LLM-provided Begründung for this doc if available
-      llm_begr = item.get('begruendung') or item.get('begründung') or ''
-      head_line = f"{i}. {fname}  relevance={rel_str}"
-      if meta_desc:
-        head_line += f"  – {meta_desc}"
-      # Wrap the head line if too long
-      for line in textwrap.wrap(head_line, width=max(20, w-2)):
-        if y >= h-2:
-          break
-        stdscr.addnstr(y, 0, line, w-1); y += 1
-      if llm_begr and y < h-2:
-        for line in textwrap.wrap(f"Begründung: {llm_begr}", width=max(20, w-2)):
-          if y >= h-2:
-            break
-          stdscr.addnstr(y, 0, line, w-1); y += 1
-  else:
-    stdscr.addnstr(y, 0, "KEINE DOKUMENTE", w-1); y += 1
+    stdscr.addnstr(y, 0, "(keine Begründung)", w-1); y += 1
   stdscr.addnstr(h-1, 0, "Taste drücken um zurückzukehren…", w-1, curses.A_DIM)
   stdscr.refresh()
   stdscr.getch()

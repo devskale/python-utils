@@ -1,12 +1,23 @@
 """
-Unlist command handler for processing uncategorized files from a JSON list.
+Unlist command handler for processing uncategorized files.
+
+Two modes are supported:
+1) Legacy JSON mode (if --json-file is provided or <directory>/un_items.json exists):
+    Reads a JSON list of files and processes them.
+2) OFS mode (default):
+    Uses the OFS package to:
+      - list projects
+      - list bidders per project
+      - list documents (A and B scope) including metadata
+      - identify uncategorized or missing-metadata documents
+    Then processes those documents end-to-end.
 """
 
 import json
 import os
 import tempfile
 from pathlib import Path
-from typing import Optional, Union, Dict, Any
+from typing import Optional, Union, Dict, Any, List
 from .base import BaseCommand
 
 
@@ -14,64 +25,204 @@ class UnlistCommand(BaseCommand):
     """Handle the unlist command for processing uncategorized files from a JSON list."""
 
     def run(self) -> None:
-        """Execute the unlist command to process NUM files from un_items.json."""
-        # Validate the JSON file exists
-        json_file_path = self.validate_file_path(self.args.json_file)
+        """Execute the unlist command.
 
-        # Load the JSON file
-        with open(json_file_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        If a JSON list is specified (legacy), use it; otherwise, use OFS to
+        auto-discover uncategorized or missing-metadata documents and process them.
+        """
+        # Legacy JSON mode if explicitly requested/provided
+        legacy_json = getattr(self.args, 'json_file', None)
+        if legacy_json:
+            return self._run_legacy_json_mode()
 
-        if 'un_items' not in data:
-            self.log("JSON file must contain 'un_items' array", "error")
+        # Else: OFS-backed traversal is the default
+        return self._run_ofs_mode()
+
+    # -----------------------------
+    # Legacy JSON mode (back-compat)
+    # -----------------------------
+    def _run_legacy_json_mode(self) -> None:
+        # Resolve and validate base directory
+        dir_arg = getattr(self.args, 'directory', None)
+        if isinstance(dir_arg, str) and dir_arg:
+            base_dir = self.validate_directory_path(dir_arg)
+        else:
+            # Infer base_dir from json_file if absolute; otherwise current working dir
+            jf_path = Path(self.args.json_file)
+            base_dir = jf_path.parent if jf_path.is_absolute() else Path.cwd()
+
+        # Determine JSON file path (explicit)
+        jf = Path(self.args.json_file)
+        json_file_path = jf if jf.is_absolute() else (base_dir / jf)
+        if not json_file_path.exists():
+            self.log(f"JSON file not found: {self.args.json_file}", "error")
             return
 
-        # Filter out image files and get uncategorized items
-        filtered_items = self._filter_items(data['un_items'])
+        # Ensure downstream helpers see the directory base as well
+        setattr(self.args, 'directory', str(base_dir))
 
+        # Load the JSON file
+        try:
+            with open(json_file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except Exception as e:
+            self.log(f"Failed to read JSON file {json_file_path}: {e}", "error")
+            return
+
+        # Accept both legacy key 'un_items' and new key 'files'
+        if 'un_items' in data:
+            raw_items = data['un_items']
+        elif 'files' in data:
+            raw_items = data['files']
+        else:
+            self.log("No 'un_items' found in JSON file", "error")
+            return
+
+        filtered_items = self._filter_items(raw_items)
         if not filtered_items:
             self.log("No suitable files found for processing", "warning")
             return
 
-        # Limit to the requested number
-        num_to_process = min(self.args.num, len(filtered_items))
+        # Limit and process
+        num_arg = getattr(self.args, 'num', None)
+        num_to_process = len(filtered_items) if (num_arg is None or num_arg <= 0) else min(num_arg, len(filtered_items))
         items_to_process = filtered_items[:num_to_process]
 
-        self.log(
-            f"Found {len(filtered_items)} suitable files, processing {num_to_process}")
+        self.log(f"Found {len(filtered_items)} suitable files, processing {num_to_process}")
+        if self.args.dry_run:
+            self._handle_dry_run(items_to_process)
+            return
+        self._process_files(items_to_process, json_file_path)
+
+    # -----------------------------
+    # OFS mode (default)
+    # -----------------------------
+    def _run_ofs_mode(self) -> None:
+        """Traverse the OFS structure to find uncategorized/missing-metadata docs and process them."""
+        try:
+            from ofs.api import list_projects, list_bidders_for_project, docs_list
+            # Allow overriding OFS BASE_DIR from positional 'directory'
+            base_override = getattr(self.args, 'directory', None)
+            if isinstance(base_override, str) and base_override.strip():
+                base_path = Path(base_override).resolve()
+                if base_path.exists():
+                    # Set env for any downstream consumers
+                    os.environ['OFS_BASE_DIR'] = str(base_path)
+                    # Update live OFS config singleton
+                    try:
+                        from ofs.config import get_config
+                        get_config().set('BASE_DIR', str(base_path))
+                    except Exception:
+                        pass
+        except Exception as e:
+            self.log(f"OFS package not available or failed to import: {e}", "error")
+            return
+
+        # Gather uncategorized docs across all projects (A and B scopes)
+        items: List[Dict[str, Any]] = []
+
+        # Projects
+        projects_json = list_projects()
+        projects: List[str] = []
+        if isinstance(projects_json, dict):
+            projects = projects_json.get('projects') or []
+        elif isinstance(projects_json, list):
+            projects = projects_json
+        # Fallback: if still empty, scan the provided base directory for projects (dirs only)
+        if not projects:
+            base_override = os.environ.get('OFS_BASE_DIR')
+            if base_override:
+                try:
+                    p = Path(base_override)
+                    if p.exists():
+                        projects = [d.name for d in p.iterdir() if d.is_dir() and not d.name.startswith('.') and d.name not in {'md','archive'}]
+                except Exception:
+                    pass
+
+        if not projects:
+            self.log("No OFS projects found.", "warning")
+            return
+
+        for project in projects:
+            # A/ documents with metadata view
+            try:
+                a_docs = docs_list(project, meta=True)
+                items.extend(self._gather_uncategorized_from_docs(a_docs, scope='A', project=project))
+            except Exception as e:
+                if self.verbose:
+                    self.log(f"Docs listing for A in project '{project}' failed: {e}", "warning")
+
+            # B/ bidders and their documents
+            try:
+                bidders = list_bidders_for_project(project)
+            except Exception as e:
+                bidders = []
+                if self.verbose:
+                    self.log(f"Listing bidders for project '{project}' failed: {e}", "warning")
+
+            for bidder in bidders or []:
+                try:
+                    b_docs = docs_list(f"{project}@{bidder}", meta=True)
+                    items.extend(self._gather_uncategorized_from_docs(b_docs, scope='B', project=project, bidder=bidder))
+                except Exception as e:
+                    if self.verbose:
+                        self.log(f"Docs listing for B '{bidder}' in project '{project}' failed: {e}", "warning")
+
+        if not items:
+            self.log("No uncategorized or missing-metadata documents found in OFS.", "success")
+            return
+
+        # Apply --num limit if provided
+        num_arg = getattr(self.args, 'num', None)
+        num_to_process = len(items) if (num_arg is None or num_arg <= 0) else min(num_arg, len(items))
+        items_to_process = items[:num_to_process]
+
+        self.log(f"Found {len(items)} uncategorized/missing-metadata docs, processing {num_to_process}")
 
         if self.args.dry_run:
             self._handle_dry_run(items_to_process)
             return
 
-        # Ask for confirmation unless in quiet mode
-        # if not self._get_user_confirmation(num_to_process):
-        #    self.log("Processing cancelled", "warning")
-        #    return
+        # Prevent legacy path prefixing with positional 'directory' in OFS mode
+        try:
+            setattr(self.args, 'directory', '')
+        except Exception:
+            pass
 
-        # Process the files
-        self._process_files(items_to_process, json_file_path)
+        # In OFS mode, we don't have a json_file context; pass None
+        self._process_files(items_to_process, None)
 
     def _filter_items(self, un_items: list) -> list:
-        """Filter items to exclude image files and include only uncategorized items."""
+        """Filter items to exclude image files and include only uncategorized items when status is present.
+
+        Logic:
+        - If item has key 'category', include only when category == 'uncategorized'
+        - Else if item has key 'uncategorized' (bool), include only when True
+        - Else (no explicit status), include by default
+        - In all cases, skip common image extensions
+        """
         image_extensions = {'.png', '.jpg', '.jpeg',
                             '.gif', '.bmp', '.tiff', '.svg', '.webp'}
 
         filtered = []
         for item in un_items:
-            # Skip if not uncategorized
-            if not item.get('uncategorized', False):
-                continue
-
             # Skip image files
-            path = item.get('path', '')
+            path = item.get('path') or item.get('file_path') or item.get('file', '')
             file_ext = Path(path).suffix.lower()
             if file_ext in image_extensions:
                 if self.verbose:
                     self.log(f"Skipping image file: {path}", "info")
                 continue
 
-            filtered.append(item)
+            # Determine uncategorized status
+            include = True
+            if 'category' in item:
+                include = (str(item.get('category', '')).lower() == 'uncategorized')
+            elif 'uncategorized' in item:
+                include = bool(item.get('uncategorized'))
+
+            if include:
+                filtered.append(item)
 
         return filtered
 
@@ -79,7 +230,7 @@ class UnlistCommand(BaseCommand):
         """Handle dry run mode for unlist processing."""
         print("🔍 DRY RUN - Files that would be processed:")
         for i, item in enumerate(items_to_process, 1):
-            path = item.get('path', 'unknown')
+            path = item.get('path') or item.get('file_path') or item.get('file', 'unknown')
             unparsed = item.get('unparsed', False)
             prompt_name = self._determine_prompt_for_path(path)
             print(f"   {i}. 📄 {path}")
@@ -92,13 +243,13 @@ class UnlistCommand(BaseCommand):
         print(f"\n🚀 Process {count} files for categorization? (y/N): ", end="")
         return input().strip().lower() == 'y'
 
-    def _process_files(self, items_to_process: list, json_file_path: Path) -> None:
+    def _process_files(self, items_to_process: list, json_file_path: Optional[Path]) -> None:
         """Process all selected items."""
         successful = 0
         failed = 0
 
         for i, item in enumerate(items_to_process, 1):
-            path = item.get('path', '')
+            path = item.get('path') or item.get('file_path') or item.get('file', '')
 
             try:
                 if self._process_single_item(item, json_file_path):
@@ -114,18 +265,26 @@ class UnlistCommand(BaseCommand):
         # Summary
         self._print_summary(successful, failed, len(items_to_process))
 
-    def _process_single_item(self, item: dict, json_file_path: Path) -> bool:
+    def _process_single_item(self, item: dict, json_file_path: Optional[Path]) -> bool:
         """Process a single item from the un_items list."""
-        path = item.get('path', '')
+        path = item.get('path') or item.get('file_path') or item.get('file', '')
 
         # Check if the file exists in the base directory
-        if hasattr(self.args, 'directory') and self.args.directory:
+        p = Path(path)
+        if p.is_absolute():
+            full_path = p
+            base_directory = p.parent
+        elif hasattr(self.args, 'directory') and self.args.directory:
             full_path = Path(self.args.directory) / path
-            base_directory = Path(self.args.directory)
+            base_directory = full_path.parent
         else:
             # Try to find the file relative to the JSON file location
-            full_path = json_file_path.parent / path
-            base_directory = json_file_path.parent
+            if json_file_path is not None:
+                full_path = json_file_path.parent / path
+                base_directory = full_path.parent
+            else:
+                full_path = Path.cwd() / path
+                base_directory = full_path.parent
 
         if not full_path.exists():
             self.log(f"File not found: {full_path}", "warning")
@@ -212,6 +371,77 @@ class UnlistCommand(BaseCommand):
             self._print_categorization_result(path, None, prompt_name, chosen_md_file, parser_used, False)
             return False
 
+    # -----------------------------
+    # OFS helpers
+    # -----------------------------
+    def _gather_uncategorized_from_docs(self, docs_json: Dict[str, Any], scope: str, project: str, bidder: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Produce a list of items (dicts) with 'path' for documents considered uncategorized/missing-metadata.
+
+        The returned items are compatible with the existing processing pipeline.
+        """
+        results: List[Dict[str, Any]] = []
+        if not isinstance(docs_json, dict):
+            return results
+
+        documents = docs_json.get('documents') or []
+        for d in documents:
+            # Skip images and JSON (e.g., audit.json) similar to legacy filtering
+            image_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.svg', '.webp'}
+            ext = None
+            if isinstance(d.get('type'), str):
+                ext = d['type'].lower()
+            elif isinstance(d.get('name'), str):
+                ext = Path(d['name']).suffix.lower()
+            elif isinstance(d.get('path'), str):
+                ext = Path(d['path']).suffix.lower()
+            if ext in image_extensions or ext == '.json':
+                continue
+
+            # Prefer 'path' when include_metadata=True, otherwise compose minimal path from known fields
+            path = d.get('path')
+            if not path:
+                name = d.get('name') or d.get('filename')
+                if not name:
+                    continue
+                # Compose best-effort path using scope
+                try:
+                    from ofs.paths import get_path as ofs_get_path
+                    project_dir = Path(ofs_get_path(project))
+                    if scope == 'A':
+                        composed = project_dir / 'A' / name
+                    else:
+                        composed = project_dir / 'B' / (bidder or '') / name
+                    path = str(composed)
+                except Exception:
+                    path = name  # fallback relative
+
+            if self._is_uncategorized(d):
+                results.append({
+                    'path': path,
+                    'project': project,
+                    **({'bidder': bidder} if bidder else {})
+                })
+        return results
+
+    def _is_uncategorized(self, doc_entry: Dict[str, Any]) -> bool:
+        """Determine if a document is uncategorized or missing metadata.
+
+        Heuristics:
+        - No 'meta' dict present
+        - 'meta' present but missing 'kategorie' or 'name'
+        - 'kategorie' equals 'uncategorized' (case-insensitive)
+        """
+        meta = doc_entry.get('meta')
+        if not isinstance(meta, dict) or not meta:
+            return True
+        kategorie = meta.get('kategorie')
+        name = meta.get('name')
+        if kategorie is None or name is None:
+            return True
+        if isinstance(kategorie, str) and kategorie.strip().lower() == 'uncategorized':
+            return True
+        return False
+
     def _determine_prompt_for_path(self, file_path: str) -> str:
         """
         Determine the appropriate prompt based on the opinionated file structure.
@@ -232,14 +462,16 @@ class UnlistCommand(BaseCommand):
                     self.log(
                         f"Using 'adok' prompt for /A/ directory: {file_path}")
                 return 'adok'
-            elif part == 'B':
+            if part == 'B':
                 if self.verbose:
                     self.log(
                         f"Using 'bdok' prompt for /B/ directory: {file_path}")
                 return 'bdok'
 
         # Fallback to the user-specified prompt or default
-        fallback_prompt = self.args.prompt
+        fallback_prompt = getattr(self.args, 'prompt', None)
+        if not isinstance(fallback_prompt, str) or not fallback_prompt:
+            fallback_prompt = 'metadata_extraction'
         if self.verbose:
             self.log(
                 f"Using fallback prompt '{fallback_prompt}' for: {file_path}")
@@ -295,26 +527,16 @@ class UnlistCommand(BaseCommand):
             file_path_obj = Path(file_path)
             if file_path_obj.is_absolute():
                 file_directory = file_path_obj.parent
+                full_file_path = file_path_obj
             else:
-                # For relative paths, resolve against base_directory
-                full_file_path = base_directory / file_path
-                file_directory = full_file_path.parent
+                # For relative paths, treat base_directory as the actual file directory
+                # and avoid re-attaching subfolders that are already included in file_path
+                file_directory = base_directory
+                full_file_path = base_directory / file_path_obj.name
             
-            # Load config for index file name
+            # Use only the modern OFS index file name
             index_file_name = '.ofs.index.json'
-            try:
-                cfg_path = Path('./config.json')
-                if cfg_path.exists():
-                    with open(cfg_path, 'r', encoding='utf-8') as cfh:
-                        cfg = json.load(cfh)
-                        index_file_name = cfg.get('index_file_name', index_file_name)
-            except Exception:
-                pass
-            # Determine path (prefer new, fallback to legacy if present)
             index_path = file_directory / index_file_name
-            legacy_path = file_directory / '.pdf2md_index.json'
-            if not index_path.exists() and legacy_path.exists():
-                index_path = legacy_path
             
             # Clean and extract metadata from the AI result
             if isinstance(result, dict):
@@ -436,8 +658,86 @@ class UnlistCommand(BaseCommand):
             print(f"     {prompt_name} @ (content extracted directly)")
         
         # Show success status
-        status = "ok (json inserted)" if success else "not ok"
-        print(f"     {status}")
+        if success:
+            # Try to surface key fields in the success message
+            name = None
+            kategorie = None
+
+            # 1) Try to extract from result directly (dict or JSON string)
+            try:
+                payload = result
+                if isinstance(payload, str):
+                    try:
+                        payload = json.loads(payload)
+                    except Exception:
+                        # Try robust cleanup for loosely-structured JSON
+                        try:
+                            from strukt2meta.jsonclean import cleanify_json
+                            payload = cleanify_json(payload)
+                        except Exception:
+                            payload = None
+                if isinstance(payload, dict):
+                    # Look for direct keys first
+                    name = payload.get("name")
+                    kategorie = payload.get("kategorie")
+                    # Or nested under meta
+                    if (name is None or kategorie is None) and isinstance(payload.get("meta"), dict):
+                        meta = payload.get("meta", {})
+                        name = name or meta.get("name")
+                        kategorie = kategorie or meta.get("kategorie")
+            except Exception:
+                name = None
+                kategorie = None
+
+            # 2) If still missing, try reading the index file written for this item
+            if not (name or kategorie):
+                try:
+                    file_path_obj = Path(file_path)
+                    # Determine directory similar to _update_index_file
+                    if file_path_obj.is_absolute():
+                        file_directory = file_path_obj.parent
+                        fname = file_path_obj.name
+                    else:
+                        base_dir = getattr(self.args, 'directory', None)
+                        if base_dir:
+                            file_directory = Path(base_dir) / file_path_obj
+                            file_directory = file_directory.parent
+                            fname = file_path_obj.name
+                        else:
+                            file_directory = Path.cwd()
+                            fname = file_path_obj.name
+
+                    # Resolve index filename (fixed)
+                    index_file_name = '.ofs.index.json'
+                    index_path = file_directory / index_file_name
+
+                    if index_path.exists():
+                        with open(index_path, 'r', encoding='utf-8') as ifh:
+                            idx = json.load(ifh)
+                        files = idx.get('files') if isinstance(idx, dict) else None
+                        if isinstance(files, list):
+                            for entry in files:
+                                if isinstance(entry, dict) and entry.get('name') == fname:
+                                    meta = entry.get('meta') or {}
+                                    if isinstance(meta, dict):
+                                        name = name or meta.get('name')
+                                        kategorie = kategorie or meta.get('kategorie')
+                                    break
+                except Exception:
+                    # Silently ignore and fallback
+                    pass
+
+            # Finalize message
+            if name or kategorie:
+                parts = []
+                parts.append(str(name) if name is not None else "")
+                parts.append(str(kategorie) if kategorie is not None else "")
+                descriptor = ", ".join(p for p in parts if p)
+                print(f"     ok ({descriptor})")
+            else:
+                print("     ok (json inserted)")
+        else:
+            print("     not ok")
 
     def _print_summary(self, successful: int, failed: int, total: int) -> None:
         """Print processing summary."""
@@ -448,7 +748,7 @@ class UnlistCommand(BaseCommand):
 
         if successful > 0:
             print(
-                f"   📄 Metadata written to index files (.ofs.index.json or legacy .pdf2md_index.json) in each file's directory")
+                f"   📄 Metadata written to .ofs.index.json in each file's directory")
 
             # Also mention target JSON if specified
             if hasattr(self.args, 'target_json') and self.args.target_json:

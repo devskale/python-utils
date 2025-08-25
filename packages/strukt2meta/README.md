@@ -29,7 +29,8 @@ strukt2meta generate --i input.md --p zusammenfassung --o metadata.json
 
 Process uncategorized items (automatic `adok`/`bdok` selection):
 ```/dev/null/unlist.example#L1-2
-strukt2meta unlist 5 ./un_items.json -d ./data --prompt metadata_extraction -v
+strukt2meta unlist .klark0 --num 10 --prompt metadata_extraction -v
+# Uses .klark0/un_items.json by default
 ```
 
 Extract qualification criteria from a tender document:
@@ -48,7 +49,10 @@ strukt2meta inject --params injection_params.json --dry-run
   - Key options: `--i/--inpath`, `--p/--prompt`, `--o/--outfile`, `--j/--json-cleanup`, `-v/--verbose`.
 
 - `unlist` — Batch-process a list of uncategorized files (JSON with `un_items`).
+  - Usage: `strukt2meta unlist <directory> [--num NUM] [--json-file path] [-p prompt] [-t target.json] [-v]`
+  - Defaults to `<directory>/un_items.json`; `--num` limits how many to process (all by default).
   - Auto-selects `adok`/`bdok` by path; can update the OFS index and optionally inject results elsewhere.
+  - Example: `strukt2meta unlist .klark0 --num 25` will process up to 25 non-image files from `.klark0/un_items.json`.
 
 - `kriterien` — Extract structured qualification criteria from tender documents.
   - Supports `--insert` to merge results into an existing JSON key.

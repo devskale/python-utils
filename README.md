@@ -45,6 +45,31 @@ cd python-utils
 pip install -e .
 ```
 
+
+# Workflows
+
+Parsing through directory tree
+```bash
+pdf2md .dir --parsers pdfplumber --recursive
+```
+
+updating index. generating list of uncategorized or unparsed files
+```bash
+ofs index update .dir
+ofs index un .dir --json
+```
+
+categorizing files of ausschreibungen and bieter.
+```bash
+strukt2meta .dir --recursive
+```
+
+
+
+
+
+
+
 ## Contributing
 
 Contributions are welcome! Please see the [contributing guidelines](docs/contributing.md) for more information.
