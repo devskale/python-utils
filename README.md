@@ -66,6 +66,10 @@ strukt2meta .dir ofs --mode kriterien --step bdoks
 strukt2meta .dir ofs --mode kriterien --step ids
 ```
 
+```bash
+ofs kriterien-sync
+```
+
 
 
 
