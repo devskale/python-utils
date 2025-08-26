@@ -1,14 +1,20 @@
 import argparse
 import json
+import re
 import sys
 from credgoo import get_api_key
 from ofs.api import list_bidder_docs_json, get_bieterdokumente_list  # type: ignore
 # Agno framework pieces (used to construct the minimal workflow)
 from agno.agent import Agent
 from agno.models.vllm import vLLM
-from agno.tools import tool
-from agno.workflow.v2.workflow import Workflow
-from agno.utils.pprint import pprint_run_response
+# from agno.tools import tool
+# from agno.workflow.v2.workflow import Workflow
+
+# Optional JSON repair for messy LLM outputs
+try:
+    from json_repair import repair_json  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    repair_json = None  # type: ignore
 
 
 
@@ -115,6 +121,70 @@ gib eine liste der am besten passenden hochgeladenen Dokumente zurück, die zu d
     return prompt
 
 
+def extract_json_clean(text: str):
+    """Try to extract/parse JSON from a possibly noisy LLM response.
+
+    Strategy:
+    - Try direct json.loads
+    - Try fenced code blocks ```json ... ``` or ``` ... ```
+    - Try extracting just the matches array
+    - Try using json_repair.repair_json when available
+    Returns a Python object (dict or list) or None.
+    """
+    if not text:
+        return None
+    # 1) Direct parse
+    try:
+        return json.loads(text)
+    except Exception:
+        pass
+
+    # 2) Look for fenced json blocks
+    for pattern in [r"```json\s*(.*?)```", r"```\s*(.*?)```"]:
+        m = re.search(pattern, text, flags=re.DOTALL | re.IGNORECASE)
+        if m:
+            block = m.group(1).strip()
+            try:
+                return json.loads(block)
+            except Exception:
+                # Attempt repair on the block if available
+                if repair_json:
+                    try:
+                        fixed = repair_json(block)
+                        return json.loads(fixed)
+                    except Exception:
+                        pass
+                continue
+
+    # 3) Extract just the matches array and wrap it
+    m2 = re.search(r'"matches"\s*:\s*(\[.*?\])', text, flags=re.DOTALL)
+    if m2:
+        arr_text = m2.group(1)
+        try:
+            matches = json.loads(arr_text)
+            return {"matches": matches}
+        except Exception:
+            # Attempt repair on the array if available
+            if repair_json:
+                try:
+                    fixed_arr = repair_json(arr_text)
+                    matches = json.loads(fixed_arr)
+                    return {"matches": matches}
+                except Exception:
+                    pass
+            pass
+
+    # 4) Last resort: try to repair the entire text
+    if repair_json:
+        try:
+            fixed_all = repair_json(text)
+            return json.loads(fixed_all)
+        except Exception:
+            pass
+
+    return None
+
+
 def main():
     """Minimal utility:
 
@@ -124,6 +194,7 @@ def main():
     """
     parser = argparse.ArgumentParser(description="List bidder docs JSON for project@bidder")
     parser.add_argument("identifier", help="project@bidder")
+    parser.add_argument("--limit", type=int, default=100, help="Number of required docs to process (default: 3)")
     args = parser.parse_args()
 
     agent = Agent(
@@ -155,8 +226,14 @@ def main():
     print(f"Hochgeladene Bieterdokumente: {len(hochgeladene_dokumente['documents'])}")
     #print(json.dumps(hochgeladene_dokumente, indent=2, ensure_ascii=False))
     #print(json.dumps(geforderte_dokumente, indent=2, ensure_ascii=False))
+    # Build a matched list for the first N required docs
+    limit = max(0, int(args.limit))
+    matched_list = []
+
     # loop through geforderte_dokumente and print index and bezeichnung
     for i, gefordertes_doc in enumerate(geforderte_dokumente, start=1):
+        if limit and i > limit:
+            break
         print(f"{i}/{len(geforderte_dokumente)} - {gefordertes_doc.get('bezeichnung')}")
         # ask llm if bieterdoc matches a gefordertes_doc
         # if yes, print match, if no, print no match
@@ -167,13 +244,41 @@ def main():
         print(f"Prompt preview: {preview}")
         response = agent.run(
             mPrompt,
-            stream=True,
-            markdown=True,
+            stream=False,  # capture final text only
+            markdown=False,
             show_message=False
         )
-        pprint_run_response(response, markdown=True)
-        input("Press Enter to continue...")
-        i += 1
+        # Parse the response into JSON (clean) and attach to current required doc
+        content = getattr(response, "content", response)
+        result = extract_json_clean(content if isinstance(content, str) else str(content))
+        matches = None
+        if isinstance(result, dict) and "matches" in result:
+            matches = result["matches"]
+        elif isinstance(result, list):
+            matches = result
+        else:
+            print("Warning: Could not extract matches JSON cleanly; storing raw content.")
+            matches = content
+
+        # Add matches to the current required doc and to the aggregate list
+        gefordertes_doc["matches"] = matches
+        matched_list.append({
+            "gefordertes_doc": gefordertes_doc,
+            "matches": matches,
+        })
+
+    # Print the aggregated matched list for the processed items
+    print("\nMatched list (first {} items):".format(limit or len(matched_list)))
+    print(json.dumps(matched_list, indent=2, ensure_ascii=False))
+
+    # Save matched list to file
+    out_file = f"matcha.{project}.{bidder}.json"
+    try:
+        with open(out_file, "w", encoding="utf-8") as f:
+            json.dump(matched_list, f, indent=2, ensure_ascii=False)
+        print(f"Saved matched list to {out_file}")
+    except Exception as e:
+        print(f"Error saving matched list to {out_file}: {e}")
 
 if __name__ == "__main__":
     main()
