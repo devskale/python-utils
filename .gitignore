@@ -57,3 +57,8 @@ packages/strukt2meta/prompts/adok.1.md
 packages/strukt2meta/prompts/bdok.1.md
 klark0
 test_*
+.dir
+packages/ofs/aufsitz.md
+packages/ofs/aufsitzrasenmäher.krit.json
+packages/ofs/entrümpel.md
+packages/ofs/entrümpelung.krit.json
