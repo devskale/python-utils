@@ -88,3 +88,23 @@ Dieses Repository enthält den "DokDa"-Agent (`agentos/agentBieterDokDa.py`), de
 - Wenn viele Dokumente vorhanden sind, empfiehlt sich ein zwei‑stufiger Ansatz: schnelle Metadaten‑Filtration → inhaltliche Prüfung nur für Top‑N.
 
 Bei Fragen zur Anpassung der Prompts, zur Reduktion der Token‑Kosten oder zur Integration in ein GUI/CI‑System helfe ich dir gerne weiter.
+
+## AgentOS Python Utilities
+
+This directory contains various Python utilities that leverage the AgentOS framework for document intelligence tasks.
+
+### `matchaFlow.py`
+
+**Purpose:** This script uses an LLM to match required documents with uploaded bidder documents, primarily in procurement contexts. It connects to an `ofs` API to retrieve document lists, processes them, and then uses an `Agent` (from the `agno` framework) to run an LLM prompt for matching.
+
+**Usage:** The script is typically run with `project` and `bidder` arguments, which define the scope of the document matching.
+
+**Result:** It outputs a JSON file named `matcha.{project}.{bidder}.json` containing the matched document list.
+
+### `checkaFlow.py`
+
+**Purpose:** This script assesses bidder documents against predefined audit criteria using an LLM. It retrieves audit criteria and uploaded documents, then iteratively uses an LLM to find relevant documents for each criterion and subsequently assesses whether the criterion is met based on the document content.
+
+**Usage:** The script requires `project` and `bidder` arguments to specify the context of the assessment. It can also take an optional `out` argument to specify the output file path and a `limit` argument to restrict the number of criteria processed.
+
+**Result:** It outputs a JSON file named `{project}.{bidder}.assessments.json` containing the detailed assessment results for each criterion.
