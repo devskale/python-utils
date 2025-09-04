@@ -33,7 +33,7 @@ MODELS = {
     "qwen-large": "qwen-32b"
 }
 
-MODEL = MODELS["mistral-small"]
+MODEL = MODELS["deepseek-r1"]
 
 api_key = get_api_key(PROVIDER)
 
@@ -108,7 +108,7 @@ Du erhältst eine Liste von geforderten Dokumenten mit ihren Bezeichnungen.
 Sofern nicht anders angegeben gilt standardmäßig: 
 - das ausschreibende Unternehmen ist die "Wiener Wohnen Hausbetreuung Gmbh", ein Unternehmen aus Österreich.
 - Der teilnehmende Bieter ist ein Unternehmen aus Österreich. Daher sind nur Dokumente für österreichische Unternehmen relevant.
-- der Bieter bietet für alle Lose an.
+- Der Bieter bietet für alle Lose an.
 - Der Bieter ist der Hauptauftragnehmer.
 - Die hochgeladenen Dokumente sind von einem Bieter, der an der Ausschreibung teilnimmt.
 - Der Bieter ist ein Einzalbieter, es gibt keine Bieter- oder Arbeitsgemeinschaft. Daher sind keine Dokumente für BIEGE oder ARGE notwendig.
@@ -122,6 +122,8 @@ Die liste mit den hochgeladenen Bieterdokumenten ist:
 {json.dumps(hochgeladene_docs, indent=2, ensure_ascii=False)}
 
 gib eine liste der am besten passenden hochgeladenen Dokumente zurück, die zu dem geforderten Dokument passen. Falls Dokumente nicht notwendig sind (zB ARGE oder Subunternehmer, ausländische Bieter, etc).
+Der Bieter kann anstatt der Formblätter auch Listen oder Formulare in (zB Referenzlisten) in eigenem Format abgeben, bitte identifiziere diese ebenso und weise sie zu, wenn Sie zum geforderten Dokument passen.
+Führe keine inhaltliche Bewertung durch. Erkenne nur ob das Dokument für als gefordertes Dokument relevant ist.
 "matches": [
     {{
      "Dateiname": "...",    # der Dateiname des hochgeladenen Dokuments oder NONE
@@ -200,7 +202,7 @@ def extract_json_clean(text: str):
 
 def view_matcha_results(filename):
     """Display matcha results in a readable format.
-    
+
     Args:
         filename (str): Path to the matcha JSON file
     """
@@ -210,7 +212,7 @@ def view_matcha_results(filename):
     except Exception as e:
         print(f"Error reading file {filename}: {e}")
         return
-    
+
     # Handle both old format (list) and new format (dict with metadata)
     if isinstance(data, list):
         # Old format - just the matched documents list
@@ -224,19 +226,19 @@ def view_matcha_results(filename):
     else:
         print("Invalid file format: expected a list or dict with matched_documents")
         return
-    
+
     # Separate matched and unmatched required docs
     matched_docs = []
     unmatched_docs = []
     all_matched_bidder_docs = set()
-    
+
     for item in matched_documents:
         if not isinstance(item, dict) or 'gefordertes_doc' not in item:
             continue
-            
+
         gefordertes_doc = item['gefordertes_doc']
         matches = gefordertes_doc.get('matches', [])
-        
+
         # Check if this required doc has valid matches
         has_valid_matches = False
         if isinstance(matches, list):
@@ -246,29 +248,31 @@ def view_matcha_results(filename):
                     if dateiname and dateiname.upper() != 'NONE':
                         has_valid_matches = True
                         all_matched_bidder_docs.add(dateiname)
-        
+
         if has_valid_matches:
             matched_docs.append(item)
         else:
             unmatched_docs.append(item)
-    
+
     # Print results
     print(f"\n=== MATCHA RESULTS: {filename} ===")
     if metadata:
-        print(f"Project: {metadata.get('ausschreibung', 'N/A')}, Bidder: {metadata.get('bieter', 'N/A')}")
+        print(
+            f"Project: {metadata.get('ausschreibung', 'N/A')}, Bidder: {metadata.get('bieter', 'N/A')}")
     print(f"Total required documents: {len(matched_documents)}")
-    
+
     # Show matched documents first
     if matched_docs:
-        print(f"\n📋 MATCHED REQUIRED DOCUMENTS {len(matched_docs)}/{len(matched_documents)}:")
+        print(
+            f"\n📋 MATCHED REQUIRED DOCUMENTS {len(matched_docs)}/{len(matched_documents)}:")
         print("=" * 50)
         for item in matched_docs:
             gefordertes_doc = item['gefordertes_doc']
             matches = gefordertes_doc.get('matches', [])
-            
+
             print(f"\n🔹 {gefordertes_doc.get('bezeichnung', 'Unknown')}")
             print(f"   Category: {gefordertes_doc.get('kategorie', 'N/A')}")
-            
+
             if isinstance(matches, list):
                 for match in matches:
                     if isinstance(match, dict):
@@ -279,70 +283,75 @@ def view_matcha_results(filename):
                             print(f"   ✅ {dateiname}")
                             print(f"      Name: {name}")
                             print(f"      Category: {kategorie}")
-    
+
     # Show unmatched required documents
     if unmatched_docs:
-        print(f"\n❌ UNMATCHED REQUIRED DOCUMENTS {len(unmatched_docs)}/{len(matched_documents)}:")
+        print(
+            f"\n❌ UNMATCHED REQUIRED DOCUMENTS {len(unmatched_docs)}/{len(matched_documents)}:")
         print("=" * 50)
         for i, item in enumerate(unmatched_docs, 1):
             gefordertes_doc = item['gefordertes_doc']
             print(f"{i}. {gefordertes_doc.get('bezeichnung', 'Unknown')}")
-    
+
     # Calculate bidder document counts
     total_bidder_docs = len(all_matched_bidder_docs)
     unmatched_bidder_count = 0
-    
+
     if metadata and 'ausschreibung' in metadata and 'bieter' in metadata:
         try:
             # Retrieve bidder documents live using ofs command
             project = metadata['ausschreibung']
             bidder = metadata['bieter']
-            hochgeladene_docs = list_bidder_docs_json(project, bidder, include_metadata=True)
-            
+            hochgeladene_docs = list_bidder_docs_json(
+                project, bidder, include_metadata=True)
+
             # Get all uploaded bidder documents
             all_bidder_docs = set()
             if isinstance(hochgeladene_docs, dict) and 'documents' in hochgeladene_docs:
                 for doc in hochgeladene_docs['documents']:
                     if isinstance(doc, dict) and 'name' in doc:
                         all_bidder_docs.add(doc['name'])
-            
+
             # Find unmatched bidder documents
             unmatched_bidder_docs = all_bidder_docs - all_matched_bidder_docs
             unmatched_bidder_count = len(unmatched_bidder_docs)
             total_bidder_docs = len(all_bidder_docs)
-            
+
         except Exception as e:
             unmatched_bidder_docs = set()
-    
+
     # Show matched bidder documents summary
-    print(f"\n📄 MATCHED BIDDER DOCUMENTS SUMMARY {len(all_matched_bidder_docs)}/{total_bidder_docs}:")
+    print(
+        f"\n📄 MATCHED BIDDER DOCUMENTS SUMMARY {len(all_matched_bidder_docs)}/{total_bidder_docs}:")
     print("=" * 50)
     for i, doc in enumerate(sorted(all_matched_bidder_docs), 1):
         print(f"{i}. {doc}")
-    
+
     # Show unmatched bidder documents section
-    print(f"\n📄 UNMATCHED BIDDER DOCUMENTS {unmatched_bidder_count}/{total_bidder_docs}:")
+    print(
+        f"\n📄 UNMATCHED BIDDER DOCUMENTS {unmatched_bidder_count}/{total_bidder_docs}:")
     print("=" * 50)
-    
+
     if metadata and 'ausschreibung' in metadata and 'bieter' in metadata:
         try:
             if unmatched_bidder_docs:
                 for i, doc in enumerate(sorted(unmatched_bidder_docs), 1):
                     print(f"{i}. {doc}")
             else:
-                print("(All uploaded bidder documents were matched to required documents)")
-                
+                print(
+                    "(All uploaded bidder documents were matched to required documents)")
+
         except Exception as e:
             print(f"(Error retrieving bidder documents: {e})")
     else:
         print("(Note: This section requires metadata with project and bidder information)")
-    
+
     print("\n" + "=" * 60)
 
 
 def process_bidder(agent, project: str, bidder: str, limit: int):
     """Process a single bidder for a project and generate matcha results.
-    
+
     Args:
         agent: The AI agent for processing
         project: Project name
@@ -350,7 +359,7 @@ def process_bidder(agent, project: str, bidder: str, limit: int):
         limit: Number of required docs to process
     """
     print(f"\n=== Processing {project}@{bidder} ===")
-    
+
     try:
         hochgeladene_dokumente = list_bidder_docs_json(
             project, bidder, include_metadata=True)
@@ -362,11 +371,11 @@ def process_bidder(agent, project: str, bidder: str, limit: int):
     print(f"Geforderte Bieterdokumente: {len(geforderte_dokumente)}")
     print(
         f"Hochgeladene Bieterdokumente: {len(hochgeladene_dokumente['documents'])}")
-    
+
     # Build a matched list for the first N required docs
     limit = max(0, int(limit))
     matched_list = []
-    
+
     # Add metadata to track project and bidder for unmatched document analysis
     metadata = {
         "ausschreibung": project,
@@ -455,21 +464,23 @@ def main():
     """
     parser = argparse.ArgumentParser(
         description="List bidder docs JSON for project[@bidder] or view matcha results")
-    parser.add_argument("identifier", nargs='?', help="project[@bidder] (not needed with --view)")
+    parser.add_argument("identifier", nargs='?',
+                        help="project[@bidder] (not needed with --view)")
     parser.add_argument("--limit", type=int, default=100,
                         help="Number of required docs to process (default: 100)")
     parser.add_argument("--view", type=str, metavar="FILENAME",
                         help="View matcha results from JSON file")
     args = parser.parse_args()
-    
+
     # Handle view mode
     if args.view:
         view_matcha_results(args.view)
         return
-    
+
     # Validate identifier for normal mode
     if not args.identifier:
-        print("Error: identifier (project[@bidder]) is required when not using --view")
+        print(
+            "Error: identifier (project[@bidder]) is required when not using --view")
         parser.print_help()
         sys.exit(2)
 
@@ -485,7 +496,7 @@ def main():
     )
 
     identifier = args.identifier
-    
+
     # Check if identifier contains @ (project@bidder) or is just project
     if "@" in identifier:
         # Single bidder mode
@@ -499,12 +510,13 @@ def main():
             if not bidders:
                 print(f"No bidders found for project '{project}'")
                 sys.exit(1)
-            
-            print(f"Found {len(bidders)} bidders for project '{project}': {', '.join(bidders)}")
-            
+
+            print(
+                f"Found {len(bidders)} bidders for project '{project}': {', '.join(bidders)}")
+
             for bidder in bidders:
                 process_bidder(agent, project, bidder, args.limit)
-                
+
         except Exception as e:
             print(f"Error processing project '{project}': {e}")
             sys.exit(1)
