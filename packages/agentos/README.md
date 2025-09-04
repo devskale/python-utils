@@ -91,20 +91,223 @@ Bei Fragen zur Anpassung der Prompts, zur Reduktion der Token‑Kosten oder zur 
 
 ## AgentOS Python Utilities
 
-This directory contains various Python utilities that leverage the AgentOS framework for document intelligence tasks.
+This directory contains various Python utilities that leverage the AgentOS framework for document intelligence tasks in procurement and document assessment workflows.
 
-### `matchaFlow.py`
+### `agentBieterDokDa.py` - Interactive Document Assessment Agent
 
-**Purpose:** This script uses an LLM to match required documents with uploaded bidder documents, primarily in procurement contexts. It connects to an `ofs` API to retrieve document lists, processes them, and then uses an `Agent` (from the `agno` framework) to run an LLM prompt for matching.
+**Purpose:** The "DokDa" (Dokument-Datenanalyse) Agent provides an interactive terminal-based UI for assessing bidder documents against procurement criteria. It combines metadata analysis with LLM-powered document evaluation.
 
-**Usage:** The script is typically run with `project` and `bidder` arguments, which define the scope of the document matching.
+**Key Features:**
+- Interactive terminal UI (TUI) for criteria navigation
+- Metadata-based document pre-filtering
+- Content-based document assessment
+- Real-time LLM evaluation of document relevance
 
-**Result:** It outputs a JSON file named `matcha.{project}.{bidder}.json` containing the matched document list.
+**Usage:**
+```bash
+python agentBieterDokDa.py
+```
 
-### `checkaFlow.py`
+**Configuration:**
+- Set environment variables: `PROVIDER`, `BASE_URL`, `MODEL`
+- Configure project and bidder variables in the script
+- Requires OFS API access for document retrieval
 
-**Purpose:** This script assesses bidder documents against predefined audit criteria using an LLM. It retrieves audit criteria and uploaded documents, then iteratively uses an LLM to find relevant documents for each criterion and subsequently assesses whether the criterion is met based on the document content.
+**Workflow:**
+1. Load criteria and bidder documents via OFS API
+2. Navigate criteria using arrow keys in TUI
+3. Press Enter to analyze a criterion
+4. View relevant documents with relevance scores
+5. Press 'b' to perform detailed content evaluation
 
-**Usage:** The script requires `project` and `bidder` arguments to specify the context of the assessment. It can also take an optional `out` argument to specify the output file path and a `limit` argument to restrict the number of criteria processed.
+### `matchaFlow.py` - Document Matching Workflow
 
-**Result:** It outputs a JSON file named `{project}.{bidder}.assessments.json` containing the detailed assessment results for each criterion.
+**Purpose:** Automatically matches required procurement documents with uploaded bidder documents using LLM analysis. Designed for procurement workflows where document compliance needs to be verified.
+
+**Usage:**
+```bash
+python matchaFlow.py <project> <bidder> [--out output.json] [--limit N]
+```
+
+**Parameters:**
+- `project`: Project identifier for document retrieval
+- `bidder`: Bidder identifier for document scope
+- `--out`: Optional output file path (default: `matcha.{project}.{bidder}.json`)
+- `--limit`: Limit number of documents to process
+
+**Features:**
+- Retrieves required documents from OFS API
+- Analyzes uploaded bidder documents
+- Uses LLM to match documents based on content and metadata
+- Outputs structured JSON with matching results
+
+**Output Format:**
+```json
+{
+  "matches": [
+    {
+      "required_doc": "Document Name",
+      "matched_file": "uploaded_file.pdf",
+      "confidence": 0.95,
+      "reasoning": "Explanation of match"
+    }
+  ]
+}
+```
+
+### `checkaFlow.py` - Criteria Assessment Workflow
+
+**Purpose:** Systematically assesses bidder documents against predefined audit criteria using LLM analysis. Provides automated compliance checking for procurement processes.
+
+**Usage:**
+```bash
+python checkaFlow.py <project> <bidder> [--out output.json] [--limit N]
+```
+
+**Parameters:**
+- `project`: Project identifier
+- `bidder`: Bidder identifier
+- `--out`: Output file path (default: `{project}.{bidder}.assessments.json`)
+- `--limit`: Limit number of criteria to process
+
+**Workflow:**
+1. Retrieves audit criteria from OFS API
+2. For each criterion:
+   - Finds relevant documents using LLM
+   - Assesses criterion fulfillment based on document content
+   - Generates structured assessment results
+
+**Output Format:**
+```json
+{
+  "project": "ProjectName",
+  "bidder": "BidderName",
+  "results": [
+    {
+      "id": "criterion_id",
+      "name": "Criterion Name",
+      "assessment": {
+        "erfüllt": "ja|nein|teilweise|nicht beurteilbar",
+        "begründung": "Detailed reasoning"
+      },
+      "doc_names": ["relevant_document.pdf"]
+    }
+  ]
+}
+```
+
+### `assessments_to_md.py` - Assessment Report Generator
+
+**Purpose:** Converts JSON assessment results from `checkaFlow.py` into human-readable Markdown reports for stakeholder review.
+
+**Usage:**
+```bash
+python assessments_to_md.py <assessment_file.json> [--out report.md]
+```
+
+**Features:**
+- Converts JSON assessments to formatted Markdown
+- Enriches reports with criterion descriptions from OFS API
+- Provides clear pass/fail status for each criterion
+- Includes detailed reasoning for each assessment
+
+**Output:** Generates a structured Markdown report with:
+- Project and bidder information
+- Assessment summary
+- Detailed criterion-by-criterion evaluation
+- Document references
+
+### `json2table.py` - Matching Results Table Generator
+
+**Purpose:** Converts document matching results from `matchaFlow.py` into formatted Markdown tables for easy review and reporting.
+
+**Usage:**
+```bash
+python json2table.py <matcha.project.bidder.json> [--out output.md] [--max-reason-len 160]
+```
+
+**Parameters:**
+- Input: JSON file from matchaFlow.py
+- `--out`: Output Markdown file path
+- `--max-reason-len`: Maximum length for reasoning text (default: 160)
+
+**Features:**
+- Generates clean Markdown tables
+- Truncates long reasoning text for readability
+- Preserves all matching information in tabular format
+- Auto-derives output filename from input if not specified
+
+### `llmcall.py` - LLM Integration Module
+
+**Purpose:** Centralized LLM calling functionality with task-specific configuration and token management.
+
+**Key Features:**
+- Task-specific model configuration (default vs. kriterien tasks)
+- Automatic token estimation and context management
+- JSON response cleanup and repair
+- Provider-agnostic LLM integration via uniinfer
+- Credential management via credgoo
+
+**Configuration:**
+- Uses `config.json` for task-specific settings
+- Environment variables: `PROVIDER`, `MODEL` (override config)
+- Supports different token limits per task type
+
+**Usage (as module):**
+```python
+from llmcall import call_ai_model
+
+result = call_ai_model(
+    prompt="System prompt",
+    input_text="User input",
+    task_type="kriterien",  # or "default"
+    json_cleanup=True,
+    verbose=True
+)
+```
+
+## Environment Setup
+
+### Required Environment Variables
+```bash
+export PROVIDER="tu"  # or your LLM provider
+export BASE_URL="https://your-llm-endpoint/v1"
+export MODEL="deepseek-r1"  # optional, uses config.json default
+```
+
+### Configuration File (`config.json`)
+```json
+{
+  "provider": "tu",
+  "model": "mistral-small-3.1-24b",
+  "kriterien": {
+    "provider": "tu",
+    "model": "deepseek-r1",
+    "max_context_tokens": 32768,
+    "max_response_tokens": 16000,
+    "max_safe_input_chars": 400000
+  }
+}
+```
+
+### Dependencies
+```bash
+pip install ofs credgoo agno uniinfer
+pip install json-repair strukt2meta  # optional for JSON cleanup
+```
+
+## Workflow Integration
+
+These utilities are designed to work together in a complete document intelligence pipeline:
+
+1. **Document Matching**: Use `matchaFlow.py` to match required vs. uploaded documents
+2. **Criteria Assessment**: Use `checkaFlow.py` to assess compliance against criteria
+3. **Report Generation**: Use `assessments_to_md.py` and `json2table.py` for human-readable reports
+4. **Interactive Review**: Use `agentBieterDokDa.py` for detailed manual review
+
+## Security and Best Practices
+
+- **Data Privacy**: Be cautious when using external LLM providers with sensitive procurement data
+- **Token Management**: Monitor token usage to control costs
+- **Validation**: LLM assessments are assistive - human review is recommended for legal compliance
+- **Error Handling**: All utilities include robust error handling and fallback mechanisms

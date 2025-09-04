@@ -16,14 +16,14 @@ try:
 except Exception:  # pragma: no cover - optional dependency
     repair_json = None  # type: ignore
 
-
-
  # ---------------- Environment / Model selection -----------------
 PROVIDER = "tu"
 BASE_URL = "https://aqueduct.ai.datalab.tuwien.ac.at/v1"
-MODEL = "deepseek-r1"
+# MODEL = "deepseek-r1"
+MODEL = "mistral-large-123b"
 
 api_key = get_api_key(PROVIDER)
+
 
 def condense_bieterdocs(bidder_docs):
     """Return a simple view of bidder docs focusing on meta.name and meta.kategorie.
@@ -86,21 +86,21 @@ def condense_geforderte_doks(required_docs):
     return out
 
 
-def findMatches(geforderte_dokumente, hochgeladene_docs, runner = 1):
+def findMatches(geforderte_dokumente, hochgeladene_docs, runner=1):
     prompt = f"""
 Du bist ein hilfreicher Assistent, der dabei hilft, geforderte Dokumente mit hochgeladenen Dokumenten abzugleichen.
 Deine Aufgabe ist es, das am besten passende hochgeladene Dokument für jedes geforderte Dokument zu finden.
 Du erhältst eine Liste von geforderten Dokumenten mit ihren Bezeichnungen.
 
-Wenn nicht anders angegeben gilt: 
-- ist das ausschreibende Unternehmen die "Wiener Wohnen Hausbetreuung Gmbh", ein Unternehmen aus Österreich.
-- ist der Bieter ein Unternehmen aus Österreich, das an der Ausschreibung teilnimmt.
-- ist der Bieter ein Einzalbieter, keine Bieter- oder Arbeitsgemeinschaft.
-- sind die hochgeladenen Dokumente von einem Bieter, der an der Ausschreibung teilnimmt.
-- sind die hochgeladenen Dokumente in deutscher Sprache.
-- bietet der Bieter für alle Lose an.
-- ist der Bieter der Hauptauftragnehmer
-- Es gibt keine Subunternehmer.
+Sofern nicht anders angegeben gilt standardmäßig: 
+- das ausschreibende Unternehmen ist die "Wiener Wohnen Hausbetreuung Gmbh", ein Unternehmen aus Österreich.
+- Der teilnehmende Bieter ist ein Unternehmen aus Österreich. Daher sind nur Dokumente für österreichische Unternehmen relevant.
+- der Bieter bietet für alle Lose an.
+- Der Bieter ist der Hauptauftragnehmer.
+- Die hochgeladenen Dokumente sind von einem Bieter, der an der Ausschreibung teilnimmt.
+- Der Bieter ist ein Einzalbieter, es gibt keine Bieter- oder Arbeitsgemeinschaft. Daher sind keine Dokumente für BIEGE oder ARGE notwendig.
+- Es gibt keine Subunternehmer. Daher sind Dokumente für Subunternehmer nicht notwendig.
+- Die hochgeladenen Dokumente sind in deutscher Sprache verfasst.
 
 Das geforderte Dokument ist:
 {json.dumps(geforderte_dokumente, indent=2, ensure_ascii=False)}
@@ -108,10 +108,10 @@ Das geforderte Dokument ist:
 Die liste mit den hochgeladenen Bieterdokumenten ist:
 {json.dumps(hochgeladene_docs, indent=2, ensure_ascii=False)}
 
-gib eine liste der am besten passenden hochgeladenen Dokumente zurück, die zu dem geforderten Dokument passen.
+gib eine liste der am besten passenden hochgeladenen Dokumente zurück, die zu dem geforderten Dokument passen. Falls Dokumente nicht notwendig sind (zB ARGE oder Subunternehmer, ausländische Bieter, etc).
 "matches": [
     {{
-    "Dateiname": "...",    # der Dateiname des hochgeladenen Dokuments 
+     "Dateiname": "...",    # der Dateiname des hochgeladenen Dokuments oder NONE
      "Name": "...",         # der Name aus meta.name des hochgeladenen Dokuments
      "Kategorie": "...",    # die Kategorie aus meta.kategorie des hochgeladenen Dokuments
      "Begründung": "..."}},  # die Begründung für die Zuordnung
@@ -192,9 +192,11 @@ def main():
     - Calls ofs.api.list_bidder_docs_json(project, bidder)
     - Prints the returned JSON nicely
     """
-    parser = argparse.ArgumentParser(description="List bidder docs JSON for project@bidder")
+    parser = argparse.ArgumentParser(
+        description="List bidder docs JSON for project@bidder")
     parser.add_argument("identifier", help="project@bidder")
-    parser.add_argument("--limit", type=int, default=100, help="Number of required docs to process (default: 3)")
+    parser.add_argument("--limit", type=int, default=100,
+                        help="Number of required docs to process (default: 3)")
     args = parser.parse_args()
 
     agent = Agent(
@@ -203,11 +205,10 @@ def main():
             api_key=api_key,
             id=MODEL,
             max_retries=3,
-            #stream=True,
+            # stream=True,
         ),
         tools=[],
     )
-
 
     identifier = args.identifier
     if "@" not in identifier:
@@ -216,16 +217,18 @@ def main():
     project, bidder = identifier.split("@", 1)
 
     try:
-        hochgeladene_dokumente = list_bidder_docs_json(project, bidder, include_metadata=True)
+        hochgeladene_dokumente = list_bidder_docs_json(
+            project, bidder, include_metadata=True)
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)
 
     geforderte_dokumente = get_bieterdokumente_list(project)
     print(f"Geforderte Bieterdokumente: {len(geforderte_dokumente)}")
-    print(f"Hochgeladene Bieterdokumente: {len(hochgeladene_dokumente['documents'])}")
-    #print(json.dumps(hochgeladene_dokumente, indent=2, ensure_ascii=False))
-    #print(json.dumps(geforderte_dokumente, indent=2, ensure_ascii=False))
+    print(
+        f"Hochgeladene Bieterdokumente: {len(hochgeladene_dokumente['documents'])}")
+    # print(json.dumps(hochgeladene_dokumente, indent=2, ensure_ascii=False))
+    # print(json.dumps(geforderte_dokumente, indent=2, ensure_ascii=False))
     # Build a matched list for the first N required docs
     limit = max(0, int(args.limit))
     matched_list = []
@@ -234,37 +237,54 @@ def main():
     for i, gefordertes_doc in enumerate(geforderte_dokumente, start=1):
         if limit and i > limit:
             break
-        print(f"{i}/{len(geforderte_dokumente)} - {gefordertes_doc.get('bezeichnung')}")
+
+        # Print document info with inline progress indicator
+        print(
+            f"{i}/{len(geforderte_dokumente)} - {gefordertes_doc.get('bezeichnung')}", end="")
+        print("    [...", end="", flush=True)
+
         # ask llm if bieterdoc matches a gefordertes_doc
-        # if yes, print match, if no, print no match
         mPrompt = findMatches(
-              gefordertes_doc, hochgeladene_dokumente, i)
-        # Show only the first 100 characters of the prompt for preview
-        preview = mPrompt[:100].replace("\n", " ") + ("..." if len(mPrompt) > 100 else "")
-        print(f"Prompt preview: {preview}")
+            gefordertes_doc, hochgeladene_dokumente, i)
+
         response = agent.run(
             mPrompt,
             stream=False,  # capture final text only
             markdown=False,
             show_message=False
         )
+
         # Parse the response into JSON (clean) and attach to current required doc
         content = getattr(response, "content", response)
-        result = extract_json_clean(content if isinstance(content, str) else str(content))
+        result = extract_json_clean(
+            content if isinstance(content, str) else str(content))
         matches = None
         if isinstance(result, dict) and "matches" in result:
             matches = result["matches"]
         elif isinstance(result, list):
             matches = result
         else:
+            print(" | ERROR]")  # Close the progress indicator on error
             print("Warning: Could not extract matches JSON cleanly; storing raw content.")
             matches = content
+            continue
+
+        # Count valid matches (not None, not empty string, not "NONE")
+        match_count = 0
+        if isinstance(matches, list):
+            for match in matches:
+                if isinstance(match, dict):
+                    dateiname = match.get("Dateiname", "")
+                    if dateiname and dateiname.upper() != "NONE":
+                        match_count += 1
+
+        # Complete the progress indicator with match count
+        print(f" | {match_count}]")
 
         # Add matches to the current required doc and to the aggregate list
         gefordertes_doc["matches"] = matches
         matched_list.append({
             "gefordertes_doc": gefordertes_doc,
-            "matches": matches,
         })
 
     # Print the aggregated matched list for the processed items
@@ -279,6 +299,7 @@ def main():
         print(f"Saved matched list to {out_file}")
     except Exception as e:
         print(f"Error saving matched list to {out_file}: {e}")
+
 
 if __name__ == "__main__":
     main()
