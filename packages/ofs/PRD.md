@@ -1,14 +1,34 @@
-# OFS Core / Shared Index Service PRD (Consolidated)
+# OFS (Opinionated Filesystem) - Product Requirements Document
 
-1. Overview
+## Overview
 
----
+OFS is a comprehensive Python package for managing opinionated filesystem structures designed to organize tender documents (Ausschreibungsdokumente) and bidder documents (Bieterdokumente) in a standardized, efficient manner. This structure facilitates AI-assisted legal analysis, document processing, and metadata management.
 
-Create a python library to access, edit and navigate the opinionated filesystem (OFS), described in docs/opinionatedFilesystem.md
+## Project Goals
 
-# TODO
+- Create a python library to access, edit and navigate the opinionated filesystem (OFS)
+- Support local and remote storage (e.g., via WebDAV)
+- Optimize for processing pipelines like PDF to Markdown conversion
+- Provide comprehensive indexing and metadata management
+- Enable AI-assisted legal analysis and document processing
 
-✅ get_path('name') -> str - IMPLEMENTED (uses BASE_DIR from config)
+## Architecture Components
+
+### Core Features
+- **Configuration Management**: Hierarchical configuration system with environment variables, config files, and defaults
+- **Path Resolution**: Intelligent path finding with filesystem matching and index file parsing
+- **Document Management**: Support for PDF, Office documents, text files, and images
+- **Index Management**: `.ofs.index.json` files for tracking document metadata and parsing status
+- **Criteria Management**: Support for tender criteria analysis and bidder evaluation
+- **Tree Visualization**: Directory structure visualization with filtering options
+
+### Dependency Injection Architecture
+- **Interfaces**: Abstract protocols for all major OFS components (ConfigProvider, IndexManager, PathResolver, DocumentManager, TreeGenerator, KriterienManager)
+- **Container**: Service registration and resolution with singleton, factory, and instance support
+- **Implementations**: Concrete implementations wrapping existing OFS functionality
+- **Service Layer**: High-level service coordination with backward compatibility
+
+## TODO Status
 
 ## Implementation Status
 
@@ -98,6 +118,42 @@ Create a python library to access, edit and navigate the opinionated filesystem 
   - Improved user feedback showing exactly which files were affected during index operations
   - Maintains backward compatibility while providing more informative output
 - [x] **Enhanced index update verbosity**:
+  - Detailed logging of file changes during index operations
+  - Individual file change tracking with action types (ADDED, REMOVED, MODIFIED)
+  - Improved user feedback for index operations
+
+## Critical Issues Addressed
+
+### Configuration Improvements
+- **Fixed**: Configuration file naming consistency (`ofs.config.json`)
+- **Fixed**: Default `INDEX_FILE` updated to `.ofs.index.json`
+- **Enhanced**: Hierarchical configuration system with environment variable support
+
+### Architecture Improvements
+- **Implemented**: Dependency injection architecture for better testability
+- **Fixed**: Import and module structure issues
+- **Enhanced**: Error handling across all critical functions
+- **Added**: Comprehensive test suite with 35+ passing tests
+
+### Integration Improvements
+- **Planned**: Integration of pdf2md indexing functionality into OFS core
+- **Planned**: Centralized indexing operations with `OFSIndexManager`
+- **Planned**: Parser status tracking and file processing pipeline
+
+## Kriterien (Criteria) Management
+
+### Bidder Evaluation System
+- **Status Values**: Support for `ja`, `ja.int`, `ja.ki`, `nein`, `optional`, `halt`
+- **Priority System**: Optional `prio` field for criterion sorting
+- **Audit Trail**: Complete audit history for criterion changes
+- **File Structure**: 
+  - Project: `{PROJECT}/kriterien.json`
+  - Bidder: `{PROJECT}/B/{BIDDER}/audit.json`
+
+### Synchronization Process
+- **Idempotent**: Safe repeated synchronization
+- **Selective**: Only relevant criteria (status starting with `ja`) are transferred
+- **Auditable**: Full audit trail of all criterion changes
   - Added OFS root directory display: `ofs root: <path>`
   - Added project count: `N projects checked`
   - Added bidder directory count: `M Bidder dirs checked`

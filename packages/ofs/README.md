@@ -8,6 +8,8 @@ A comprehensive Python package for managing opinionated filesystem structures de
 - **Bieterdokumente**: Documents submitted by bidders, including offers, price sheets, suitability proofs, and possibly concepts or technical solutions.
 - **Index Files**: `.ofs.index.json` files that track document metadata, parsing status, and categorization.
 - **Metadata Files**: JSON files containing project information, criteria, and document metadata.
+- **Kriterien (Criteria)**: Evaluation criteria for tender analysis with status tracking (`ja`, `ja.int`, `ja.ki`, `nein`, `optional`, `halt`).
+- **Dependency Injection**: Clean architecture with interfaces, containers, and service layers for better testability and maintainability.
 
 The structure supports local and remote storage (e.g., via WebDAV) and is optimized for processing pipelines like PDF to Markdown conversion with comprehensive indexing and metadata management.
 
@@ -213,6 +215,49 @@ ofs index stats "/path/to/directory"
 ```bash
 # Show current configuration
 ofs config
+```
+
+## Architecture
+
+### Dependency Injection System
+
+OFS implements a clean dependency injection architecture for better testability and maintainability:
+
+```python
+from ofs import get_container, ConfigProvider, IndexManager, PathResolver
+
+# Get services from the container
+container = get_container()
+config = container.get(ConfigProvider)
+index_manager = container.get(IndexManager)
+path_resolver = container.get(PathResolver)
+
+# Use high-level service layer
+from ofs import get_ofs_service
+service = get_ofs_service()
+projects = service.list_projects()
+```
+
+#### Available Interfaces
+- **ConfigProvider**: Configuration management
+- **IndexManager**: Search index operations
+- **PathResolver**: Path resolution and navigation
+- **DocumentManager**: Document access and management
+- **TreeGenerator**: Directory tree generation
+- **KriterienManager**: Criteria analysis
+
+#### Container Management
+```python
+from ofs import get_container, set_container, reset_container
+
+# Get current container
+container = get_container()
+
+# Set custom container
+set_container(my_custom_container)
+
+# Reset to default
+reset_container()
 ```
 
 ### Python API
