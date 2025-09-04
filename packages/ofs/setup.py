@@ -13,7 +13,7 @@ with open(os.path.join(this_directory, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="ofs",
-    version="0.1.1",
+    version="0.2.0",
     author="Johann Waldherr",
     author_email="",
     description="OFS (Opinionated Filesystem) - A rich filesystem for handling tender documentation with indexes and metadata",
@@ -31,7 +31,7 @@ setup(
     ],
     python_requires=">=3.12",
     install_requires=[
-#        "pdfplumber>=0.9.0",  # For PDF text extraction in read_doc functionality
+        #        "pdfplumber>=0.9.0",  # For PDF text extraction in read_doc functionality
     ],
     extras_require={
         "dev": [
