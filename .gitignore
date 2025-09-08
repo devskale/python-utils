@@ -25,6 +25,8 @@ htmlcov/
 test/
 /tests/
 !/robtni/robotni/tests/
+matcha*.json
+matcha*.md
 
 # Node
 node_modules/

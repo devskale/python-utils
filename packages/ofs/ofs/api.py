@@ -404,3 +404,35 @@ def get_kriterium_description(project: str, kriterium_id: str) -> Dict[str, Any]
     return {'id': kriterium_id, 'missing': True}
 
 __all__ += ['get_kriterium_description']
+
+def get_bieterdokumente_list(project: str) -> List[Dict[str, Any]]:
+    """Return the list of 'bdoks.bieterdokumente' from a project's kriterien.json.
+
+    Args:
+        project: Project name
+
+    Returns:
+        A list of dicts representing the required bidder documents as defined under
+        the key path bdoks.bieterdokumente in kriterien.json. If the key is missing,
+        returns an empty list.
+
+    Raises:
+        RuntimeError if the project path or kriterien.json file is not found.
+    """
+    project_path = get_path(project)
+    if not project_path or not os.path.isdir(project_path):
+        raise RuntimeError(f"Projekt '{project}' nicht gefunden")
+    k_file = find_kriterien_file(project)
+    if not k_file:
+        raise RuntimeError(f"Keine kriterien.json für Projekt '{project}' gefunden")
+    data = load_kriterien(k_file)
+    bdoks = data.get('bdoks') if isinstance(data, dict) else None
+    if not isinstance(bdoks, dict):
+        return []
+    bdocs = bdoks.get('bieterdokumente')
+    if isinstance(bdocs, list):
+        # ensure each entry is a dict (best-effort)
+        return [x for x in bdocs if isinstance(x, dict)]
+    return []
+
+__all__ += ['get_bieterdokumente_list']

@@ -221,6 +221,8 @@ def list_bidder_docs_json(project_name: str, bidder_name: str, include_metadata:
         - With metadata: full document details and metadata
     """
     # Define allowed file extensions for documents
+    # Note: JSON files are reserved for internal/index data (e.g., audit.json, .ofs.index.json)
+    # and must not be exposed via this listing API.
     allowed_extensions = {
         # PDF files
         '.pdf',
@@ -228,8 +230,8 @@ def list_bidder_docs_json(project_name: str, bidder_name: str, include_metadata:
         '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.tif', '.svg', '.webp',
         # Office documents
         '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.odt', '.ods', '.odp',
-        # Text formats
-        '.txt', '.md', '.rtf', '.csv', '.json', '.xml'
+        # Text formats (explicitly excluding '.json')
+        '.txt', '.md', '.rtf', '.csv', '.xml'
     }
 
     # Result structure
