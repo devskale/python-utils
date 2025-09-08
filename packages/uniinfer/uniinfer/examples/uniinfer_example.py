@@ -201,9 +201,10 @@ def main():
     end_time = time.time()
     
     # Calculate statistics
-    total_time = end_time - start_time
     time_to_first_token = first_token_time - start_time if first_token_time else 0
-    tokens_per_second = token_count / total_time if total_time > 0 else 0
+    # Calculate tokens per second from first token to end (excluding initial latency)
+    token_generation_time = end_time - first_token_time if first_token_time else 0
+    tokens_per_second = token_count / token_generation_time if token_generation_time > 0 else 0
     
     # Print statistics
     print(f"\n\ntok/s: {tokens_per_second:.2f}          tft: {time_to_first_token:.2f} s")
