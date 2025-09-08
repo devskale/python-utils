@@ -15,6 +15,8 @@ This repository contains a collection of Python utility packages designed to be 
 - **md2blank**: A markdown to blank converter that removes all PII content while preserving structure
 - **robotni**: A minimal, file-based task scheduler to run Python jobs from a web app, with async task queuing and status polling.
 - **md2pdfs**: A Python package for generating beautiful PDFs from Markdown content.
+- **strukt2meta**: A Python package for metadata extraction from structured documents.
+- **ofs**: A Python package for organizing and managing files in a directory.
 
 ## Installation
 
@@ -30,6 +32,7 @@ pip install git+https://github.com/devskale/python-utils.git#subdirectory=packag
 pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/md2pdfs
 pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/robotni
 pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/strukt2meta
+pip install git+https://github.com/devskale/python-utils.git#subdirectory=packages/ofs
 ```
 
 ## Development Setup

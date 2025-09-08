@@ -207,6 +207,12 @@ def create_parser() -> argparse.ArgumentParser:
         help="Show criteria tree organized by typ and kategorie"
     )
 
+    # kriterien md command
+    md_parser = kriterien_subparsers.add_parser(
+        "md",
+        help="Show criteria as structured markdown list"
+    )
+
     # kriterien tag command
     tag_parser = kriterien_subparsers.add_parser(
         "tag",
@@ -590,6 +596,13 @@ def handle_kriterien(project: str, action: str, limit: Optional[int] = None, tag
         result = get_kriterien_tree_json(project)
         print(json.dumps(result, indent=2, ensure_ascii=False))
         if "error" in result:
+            sys.exit(1)
+    elif action == "md":
+        from .kriterien import get_kriterien_md
+        result = get_kriterien_md(project)
+        print(result)
+        # Check if result starts with "Error:" to determine if we should exit
+        if result.startswith("Error:"):
             sys.exit(1)
     elif action == "tag":
         result = get_kriterien_tag_json(project, tag_id)

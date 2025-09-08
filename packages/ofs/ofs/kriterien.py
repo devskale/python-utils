@@ -577,6 +577,172 @@ def get_kriterien_tag_json(project_name: str, tag_id: Optional[str] = None) -> D
         return {"error": str(e), "project": project_name}
 
 
+def get_kriterien_md(project_name: str) -> str:
+    """
+    Generate a markdown-formatted output of the criteria list organized by typ and kategorie.
+    
+    Args:
+        project_name (str): Project name
+        
+    Returns:
+        str: Markdown-formatted criteria list or error message
+    """
+    try:
+        k_file = find_kriterien_file(project_name)
+        if not k_file:
+            return f"Error: No kriterien file found for project '{project_name}'"
+        
+        data = load_kriterien(k_file)
+        k_list = extract_kriterien_list(data)
+        
+        if not k_list:
+            return f"# Kriterien für {project_name}\n\nNo criteria found in the data."
+        
+        tree = build_kriterien_tree_from_list(k_list)
+        unproven = get_unproven_kriterien_from_list(k_list)
+        total = len(k_list)
+        proven_count = total - len(unproven)
+        
+        lines: List[str] = []
+        lines.append(f"# Kriterien für {project_name}")
+        lines.append("")
+        
+        # Add project metadata from data
+        meta_info = data.get('meta', {})
+        if isinstance(meta_info, dict) and 'meta' in meta_info:
+            project_meta = meta_info['meta']
+            if 'auftraggeber' in project_meta:
+                lines.append(f"**Auftraggeber:** {project_meta['auftraggeber']}")
+            if 'aktenzeichen' in project_meta:
+                lines.append(f"**Aktenzeichen:** {project_meta['aktenzeichen']}")
+            
+            # Add lose information
+            if 'lose' in project_meta and isinstance(project_meta['lose'], list):
+                lines.append("")
+                lines.append("**Lose:**")
+                for los in project_meta['lose']:
+                    if isinstance(los, dict):
+                        nummer = los.get('nummer', 'N/A')
+                        bezeichnung = los.get('bezeichnung', 'N/A')
+                        beschreibung = los.get('beschreibung', '')
+                        bewertung = los.get('bewertungsprinzip', '')
+                        lines.append(f"- {nummer}: {bezeichnung}")
+                        if beschreibung:
+                            lines.append(f"  - Beschreibung: {beschreibung}")
+                        if bewertung:
+                            lines.append(f"  - Bewertungsprinzip: {bewertung}")
+        
+        lines.append("")
+        lines.append(f"**Status:** {proven_count} von {total} Kriterien geprüft ({len(unproven)} verbleibend)")
+        lines.append(f"**Quelle:** `{k_file}`")
+        lines.append("")
+        
+        # Generate table of contents
+        lines.append("## Inhaltsverzeichnis")
+        lines.append("")
+        for typ in sorted(tree.keys()):
+            lines.append(f"- [Typ: {typ}](#{typ.lower().replace(' ', '-')})")
+            for kategorie in sorted(tree[typ].keys()):
+                lines.append(f"  - [Kategorie: {kategorie}](#{kategorie.lower().replace(' ', '-')})")
+        lines.append("")
+        
+        # Generate detailed sections
+        for typ in sorted(tree.keys()):
+            # Calculate total criteria count for this typ
+            typ_total = sum(len(kriterien_list) for kriterien_list in tree[typ].values())
+            lines.append(f"## Typ: {typ} ({typ_total})")
+#            lines.append("")
+            
+            for kategorie in sorted(tree[typ].keys()):
+                kriterien_list = tree[typ][kategorie]
+                unproven_in_cat = [k for k in kriterien_list if (k.get("pruefung") or {}).get("status") is None]
+                proven_in_cat = len(kriterien_list) - len(unproven_in_cat)
+                
+                lines.append(f"   {kategorie} ({len(kriterien_list)}):")
+#                lines.append("")
+#                lines.append(f"**Status:** {proven_in_cat} von {len(kriterien_list)} geprüft")
+#                lines.append("")
+                
+                # Sort criteria by ID for consistent output
+                sorted_kriterien = sorted(kriterien_list, key=lambda k: k.get('id', ''))
+                
+                for kriterium in sorted_kriterien:
+                    k_id = kriterium.get('id', 'N/A')
+                    k_name = kriterium.get('name') or kriterium.get('kriterium') or kriterium.get('bezeichnung') or kriterium.get('anforderung', '(Kein Name)')
+                    
+                    # Determine status
+                    pruefung = kriterium.get('pruefung', {})
+                    status = pruefung.get('status')
+                    prio = pruefung.get('prio') or kriterium.get('prio')
+                    
+                    if status is None:
+                        status_icon = "❓"
+                        status_text = "Ungeprüft"
+                    elif status == "erfuellt":
+                        status_icon = "✅"
+                        status_text = "Erfüllt"
+                    elif status == "nicht_erfuellt":
+                        status_icon = "❌"
+                        status_text = "Nicht erfüllt"
+                    elif status == "teilweise_erfuellt":
+                        status_icon = "⚠️"
+                        status_text = "Teilweise erfüllt"
+                    else:
+                        status_icon = "❓"
+                        status_text = f"Status: {status}"
+                    
+                    # Priority indicator
+                    prio_text = ""
+                    if prio:
+                        if isinstance(prio, int) and prio > 0:
+                            prio_text = f" (Priorität: {prio})"
+                    
+                    lines.append(f"      {k_id} | {k_name} ")
+ #                   lines.append("")
+ #                   lines.append(f"**Status:** {status_text}{prio_text}")
+                    
+                    # Add requirement/description if available
+                    anforderung = kriterium.get('anforderung')
+                    beschreibung = kriterium.get('beschreibung') or kriterium.get('description')
+#                    if anforderung:
+#                        lines.append(f"**Anforderung:** {anforderung}")
+#                    elif beschreibung:
+#                        lines.append(f"**Beschreibung:** {beschreibung}")
+                    
+                    # Add additional fields if available
+#                    if 'schwellenwert' in kriterium and kriterium['schwellenwert']:
+#                        lines.append(f"**Schwellenwert:** {kriterium['schwellenwert']}")
+                    
+#                    if 'gewichtung_punkte' in kriterium and kriterium['gewichtung_punkte']:
+#                        lines.append(f"**Gewichtung:** {kriterium['gewichtung_punkte']} Punkte")
+                    
+#                    if 'geltung_lose' in kriterium and kriterium['geltung_lose']:
+#                        lose_text = ', '.join(kriterium['geltung_lose'])
+#                        lines.append(f"**Geltung Lose:** {lose_text}")
+                    
+#                    if 'quelle' in kriterium and kriterium['quelle']:
+#                        lines.append(f"**Quelle:** {kriterium['quelle']}")
+                    
+                    # Add proof information if available
+#                    if pruefung:
+#                        if 'datum' in pruefung and pruefung['datum']:
+#                            lines.append(f"**Prüfdatum:** {pruefung['datum']}")
+#                        if 'bemerkung' in pruefung and pruefung['bemerkung']:
+#                            lines.append(f"**Bemerkung:** {pruefung['bemerkung']}")
+#                        if 'pruefer' in pruefung and pruefung['pruefer']:
+#                            lines.append(f"**Prüfer:** {pruefung['pruefer']}")
+                    
+#                    lines.append("")
+                
+#                lines.append("---")
+#                lines.append("")
+        
+        return "\n".join(lines)
+        
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+
 # Provide legacy aliases for any callers expecting different names (defensive)
 # These simply map to the functions above.
 find_kriterien_file = find_kriterien_file
@@ -593,3 +759,4 @@ get_kriterien_pop_json = get_kriterien_pop_json
 get_kriterien_pop_json_bidder = get_kriterien_pop_json_bidder
 get_kriterien_tree_json = get_kriterien_tree_json
 get_kriterien_tag_json = get_kriterien_tag_json
+get_kriterien_md = get_kriterien_md

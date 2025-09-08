@@ -62,3 +62,8 @@ packages/ofs/*.md
 
 klark0
 test_*
+.dir
+packages/ofs/aufsitz.md
+packages/ofs/aufsitzrasenmäher.krit.json
+packages/ofs/entrümpel.md
+packages/ofs/entrümpelung.krit.json

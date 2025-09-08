@@ -170,6 +170,9 @@ ofs kriterien "2025-04 Lampen" pop --bidder "Lampion GmbH"
 # Display criteria organized by category and type
 ofs kriterien "2025-04 Lampen" tree
 
+# Show criteria as structured markdown list with counts
+ofs kriterien "2025-04 Lampen" md
+
 # Get specific criterion by ID
 ofs kriterien "2025-04 Lampen" tag "EIG_001"
 
