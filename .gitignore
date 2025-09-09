@@ -67,3 +67,6 @@ packages/ofs/aufsitz.md
 packages/ofs/aufsitzrasenmäher.krit.json
 packages/ofs/entrümpel.md
 packages/ofs/entrümpelung.krit.json
+*.xlsx
+*assessments*
+*.csv
