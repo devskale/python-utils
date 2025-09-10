@@ -7,8 +7,8 @@ from openai import OpenAI
 import os
 from typing import List, Optional
 
-# BASE_URL = "https://amd1.mooo.com:8123/v1"
-BASE_URL = "http://localhost:8123/v1"
+BASE_URL = "https://amd1.mooo.com:8123/v1"
+# BASE_URL = "http://localhost:8123/v1"
 
 
 def create_client(api_key: str = "test23@test34", base_url: str = BASE_URL) -> OpenAI:
@@ -166,7 +166,8 @@ def main():
 
     # Detailed response analysis on all successful models
     if successful_models:
-        print(f"\n🔍 Running detailed analysis on all {len(successful_models)} models...")
+        print(
+            f"\n🔍 Running detailed analysis on all {len(successful_models)} models...")
         detailed_test_text = "This is a shorter test text for detailed API response analysis."
         for model in successful_models:
             test_detailed_response(client, model, detailed_test_text)
