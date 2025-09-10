@@ -147,3 +147,112 @@ class ChatProvider:
         """
         raise NotImplementedError(
             "Providers must implement the stream_complete method")
+
+
+class EmbeddingRequest:
+    """
+    A request for embeddings.
+
+    Attributes:
+        input (List[str]): The texts to embed.
+        model (Optional[str]): The model to use for embedding.
+        encoding_format (str): The format to return the embeddings in.
+        dimensions (Optional[int]): The number of dimensions the resulting output embeddings should have.
+        user (Optional[str]): A unique identifier representing your end-user.
+    """
+
+    def __init__(
+        self,
+        input: List[str],
+        model: Optional[str] = None,
+        encoding_format: str = "float",
+        dimensions: Optional[int] = None,
+        user: Optional[str] = None
+    ):
+        self.input = input
+        self.model = model
+        self.encoding_format = encoding_format
+        self.dimensions = dimensions
+        self.user = user
+
+
+class EmbeddingResponse:
+    """
+    A response from an embedding request.
+
+    Attributes:
+        object (str): The object type, always "list".
+        data (List[Dict]): The embedding data.
+        model (str): The model used for embedding.
+        usage (Dict): Token usage information.
+        provider (str): The provider that generated the response.
+        raw_response (Any): The raw response from the provider.
+    """
+
+    def __init__(
+        self,
+        object: str,
+        data: List[Dict],
+        model: str,
+        usage: Dict,
+        provider: str,
+        raw_response: Any
+    ):
+        self.object = object
+        self.data = data
+        self.model = model
+        self.usage = usage
+        self.provider = provider
+        self.raw_response = raw_response
+
+
+class EmbeddingProvider:
+    """
+    Abstract base class for embedding providers.
+
+    All embedding provider implementations must inherit from this class and implement
+    the embed method.
+    """
+
+    def __init__(self, api_key: Optional[str] = None, **kwargs):
+        """
+        Initialize the provider with an API key and optional configuration.
+
+        Args:
+            api_key (Optional[str]): The API key for authentication.
+            **kwargs: Additional provider-specific configuration parameters.
+        """
+        self.api_key = api_key
+        # Additional provider-specific configuration can be handled by subclasses
+
+    @classmethod
+    def list_models(cls, **kwargs) -> List[str]:
+        """
+        Standard interface for listing available models.
+
+        Args:
+            **kwargs: Additional provider-specific parameters
+
+        Returns:
+            List[str]: List of available model names
+        """
+        raise NotImplementedError(
+            "Embedding providers must implement list_models")
+
+    def embed(
+        self,
+        request: EmbeddingRequest,
+        **provider_specific_kwargs
+    ) -> EmbeddingResponse:
+        """
+        Make an embedding request.
+
+        Args:
+            request (EmbeddingRequest): The request to make.
+            **provider_specific_kwargs: Additional provider-specific parameters.
+
+        Returns:
+            EmbeddingResponse: The embedding response.
+        """
+        raise NotImplementedError(
+            "Embedding providers must implement the embed method")

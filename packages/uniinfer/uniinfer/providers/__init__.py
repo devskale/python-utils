@@ -5,6 +5,7 @@ from .mistral import MistralProvider
 from .anthropic import AnthropicProvider
 from .openai import OpenAIProvider
 from .ollama import OllamaProvider
+from .ollama_embedding import OllamaEmbeddingProvider
 from .openrouter import OpenRouterProvider
 from .arli import ArliAIProvider
 from .internlm import InternLMProvider
@@ -26,6 +27,7 @@ except ImportError:
 
 try:
     from .tu import TuAIProvider
+    from .tu_embedding import TuAIEmbeddingProvider
     HAS_TU = True
 except ImportError:
     HAS_TU = False
@@ -67,6 +69,7 @@ __all__ = [
     'AnthropicProvider',
     'OpenAIProvider',
     'OllamaProvider',
+    'OllamaEmbeddingProvider',
     'OpenRouterProvider',
     'ArliAIProvider',
     'InternLMProvider',
@@ -79,6 +82,7 @@ __all__ = [
     'PollinationsProvider',
     'BigmodelProvider',
     'TuAIProvider',
+    'TuAIEmbeddingProvider',
 ]
 
 # Add optional providers to __all__ if available

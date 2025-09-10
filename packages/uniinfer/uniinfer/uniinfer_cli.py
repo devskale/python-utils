@@ -5,7 +5,9 @@ from uniinfer import (
     ChatMessage,
     ChatCompletionRequest,
     ProviderFactory,
-    ChatProvider
+    ChatProvider,
+    EmbeddingRequest,
+    EmbeddingProviderFactory
 )
 from credgoo import get_api_key
 import argparse
@@ -31,6 +33,12 @@ def main():
                         help='List available providers')
     parser.add_argument('--list-models', action='store_true',
                         help='List available models for the specified provider or all providers when combined with --list-providers')
+    parser.add_argument('--embed', action='store_true',
+                        help='Use embedding instead of chat completion')
+    parser.add_argument('--embed-text', type=str, action='append',
+                        help='Text to embed (can be used multiple times)')
+    parser.add_argument('--embed-file', type=str,
+                        help='File containing text to embed (one text per line)')
     parser.add_argument('-p', '--provider', type=str, default='stepfun',
                         help='Specify which provider to use')
     parser.add_argument('-q', '--query', type=str,
@@ -122,6 +130,66 @@ def main():
         api_key=retrieved_api_key,
         **({} if provider not in ['cloudflare', 'ollama'] else PROVIDER_CONFIGS[provider].get('extra_params', {}))
     )
+
+    # Handle embedding requests
+    if args.embed:
+        texts_to_embed = []
+
+        # Add texts from --embed-text arguments
+        if args.embed_text:
+            texts_to_embed.extend(args.embed_text)
+
+        # Add texts from --embed-file
+        if args.embed_file:
+            try:
+                with open(args.embed_file, 'r', encoding='utf-8') as f:
+                    file_texts = [line.strip() for line in f if line.strip()]
+                    texts_to_embed.extend(file_texts)
+            except Exception as e:
+                print(f"Error reading embed file: {e}")
+                return
+
+        if not texts_to_embed:
+            print("Error: --embed-text or --embed-file is required when using --embed")
+            return
+
+        try:
+            embedding_provider = EmbeddingProviderFactory().get_provider(
+                name=provider,
+                api_key=retrieved_api_key,
+                **({} if provider not in ['cloudflare', 'ollama'] else PROVIDER_CONFIGS[provider].get('extra_params', {}))
+            )
+
+            model = args.model if args.model else PROVIDER_CONFIGS[provider]['default_model']
+            print(
+                f"Embedding {len(texts_to_embed)} text(s) using {provider}@{model}")
+
+            # Create embedding request
+            request = EmbeddingRequest(
+                input=texts_to_embed,
+                model=model
+            )
+
+            # Make the request
+            response = embedding_provider.embed(request)
+
+            print("\n=== Embedding Response ===")
+            print(f"Model: {response.model}")
+            print(f"Provider: {response.provider}")
+            print(f"Number of embeddings: {len(response.data)}")
+            print(f"Usage: {response.usage}")
+
+            for i, embedding_data in enumerate(response.data):
+                print(f"\nText {i+1}: '{texts_to_embed[i]}'")
+                print(
+                    f"Embedding dimensions: {len(embedding_data['embedding'])}")
+                print(f"First 5 values: {embedding_data['embedding'][:5]}")
+                if len(embedding_data['embedding']) > 5:
+                    print(f"Last 5 values: {embedding_data['embedding'][-5:]}")
+
+        except Exception as e:
+            print(f"Error creating embeddings: {e}")
+        return
 
     # List of machine learning topics in German
     ml_topics = [

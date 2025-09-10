@@ -4,65 +4,103 @@
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python Versions](https://img.shields.io/pypi/pyversions/uniinfer.svg)](https://pypi.org/project/uniinfer/)
-[![Documentation](https://img.shields.io/badge/docs-readthedocs.io-informational)](https://uniinfer.readthedocs.io)
 
-UniInfer provides a consistent Python interface for LLM chat completions across multiple providers with:
+UniInfer provides a consistent Python interface for LLM chat completions and embeddings across multiple providers with:
 
-- 🚀 Single API for 15+ LLM providers
+- 🚀 Single API for 20+ LLM providers
 - 🔑 Seamless API key management with credgoo integration
 - ⚡ Real-time streaming support
 - 🔄 Automatic fallback strategies
+- 📊 Embedding support for semantic search
 - 🔧 Extensible provider architecture
 
 ## Table of Contents
 
-- [Features](#features)
-- [Key Benefits](#key-benefits)
-- [Supported Providers](#supported-providers)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
-- [Advanced Usage](#advanced-usage)
-- [Provider Development](#adding-a-new-provider)
+- [Core Features](#core-features)
+- [API Reference](#api-reference)
+- [Supported Providers](#supported-providers)
 - [Contributing](#contributing)
 - [License](#license)
-- [Running and Deploying the Web Proxy](#running-and-deploying-the-web-proxy)
 
-## Features ✨
+## Core Features
 
-### Core Capabilities
+### 🔑 Secure API Key Management with credgoo
 
-- **Unified API** - Consistent interface across all providers
-- **Multi-provider Support** - Switch between providers with one line change
-- **Streaming** - Real-time token streaming for all providers
-- **Error Resilience** - Automatic retries & fallback strategies
-- **Model Discovery** - List available models across all providers
-- **TU Wien** - Support for TU Wien's internal AI models
+UniInfer integrates with [credgoo](https://github.com/your-org/credgoo) for secure API key management:
 
-## Key Benefits
-
-### Secure API Key Management with credgoo
-
-UniInfer integrates with [credgoo](https://github.com/your-org/credgoo) for secure API key management, offering:
-
-- **Centralized Key Storage** - Store all your provider API keys in a personal Google Sheet
+- **Centralized Key Storage** - Store all provider API keys in a personal Google Sheet
 - **Secure Retrieval** - Keys are encrypted and secured via token authentication
 - **Seamless Provider Switching** - Change providers without managing keys in code
-- **Development Simplicity** - No more hardcoded API keys or environment variables
-
-With credgoo integration, switching between providers becomes trivial:
 
 ```python
-from credgoo import get_api_key
-from uniinfer import ProviderFactory
-
-# Get OpenAI provider
-openai_provider = ProviderFactory.get_provider("openai")  # Key retrieved automatically
-
-# Switch to Anthropic with one line
-anthropic_provider = ProviderFactory.get_provider("anthropic")  # Key retrieved automatically
+# No API keys needed in code - retrieved automatically
+openai_provider = ProviderFactory.get_provider("openai")
+anthropic_provider = ProviderFactory.get_provider("anthropic")
+ollama_provider = ProviderFactory.get_provider("ollama")  # No auth required
 ```
 
-All provider API keys are stored securely in your personal Google Sheet and automatically retrieved when needed, eliminating the need for hardcoded keys or environment variables in your code.
+### ⚡ Real-time Streaming
+
+All providers support real-time token streaming:
+
+```python
+request = ChatCompletionRequest(
+    messages=[ChatMessage(role="user", content="Write a poem")],
+    streaming=True
+)
+
+for chunk in provider.stream_complete(request):
+    print(chunk.message.content, end="", flush=True)
+```
+
+### 📊 Embedding Support
+
+Access embedding models for semantic search and similarity:
+
+```python
+# Ollama embeddings
+ollama_embed = EmbeddingProviderFactory.get_provider("ollama")
+embed_request = EmbeddingRequest(
+    input=["machine learning", "artificial intelligence", "data science"],
+    model="nomic-embed-text:latest"
+)
+embed_response = ollama_embed.embed(embed_request)
+
+# TU Wien embeddings
+tu_embed = EmbeddingProviderFactory.get_provider("tu")
+embed_request.model = "e5-mistral-7b"
+tu_response = tu_embed.embed(embed_request)
+```
+
+### 🔄 Fallback Strategies
+
+Automatically try multiple providers until one succeeds:
+
+```python
+from uniinfer import FallbackStrategy
+
+fallback = FallbackStrategy(["mistral", "anthropic", "openai"])
+response, provider_used = fallback.complete(request)
+print(f"Response from {provider_used}: {response.message.content}")
+```
+
+### 📋 Model Discovery
+
+List available models across all providers:
+
+```python
+from uniinfer import ProviderFactory, EmbeddingProviderFactory
+
+# Chat models
+chat_models = ProviderFactory.list_models()
+print(chat_models["openai"])  # ['gpt-4', 'gpt-3.5-turbo', ...]
+
+# Embedding models
+embed_models = EmbeddingProviderFactory.list_models()
+print(embed_models["ollama"])  # ['nomic-embed-text:latest', ...]
+```
 
 ## Installation
 
@@ -73,7 +111,7 @@ pip install uniinfer credgoo
 Or install from source:
 
 ```bash
-git clone https://github.com/your-username/uniinfer.git
+git clone https://github.com/skale-dev/uniinfer.git
 cd uniinfer
 pip install -e .
 pip install credgoo  # For seamless API key management
@@ -81,598 +119,209 @@ pip install credgoo  # For seamless API key management
 
 ## Quick Start
 
-### Basic Usage with Automatic Key Management
+### Basic Chat Completion
 
 ```python
-# ... existing quick start example ...
-```
+from uniinfer import ProviderFactory, ChatMessage, ChatCompletionRequest
 
-### Example Wrapper (`uniioai.py`)
+# Get provider (API key retrieved automatically via credgoo)
+provider = ProviderFactory.get_provider("openai")
 
-For a practical example of using UniInfer to wrap a specific provider like OpenAI, see the `uniioai.py` script located in the parent `python-utils` directory. It demonstrates how to set up a streaming request easily.
-
-### Example API Server (`uniioai_proxy.py`)
-
-An example FastAPI server (`uniioai_proxy.py`) is also available in the parent `python-utils` directory. It provides an OpenAI-compatible `/v1/chat/completions` endpoint that uses `uniioai.py` internally. You can run it using `python uniioai_proxy.py` (requires `fastapi` and `uvicorn`).
-
-## Advanced Usage
-
-### Model Discovery
-
-UniInfer provides a unified way to list available models across all providers:
-
-```python
-from uniinfer import ProviderFactory
-
-# List all available models
-models = ProviderFactory.list_models()
-
-# Example output structure
-{
-    "anthropic": ["claude-3-opus", "claude-3-sonnet", "claude-3-haiku"],
-    "ollama": ["llama2", "mistral", "codellama"],
-    # ... other providers
-}
-
-# List models for a specific provider
-provider_models = ProviderFactory.list_models()["anthropic"]
-```
-
-### Provider Selection
-
-```python
-from uniinfer import ChatMessage, ChatCompletionRequest, ProviderFactory
-
-# Get a provider instance (API key retrieved automatically via credgoo)
-provider = ProviderFactory.get_provider("mistral")
-
-# Create a chat request
+# Create request
 request = ChatCompletionRequest(
-    messages=[
-        ChatMessage(role="user", content="Tell me a joke about programming.")
-    ],
-    model="mistral-small-latest",
-    temperature=0.7,
-    max_tokens=100
+    messages=[ChatMessage(role="user", content="Hello, how are you?")],
+    model="gpt-4",
+    temperature=0.7
 )
 
-# Get the completion response
+# Get response
 response = provider.complete(request)
-
-# Print the response
 print(response.message.content)
 ```
 
-### Easily Switch Between Providers
-
-One of the biggest advantages of UniInfer with credgoo integration is how easily you can switch between providers:
+### Streaming Chat Completion
 
 ```python
-from uniinfer import ChatMessage, ChatCompletionRequest, ProviderFactory
+from uniinfer import ProviderFactory, ChatMessage, ChatCompletionRequest
 
-# Create your request once
+provider = ProviderFactory.get_provider("anthropic")
+
 request = ChatCompletionRequest(
-    messages=[
-        ChatMessage(role="system", content="You are a helpful assistant."),
-        ChatMessage(role="user", content="Explain how nuclear fusion works.")
-    ],
-    temperature=0.7,
-    max_tokens=500
-)
-
-# Try different providers with minimal code changes
-# API keys are automatically retrieved from your secure credgoo storage
-
-# Using Anthropic Claude
-claude_provider = ProviderFactory.get_provider("anthropic")
-claude_request = request.copy()
-claude_request.model = "claude-3-sonnet-20240229"
-claude_response = claude_provider.complete(claude_request)
-print(f"Claude response: {claude_response.message.content[:100]}...")
-
-# Using OpenAI
-openai_provider = ProviderFactory.get_provider("openai")
-openai_request = request.copy()
-openai_request.model = "gpt-4"
-openai_response = openai_provider.complete(openai_request)
-print(f"OpenAI response: {openai_response.message.content[:100]}...")
-
-# Using Gemini
-gemini_provider = ProviderFactory.get_provider("gemini")
-gemini_request = request.copy()
-gemini_request.model = "gemini-1.5-pro"
-gemini_response = gemini_provider.complete(gemini_request)
-print(f"Gemini response: {gemini_response.message.content[:100]}...")
-```
-
-### Streaming Responses
-
-```python
-from uniinfer import ChatMessage, ChatCompletionRequest, ProviderFactory
-
-# Get a provider instance with automatic key management
-provider = ProviderFactory.get_provider("openai")
-
-# Create a chat request with streaming enabled
-request = ChatCompletionRequest(
-    messages=[
-        ChatMessage(role="user", content="Explain quantum computing.")
-    ],
-    model="gpt-4",
-    temperature=0.7,
-    max_tokens=200,
+    messages=[ChatMessage(role="user", content="Tell me a story")],
+    model="claude-3-sonnet-20240229",
     streaming=True
 )
 
-# Stream the response
+# Stream response
 for chunk in provider.stream_complete(request):
     print(chunk.message.content, end="", flush=True)
 ```
 
-### Provider-Specific Parameters
-
-You can pass provider-specific parameters when making requests:
+### Text Embeddings
 
 ```python
-# For OpenAI with tools/functions
-provider = ProviderFactory.get_provider("openai")  # Key retrieved automatically
+from uniinfer import EmbeddingProviderFactory, EmbeddingRequest
 
-response = provider.complete(
-    request,
-    tools=[
-        {
-            "type": "function",
-            "function": {
-                "name": "get_weather",
-                "description": "Get the current weather in a location",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "location": {
-                            "type": "string",
-                            "description": "The city and state, e.g. San Francisco, CA"
-                        }
-                    },
-                    "required": ["location"]
-                }
-            }
-        }
-    ],
-    tool_choice="auto"
-)
-```
+# Get embedding provider
+provider = EmbeddingProviderFactory.get_provider("ollama")
 
-### Fallback Between Providers
-
-The combination of UniInfer and credgoo makes provider fallback strategies extremely powerful:
-
-```python
-from uniinfer import ChatMessage, ChatCompletionRequest, FallbackStrategy
-
-# Create a request
-request = ChatCompletionRequest(
-    messages=[
-        ChatMessage(role="user", content="What are three facts about quantum computing?")
-    ],
-    temperature=0.7,
-    max_tokens=200
+# Create embedding request
+request = EmbeddingRequest(
+    input=["Hello world", "How are you?"],
+    model="nomic-embed-text:latest"
 )
 
-# Create a fallback strategy with providers to try in order
-# All API keys are retrieved automatically from your secure credgoo storage
-fallback = FallbackStrategy(["mistral", "anthropic", "openai", "gemini", "cohere"])
-
-# Try providers in order until one succeeds
-response, provider_used = fallback.complete(request)
-print(f"Response from {provider_used}: {response.message.content}")
+# Get embeddings
+response = provider.embed(request)
+print(f"Embeddings: {len(response.data)} vectors")
+print(f"Dimensions: {len(response.data[0]['embedding'])}")
 ```
 
-## Supported Providers 🤖
+## CLI Usage
 
-| Provider          | Example Models            | Streaming | Auth Method       |
-| ----------------- | ------------------------- | --------- | ----------------- |
-| **OpenAI**        | GPT-4, GPT-4 Turbo        | ✅        | API Key (credgoo) |
-| **Anthropic**     | Claude 3 Opus, Sonnet     | ✅        | API Key (credgoo) |
-| **Mistral**       | Mistral 8x7B, Mixtral     | ✅        | API Key (credgoo) |
-| **Ollama**        | Local/self-hosted models  | ✅        | None              |
-| **OpenRouter**    | 60+ models incl. Claude 2 | ✅        | API Key (credgoo) |
-| **Google Gemini** | Gemini Pro, Gemini Flash  | ✅        | API Key (credgoo) |
-| **HuggingFace**   | Llama 2, Mistral          | ✅        | API Key (credgoo) |
-| **Cohere**        | Command R+                | ✅        | API Key (credgoo) |
-| **Groq**          | Llama 3.1 8B/70B          | ✅        | API Key (credgoo) |
-| **AI21**          | Jamba models              | ✅        | API Key (credgoo) |
-| **InternLM**      | InternLM models           | ✅        | API Key (credgoo) |
-| **Moonshot**      | Moonshot models           | ✅        | API Key (credgoo) |
-| **StepFun**       | Step-1 models             | ✅        | API Key (credgoo) |
-| **Upstage**       | Solar models              | ✅        | API Key (credgoo) |
-| **NGC**           | NVIDIA GPU Cloud          | ✅        | API Key (credgoo) |
-| **Moonshot**      | Kimi, Moonshot            | ✅        | API Key (credgoo) |
-| **Sambanove**     | Sambanova models          | ✅        | API Key (credgoo) |
-| **Cloudflare**    | Workers AI models         | ✅        | API Key (credgoo) |
-| **Chutes**        | Deepseek, Qwen AI models  | ✅        | API Key (credgoo) |
-| **Pollinations**  | APIFree AI models         | ✅        | API Key (credgoo) |
-| **arli**          |free models         | ✅        | API Key (credgoo) |
-| **z.ai bigmodel** | glm-4.5-flash free model  | ✅        | API Key (credgoo) |
+UniInfer provides a comprehensive command-line interface:
 
+### Chat Completions
+```bash
+# Basic chat
+uniinfer -p openai -q "Hello, how are you?" -m gpt-4
 
-Below are examples for some of our newer providers (all using automatic API key management with credgoo):
+# With file context
+uniinfer -p anthropic -q "Summarize this document" -f document.txt -m claude-3-sonnet-20240229
 
-### Gemini (Google)
+# List available models
+uniinfer -p openai --list-models
+```
+
+### Embeddings
+```bash
+# Single text embedding
+uniinfer -p ollama --embed --embed-text "Hello world" --model nomic-embed-text:latest
+
+# Multiple texts
+uniinfer -p ollama --embed --embed-text "Text 1" --embed-text "Text 2" --model nomic-embed-text:latest
+
+# From file
+uniinfer -p tu --embed --embed-file texts.txt --model e5-mistral-7b
+```
+
+### Provider Management
+```bash
+# List all providers
+uniinfer -l
+
+# List models for all providers
+uniinfer -l --list-models
+```
+
+## API Server (OpenAI-Compatible)
+
+UniInfer includes an OpenAI-compatible API server for easy integration:
+
+### Running the Server
+
+```bash
+# Install additional dependencies
+pip install fastapi uvicorn
+
+# Run the server
+uvicorn uniinfer.uniioai_proxy:app --host 0.0.0.0 --port 8123
+```
+
+### API Endpoints
+
+#### POST /v1/chat/completions
+OpenAI-compatible chat completions endpoint.
+
+**Request Format:**
+```json
+{
+  "model": "openai@gpt-4",
+  "messages": [
+    {"role": "user", "content": "Hello!"}
+  ],
+  "temperature": 0.7,
+  "stream": false
+}
+```
+
+**Model Format:** `provider@model` (e.g., `openai@gpt-4`, `anthropic@claude-3-sonnet-20240229`)
+
+**Authentication:** Bearer token (managed by credgoo)
+
+**Streaming:** Set `"stream": true` for real-time responses
+
+#### Example Usage
 
 ```python
-# Requires google-generativeai package
-# pip install google-generativeai
+import openai
 
-provider = ProviderFactory.get_provider("gemini")  # API key retrieved automatically
-
-request = ChatCompletionRequest(
-    messages=[
-        ChatMessage(role="system", content="You are a helpful assistant."),
-        ChatMessage(role="user", content="Tell me about language models.")
-    ],
-    model="gemini-1.5-pro",  # or gemini-1.5-flash, etc.
-    temperature=0.7
+# Point to your UniInfer server
+client = openai.OpenAI(
+    base_url="http://localhost:8123/v1",
+    api_key="your-credgoo-bearer-token"
 )
 
-response = provider.complete(request)
-print(response.message.content)
-```
-
-### NVIDIA GPU Cloud (NGC)
-
-```python
-# Requires openai package
-# pip install openai
-
-provider = ProviderFactory.get_provider("ngc")  # API key retrieved automatically
-
-request = ChatCompletionRequest(
-    messages=[
-        ChatMessage(role="user", content="Explain how transformers work in machine learning")
-    ],
-    model="deepseek-ai/deepseek-r1-distill-llama-8b",  # NGC model
-    temperature=0.6,
-    max_tokens=4096
+# Use like regular OpenAI API
+response = client.chat.completions.create(
+    model="openai@gpt-4",
+    messages=[{"role": "user", "content": "Hello!"}]
 )
 
-# Get a completion
-response = provider.complete(request)
-print(response.message.content)
+print(response.choices[0].message.content)
 ```
 
-### Cloudflare Workers AI
+### Docker Deployment
 
-```python
-# Requires requests package
-# pip install requests
-
-# With credgoo, your API key is retrieved automatically
-# However, account_id is still required as it's specific to each request
-provider = ProviderFactory.get_provider(
-    "cloudflare",
-    account_id="your-cloudflare-account-id"  # API key retrieved automatically
-)
-
-request = ChatCompletionRequest(
-    messages=[
-        ChatMessage(role="user", content="Write a 50-word essay about hello world.")
-    ],
-    model="@cf/meta/llama-2-7b-chat-int8",  # Cloudflare model
-    temperature=0.7
-)
-
-# Get a completion
-response = provider.complete(request)
-print(response.message.content)
+```dockerfile
+FROM python:3.9
+WORKDIR /app
+COPY . .
+RUN pip install uniinfer fastapi uvicorn credgoo
+EXPOSE 8123
+CMD ["uvicorn", "uniinfer.uniioai_proxy:app", "--host", "0.0.0.0", "--port", "8123"]
 ```
 
-## Adding a New Provider 💻
+## Supported Providers
 
-Extend UniInfer with custom providers in 3 steps:
+| Provider | Chat Models | Embedding Models | Streaming | Auth Required |
+|----------|-------------|------------------|-----------|---------------|
+| **OpenAI** | GPT-4, GPT-3.5 | text-embedding-ada-002 | ✅ | ✅ |
+| **Anthropic** | Claude 3 Opus/Sonnet/Haiku | - | ✅ | ✅ |
+| **Mistral** | Mistral Large/Small | mistral-embed | ✅ | ✅ |
+| **Ollama** | Llama2, Mistral, etc. | nomic-embed-text, jina-embed | ✅ | ❌ |
+| **Google Gemini** | Gemini Pro/Flash | text-embedding-004 | ✅ | ✅ |
+| **TU Wien** | DeepSeek, Qwen, etc. | e5-mistral-7b | ✅ | ✅ |
+| **OpenRouter** | 60+ models | Various | ✅ | ✅ |
+| **HuggingFace** | Llama, Mistral | sentence-transformers | ✅ | ✅ |
+| **Cohere** | Command R+ | embed-english-v3.0 | ✅ | ✅ |
+| **Groq** | Llama 3.1 | - | ✅ | ✅ |
+| **AI21** | Jamba | - | ✅ | ✅ |
+| **Cloudflare** | Workers AI | - | ✅ | ✅ |
+| **NVIDIA NGC** | Various | Various | ✅ | ✅ |
+| **And 10+ more...** | | | | |
 
-1. **Create Provider Class**  
-   Implement required methods in `providers/your_provider.py`
-2. **Register Provider**  
-   Add to `ProviderFactory` registry
-3. **Test Integration**  
-   Use our validation suite
 
-### 1. Create the Provider Class
-
-Create a new file in `uniinfer/providers/` (e.g., `myprovider.py`) with your provider implementation:
-
-```python
-from typing import Dict, Any, Iterator, Optional
-from ..core import ChatProvider, ChatCompletionRequest, ChatCompletionResponse, ChatMessage
-
-class MyProvider(ChatProvider):
-    """Provider for MyLLM API."""
-
-    def __init__(self, api_key: Optional[str] = None, **kwargs):
-        super().__init__(api_key)
-        # Initialize any client libraries or connection details
-        # self.client = SomeClient(api_key=self.api_key)
-
-    def complete(self, request: ChatCompletionRequest, **provider_specific_kwargs) -> ChatCompletionResponse:
-        # Implement standard completion method
-        # 1. Prepare messages/parameters for your API
-        # 2. Make the API call
-        # 3. Process the response
-        # 4. Return a ChatCompletionResponse object
-
-        # Example implementation:
-        message = ChatMessage(
-            role="assistant",
-            content="Response from API"
-        )
-
-        return ChatCompletionResponse(
-            message=message,
-            provider='myprovider',
-            model=request.model,
-            usage={},  # Token usage if available
-            raw_response={}  # The raw API response
-        )
-
-    def stream_complete(self, request: ChatCompletionRequest, **provider_specific_kwargs) -> Iterator[ChatCompletionResponse]:
-        # Implement streaming completion method
-        # Yield ChatCompletionResponse objects for each chunk
-
-        # Example implementation:
-        yield ChatCompletionResponse(
-            message=ChatMessage(role="assistant", content="Streamed chunk"),
-            provider='myprovider',
-            model=request.model,
-            usage={},
-            raw_response={}
-        )
-```
-
-## Error Handling
-
-UniInfer provides standardized error handling:
-
-```python
-from uniinfer import ProviderFactory
-from uniinfer.errors import AuthenticationError, RateLimitError, TimeoutError, ProviderError
-
-try:
-    # Even with wrong API keys, the credgoo integration makes error handling cleaner
-    provider = ProviderFactory.get_provider("openai")
-    response = provider.complete(request)
-except AuthenticationError as e:
-    print("Authentication error:", str(e))
-except RateLimitError as e:
-    print("Rate limit exceeded:", str(e))
-except TimeoutError as e:
-    print("Request timed out:", str(e))
-except ProviderError as e:
-    print("Provider error:", str(e))
-```
-
-## API Reference
-
-### Core Classes
-
-- **ChatMessage**: Represents a message in a chat conversation
-
-  - `role`: The role of the message sender (user, assistant, system)
-  - `content`: The content of the message
-  - `to_dict()`: Convert to a dictionary format
-
-- **ChatCompletionRequest**: Represents a request for a chat completion
-
-  - `messages`: List of ChatMessage objects
-  - `model`: The model to use (optional)
-  - `temperature`: Controls randomness (0-1)
-  - `max_tokens`: Maximum tokens to generate (optional)
-  - `streaming`: Whether to stream the response
-
-- **ChatCompletionResponse**: Represents a response from a chat completion
-
-  - `message`: The generated ChatMessage
-  - `provider`: Name of the provider that generated the response
-  - `model`: The model used for generation
-  - `usage`: Token usage information
-  - `raw_response`: The raw response from the provider
-
-- **ChatProvider**: Abstract base class for chat providers
-
-  - `complete(request, **kwargs)`: Make a chat completion request
-  - `stream_complete(request, **kwargs)`: Stream a chat completion response
-
-- **ProviderFactory**: Factory for creating provider instances
-  - `get_provider(name, api_key=None)`: Get a provider instance (uses credgoo if no key provided)
-  - `register_provider(name, provider_class)`: Register a provider
-  - `list_providers()`: List all registered providers
-
-### Strategies
-
-- **FallbackStrategy**: Tries providers in order until one succeeds
-
-  - `complete(request, **kwargs)`: Make a request with fallback
-  - `stream_complete(request, **kwargs)`: Stream with fallback
-  - `get_stats()`: Get provider statistics
-
-- **CostBasedStrategy**: Selects providers based on cost
-  - `complete(request, **kwargs)`: Make a request with the cheapest provider
-  - `stream_complete(request, **kwargs)`: Stream with the cheapest provider
 
 ## Contributing
 
-We welcome contributions! Here's how to get started:
-
 1. Fork the repository
-2. Create a new branch (`git checkout -b feature/your-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin feature/your-feature`)
-5. Create a new Pull Request
+2. Create a feature branch
+3. Add tests for new functionality
+4. Ensure all tests pass
+5. Submit a pull request
 
-Before contributing, please read our [Contribution Guidelines](CONTRIBUTING.md).
+### Adding a New Provider
 
-## Deployment Guide
-
-### Setting up the OpenAI Proxy Server
-
-1. **Prerequisites**
-
-   - Python 3.8+
-   - FastAPI (`pip install fastapi`)
-   - Uvicorn (`pip install uvicorn`)
-   - credgoo (`pip install credgoo`)
-
-2. **Installation**
-
-   ```bash
-   pip install uniinfer
-   ```
-
-3. **Configuration**
-
-   - Set up your API keys in credgoo (see [Key Benefits](#key-benefits) section)
-   - No additional configuration needed for basic usage
-
-4. **Running the Server**
-
-uniioai accepts open ai streaming requests and handles it via uniinfer. uniioai_proxy serves as a proxy server that serves a openai style endpoint. it accepts as bearer a credgoo bearer. credgoo manages auth-keys in the background for more than 20 different llm providers.
-
-```bash
-uvicorn packages.uniinfer.uniinfer.uniioai_proxy:app --host 0.0.0.0 --port 8123 --workers 1 --reload
-```
-
-- The server will be available at `http://localhost:8123`
-- Provides OpenAI-compatible `/v1/chat/completions` endpoint
-
-OpenAI-compatible chat completions endpoint. Uses the 'model' field in the format 'provider@modelname'. Requires Bearer token authentication (used for key retrieval). Optionally accepts a 'base_url'. If provider is 'ollama' and no base_url is provided, it defaults to 'https://amp1.mooo.com:11444'.
-
-5. **Production Deployment** (Optional)
-
-   - **Docker**:
-     ```dockerfile
-     FROM python:3.9
-     WORKDIR /app
-     COPY . .
-     RUN pip install uniinfer fastapi uvicorn
-     CMD ["uvicorn", "uniinfer:app", "--host", "0.0.0.0", "--port", "8000"]
-     ```
-   - **NGINX Reverse Proxy**:
-
-     ```nginx
-     server {
-         listen 80;
-         server_name yourdomain.com;
-
-         location / {
-             proxy_pass http://localhost:8000;
-             proxy_set_header Host $host;
-             proxy_set_header X-Real-IP $remote_addr;
-         }
-     }
-     ```
-
-## Running and Deploying the Web Proxy
-
-### Running the Proxy Server
-
-1. **Ensure Prerequisites**:
-   - Python 3.8+ is installed.
-   - Install the required packages:
-
-     ```bash
-     pip install fastapi uvicorn credgoo
-     ```
-
-2. **Run the Proxy Server**:
-   Navigate to the `uniinfer` directory and execute the following command:
-
-   ```bash
-   uvicorn packages.uniinfer.uniinfer.uniioai_proxy:app --host 0.0.0.0 --port 8123 --workers 1 --reload
-   ```
-
-   - This will start the server on `http://localhost:8123`.
-   - The server provides an OpenAI-compatible `/v1/chat/completions` endpoint.
-
-3. **Authentication**:
-   - Use a Bearer token for authentication. The token is managed by `credgoo` for API key retrieval.
-
-### Deploying the Proxy Server
-
-1. **Docker Deployment**:
-   - Create a `Dockerfile`:
-
-     ```dockerfile
-     FROM python:3.9
-     WORKDIR /app
-     COPY . .
-     RUN pip install uniinfer fastapi uvicorn
-     CMD ["uvicorn", "uniinfer.uniioai_proxy:app", "--host", "0.0.0.0", "--port", "8000"]
-     ```
-
-   - Build and run the Docker container:
-
-     ```bash
-     docker build -t uniinfer-proxy .
-     docker run -p 8000:8000 uniinfer-proxy
-     ```
-
-2. **NGINX Reverse Proxy**:
-   - Configure NGINX to forward requests to the proxy server:
-
-     ```nginx
-     server {
-         listen 80;
-         server_name yourdomain.com;
-
-         location / {
-             proxy_pass http://localhost:8000;
-             proxy_set_header Host $host;
-             proxy_set_header X-Real-IP $remote_addr;
-         }
-     }
-     ```
-
-   - Restart NGINX to apply the changes.
-
-3. **Production Considerations**:
-   - Use a process manager like `supervisord` or `systemd` to keep the server running.
-   - Secure the server with HTTPS using tools like Let's Encrypt.
-
-## Implementation Status
-
-Providers:
-- OpenAI
-- Anthropic
-- Mistral AI
-- Google Gemini
-- NVIDIA GPU Cloud (NGC)
-- Cloudflare Workers AI
-- Cohere
-- AI21 Labs
-- OpenRouter
-- Ollama
-- Hugging Face Inference Endpoints
-- Moonshot AI
-- InternLM
-- StepFun
-- Sambanova
-- Pollinations
-- Arli
-- TU Wien
-
-Features:
-[ ] rate limiting (each provider has different limits)
-[ ] provider selection (e.g., cheapest, fastest, etc.)
-[ ] API model listing
-[ ] Image Generation
-[ ] Usage Monitoring
-[ ] Model Listing
+1. Create `uniinfer/providers/your_provider.py`
+2. Implement `ChatProvider` or `EmbeddingProvider` interface
+3. Register in the appropriate factory
+4. Add tests
 
 ## License
 
-[MIT License](LICENSE)
+MIT License - see [LICENSE](LICENSE) for details
 
 ---
 
-**UniInfer** with credgoo integration is designed to make working with multiple LLM providers as simple and secure as possible. By automatically retrieving API keys from your secure storage, you can focus on building applications instead of managing credentials.
-
-For issues, feature requests, or contributions, please visit our [GitHub repository](https://github.com/your-username/uniinfer).
+**UniInfer** makes working with multiple LLM providers simple and secure. Focus on building applications, not managing API keys.

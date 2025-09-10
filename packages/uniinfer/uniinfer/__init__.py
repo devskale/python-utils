@@ -5,14 +5,15 @@ A standardized interface for making chat completion requests across multiple
 LLM inference providers.
 """
 
-from .core import ChatMessage, ChatCompletionRequest, ChatCompletionResponse, ChatProvider
+from .core import ChatMessage, ChatCompletionRequest, ChatCompletionResponse, ChatProvider, EmbeddingRequest, EmbeddingResponse, EmbeddingProvider
 from .factory import ProviderFactory
+from .embedding_factory import EmbeddingProviderFactory
 from .providers import (
     MistralProvider, AnthropicProvider, OpenAIProvider,
-    OllamaProvider, OpenRouterProvider, ArliAIProvider,
+    OllamaProvider, OllamaEmbeddingProvider, OpenRouterProvider, ArliAIProvider,
     InternLMProvider, StepFunProvider, SambanovaProvider,
     UpstageProvider, NGCProvider, CloudflareProvider, ChutesProvider,
-    PollinationsProvider, BigmodelProvider, TuAIProvider
+    PollinationsProvider, BigmodelProvider, TuAIProvider, TuAIEmbeddingProvider
 )
 from .errors import (
     UniInferError, ProviderError, AuthenticationError,
@@ -75,6 +76,10 @@ ProviderFactory.register_provider("pollinations", PollinationsProvider)
 ProviderFactory.register_provider("bigmodel", BigmodelProvider)
 ProviderFactory.register_provider("tu", TuAIProvider)
 
+# Register embedding providers
+EmbeddingProviderFactory.register_provider("ollama", OllamaEmbeddingProvider)
+EmbeddingProviderFactory.register_provider("tu", TuAIEmbeddingProvider)
+
 # Register optional providers if available
 if HAS_HUGGINGFACE:
     ProviderFactory.register_provider("huggingface", HuggingFaceProvider)
@@ -102,7 +107,10 @@ __all__ = [
     'ChatCompletionRequest',
     'ChatCompletionResponse',
     'ChatProvider',
-    'ProviderFactory',
+    'EmbeddingRequest',
+    'EmbeddingResponse',
+    'EmbeddingProvider',
+    'EmbeddingProviderFactory',
     'MistralProvider',
     'AnthropicProvider',
     'OpenAIProvider',
@@ -116,6 +124,7 @@ __all__ = [
     'PollinationsProvider',
     'BigmodelProvider',
     'OllamaProvider',
+    'OllamaEmbeddingProvider',
     'OpenRouterProvider',
     'ArliAIProvider',
     'InternLMProvider',
@@ -128,6 +137,7 @@ __all__ = [
     'PollinationsProvider',
     'BigmodelProvider',
     'TuAIProvider',
+    'TuAIEmbeddingProvider',
     'UniInferError',
     'ProviderError',
     'AuthenticationError',

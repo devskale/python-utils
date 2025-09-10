@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="uniinfer",
-    version="0.1.9",
+    version="0.2.0",
     url="https://github.com/skale-dev/uniinfer",
     description="Unified Inference API for LLM chat completions",
     author="Han Woo",
@@ -36,7 +36,7 @@ setup(
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'uniinfer=uniinfer.examples.uniinfer_example:main',
+            'uniinfer=uniinfer.uniinfer_cli:main',
             'uniioai-proxy=uniinfer.uniioai_proxy:main',  # <-- Add this line
 
         ],
