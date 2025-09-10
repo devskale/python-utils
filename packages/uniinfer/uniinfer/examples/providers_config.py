@@ -73,8 +73,8 @@ PROVIDER_CONFIGS = {
         'default_model': 'gemma3:4b',
         'needs_api_key': False,
         'extra_params': {
-            # 'base_url': 'http://amp1.mooo.com:11444'
-            'base_url': 'https://ollama.molodetz.nl'
+            'base_url': 'https://amp1.mooo.com:11444'
+            # 'base_url': 'https://ollama.molodetz.nl'
         }
     },
     'arli': {
