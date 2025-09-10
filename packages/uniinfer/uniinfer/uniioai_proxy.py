@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 # Import run_in_threadpool
 from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 from fastapi.security import HTTPBearer  # Import HTTPBearer
+from fastapi.security.http import HTTPAuthorizationCredentials  # Import HTTPAuthorizationCredentials
 from uniinfer.examples.providers_config import PROVIDER_CONFIGS  # Add this import
 
 # Ensure the uniinfer package directory is in the Python path
@@ -26,7 +27,7 @@ if uniinfer_package_path not in sys.path:
 # Now import from uniioai (assuming it's inside the uniinfer package structure)
 try:
     # Import get_provider_api_key as well
-    from uniinfer.uniioai import stream_completion, get_completion, get_provider_api_key, list_providers, list_models_for_provider
+    from uniinfer.uniioai import stream_completion, get_completion, get_provider_api_key, list_providers, list_models_for_provider, get_embeddings, list_embedding_providers, list_embedding_models_for_provider
     from uniinfer.errors import UniInferError, AuthenticationError, ProviderError, RateLimitError
 except ImportError as e:
     print(f"Error importing from uniinfer.uniioai: {e}")
@@ -53,6 +54,16 @@ app.add_middleware(
 
 # Define the security scheme
 security = HTTPBearer()
+
+# Custom dependency for optional authentication
+async def optional_security(request: Request) -> Optional[str]:
+    """
+    Optional security dependency that returns None if no Authorization header is provided.
+    """
+    try:
+        return await security(request)
+    except Exception:
+        return None
 
 # --- Pydantic Models for OpenAI Compatibility ---
 
@@ -130,6 +141,27 @@ class ModelList(BaseModel):
 class ProviderList(BaseModel):
     object: str = "list"
     data: List[str]
+
+
+# --- Models for Embedding Endpoint ---
+
+class EmbeddingRequest(BaseModel):
+    model: str  # Expected format: "provider@modelname"
+    input: List[str]  # List of texts to embed
+    user: Optional[str] = None  # Optional user identifier
+
+
+class EmbeddingData(BaseModel):
+    object: str = "embedding"
+    embedding: List[float]
+    index: int
+
+
+class EmbeddingResponse(BaseModel):
+    object: str = "list"
+    data: List[EmbeddingData]
+    model: str
+    usage: Optional[Dict[str, int]] = None
 
 
 # --- Predefined Models ---
@@ -378,6 +410,93 @@ async def chat_completions(request_input: ChatCompletionRequestInput, token: str
             status_code=500, detail=f"Internal Server Error: {type(e).__name__}")
 
 
+# --- Add Embedding Endpoint ---
+@app.post("/v1/embeddings", response_model=EmbeddingResponse)
+async def create_embeddings(request_input: EmbeddingRequest, request: Request):
+    """
+    OpenAI-compatible embeddings endpoint.
+    Uses the 'model' field in the format 'provider@modelname'.
+    Authentication optional for Ollama, required for other providers.
+    """
+    # Extract authorization header manually
+    auth_header = request.headers.get("authorization")
+    api_bearer_token = None
+    if auth_header and auth_header.startswith("Bearer "):
+        api_bearer_token = auth_header[7:]  # Remove "Bearer " prefix
+
+    provider_model = request_input.model
+    input_texts = request_input.input
+
+    try:
+        # Validate model format
+        if '@' not in provider_model:
+            raise HTTPException(
+                status_code=400, detail="Invalid model format. Expected 'provider@modelname'.")
+        provider_name = provider_model.split('@', 1)[0]
+
+        # For Ollama, we don't require authentication
+        if provider_name == 'ollama':
+            provider_api_key = None
+            # Get base_url from provider config for Ollama
+            base_url = PROVIDER_CONFIGS.get("ollama", {}).get("extra_params", {}).get("base_url")
+        else:
+            # For other providers, require authentication
+            if not api_bearer_token:
+                raise HTTPException(
+                    status_code=401, detail="Authentication required for this provider")
+            try:
+                provider_api_key = get_provider_api_key(
+                    api_bearer_token, provider_name)
+            except (ValueError, AuthenticationError) as e:
+                raise HTTPException(
+                    status_code=401, detail=f"API Key Retrieval Failed: {e}")
+            base_url = None
+
+        # Get embeddings using the synchronous function in a thread pool
+        embeddings_result = await run_in_threadpool(
+            get_embeddings,
+            input_texts=input_texts,
+            provider_model_string=provider_model,
+            provider_api_key=provider_api_key,
+            base_url=base_url
+        )
+
+        # Format the response according to OpenAI spec
+        embedding_data = []
+        for i, embedding in enumerate(embeddings_result):
+            embedding_data.append(EmbeddingData(
+                embedding=embedding,
+                index=i
+            ))
+
+        response_data = EmbeddingResponse(
+            data=embedding_data,
+            model=provider_model
+            # Usage data is not available from uniioai currently
+        )
+        return response_data
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except AuthenticationError as e:
+        raise HTTPException(
+            status_code=401, detail=f"Provider Authentication Error: {e}")
+    except RateLimitError as e:
+        raise HTTPException(status_code=429, detail=f"Rate Limit Error: {e}")
+    except ProviderError as e:
+        raise HTTPException(
+            status_code=500, detail=f"Provider Error ({provider_name}): {e}")
+    except UniInferError as e:
+        raise HTTPException(status_code=500, detail=f"UniInfer Error: {e}")
+    except Exception as e:
+        print(
+            f"Unexpected error in /v1/embeddings: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500, detail=f"Internal Server Error: {type(e).__name__}")
+
+
 # --- Change dynamic list models to return ModelList ---
 @app.get("/v1/models/{provider_name}", response_model=ModelList)
 async def dynamic_list_models(provider_name: str, token: str = Depends(security)):
@@ -396,9 +515,57 @@ async def dynamic_list_models(provider_name: str, token: str = Depends(security)
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# --- Add Embedding Providers Endpoint ---
+@app.get("/v1/embedding/providers", response_model=ProviderList)
+async def get_embedding_providers(request: Request):
+    """
+    OpenAI‐style endpoint to list available embedding providers.
+    Authentication optional.
+    """
+    try:
+        providers = list_embedding_providers()
+        return ProviderList(data=providers)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- Add Embedding Models Endpoint ---
+@app.get("/v1/embedding/models/{provider_name}", response_model=ModelList)
+async def dynamic_list_embedding_models(provider_name: str, request: Request):
+    """
+    List available embedding models for a specific provider, formatted OpenAI‐style.
+    Authentication optional for Ollama.
+    """
+    # Extract authorization header manually
+    auth_header = request.headers.get("authorization")
+    api_bearer_token = None
+    if auth_header and auth_header.startswith("Bearer "):
+        api_bearer_token = auth_header[7:]  # Remove "Bearer " prefix
+
+    try:
+        # For Ollama, we don't require authentication
+        if provider_name == 'ollama':
+            api_bearer_token = None
+        else:
+            # For other providers, require authentication
+            if not api_bearer_token:
+                raise HTTPException(
+                    status_code=401, detail="Authentication required for this provider")
+
+        raw_models = list_embedding_models_for_provider(provider_name, api_bearer_token or "")
+        model_objs = [Model(id=m) for m in raw_models]
+        return ModelList(data=model_objs)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except AuthenticationError as e:
+        raise HTTPException(status_code=401, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/")
 async def root():
-    return {"message": "UniIOAI API is running. Visit /webdemo for the interactive demo, or use POST /v1/chat/completions or GET /v1/models"}
+    return {"message": "UniIOAI API is running. Visit /webdemo for the interactive demo, or use POST /v1/chat/completions, POST /v1/embeddings, or GET /v1/models"}
 
 
 # --- Run the API (for local development) ---

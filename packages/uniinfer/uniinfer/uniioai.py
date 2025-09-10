@@ -2,10 +2,11 @@
 A OpenAI compliance wrapper for LLM APIs using uniinfer, supporting streaming and non-streaming.
 """
 import os
-from typing import Optional, List  # Import Optional, List
+from typing import Optional, List, Dict, Any  # Import Optional, List, Dict, Any
 import random  # Import random
 
 from uniinfer import ProviderFactory, ChatMessage, ChatCompletionRequest, ChatCompletionResponse
+from uniinfer import EmbeddingProviderFactory, EmbeddingRequest, EmbeddingResponse
 from uniinfer.errors import UniInferError, AuthenticationError
 from dotenv import load_dotenv
 from credgoo import get_api_key
@@ -32,6 +33,7 @@ def get_provider_api_key(api_bearer_token: str, provider_name: str) -> Optional[
     Args:
         api_bearer_token (str): The API token. Can be a direct provider API key
                                 or a combined credgoo token ('bearer@encryption').
+                                Can be None or empty for providers like Ollama.
         provider_name (str): The name of the provider (e.g., 'openai', 'ollama').
 
     Returns:
@@ -41,6 +43,10 @@ def get_provider_api_key(api_bearer_token: str, provider_name: str) -> Optional[
         ValueError: If the combined credgoo token format is invalid or api_bearer_token is missing.
         AuthenticationError: If credgoo fails to retrieve a key using a combined token.
     """
+    # For Ollama, no authentication is required
+    if provider_name == 'ollama':
+        return None
+
     if not api_bearer_token:
         raise ValueError(
             "API Bearer Token is required (provider key or credgoo combo).")
@@ -229,6 +235,103 @@ def get_completion(messages, provider_model_string, temperature=0.7, max_tokens=
             f"An unexpected error occurred during non-streaming completion: {e}")
         raise UniInferError(
             f"An unexpected error occurred in get_completion: {e}")
+
+
+# --- Embedding Functions ---
+
+def get_embeddings(input_texts: List[str], provider_model_string: str, provider_api_key: Optional[str] = None, base_url: Optional[str] = None) -> List[List[float]]:
+    """
+    Initiates an embedding request via uniinfer.
+
+    Args:
+        input_texts (List[str]): A list of texts to embed.
+        provider_model_string (str): Combined provider and model name, e.g., "ollama@nomic-embed-text:latest".
+        provider_api_key (str, optional): The pre-retrieved API key for the provider. Defaults to None.
+        base_url (str, optional): The base URL for the provider's API (e.g., for Ollama). Defaults to None.
+
+    Returns:
+        List[List[float]]: A list of embedding vectors, where each vector is a list of floats.
+
+    Raises:
+        ValueError: If the provider_model_string format is invalid.
+        UniInferError: If there's an issue with the provider or the request.
+    """
+    try:
+        # Parse provider and model from the combined string
+        if '@' not in provider_model_string:
+            raise ValueError(
+                "Invalid provider_model_string format. Expected 'provider@modelname'.")
+        provider_name, model_name = provider_model_string.split('@', 1)
+
+        if not provider_name or not model_name:
+            raise ValueError(
+                "Invalid provider_model_string format. Provider or model name is empty.")
+
+        # Get the specified embedding provider, passing base_url if provided
+        provider_kwargs = {'api_key': provider_api_key}  # Use passed key
+        if base_url:
+            provider_kwargs['base_url'] = base_url
+
+        provider = EmbeddingProviderFactory.get_provider(
+            provider_name,
+            **provider_kwargs
+        )
+
+        # Create the embedding request
+        request = EmbeddingRequest(
+            input=input_texts,
+            model=model_name
+        )
+
+        # Get the response
+        print(
+            f"--- Requesting embeddings from {provider_name} ({model_name}) ---")
+        response: EmbeddingResponse = provider.embed(request)
+        print("--- Embeddings received ---")
+
+        # Extract just the embedding vectors from the response
+        embeddings = []
+        for embedding_data in response.data:
+            embeddings.append(embedding_data["embedding"])
+
+        return embeddings
+
+    except (UniInferError, ValueError) as e:
+        print(f"An error occurred during embedding request: {e}")
+        raise
+    except Exception as e:
+        print(f"An unexpected error occurred during embedding request: {e}")
+        raise UniInferError(
+            f"An unexpected error occurred in get_embeddings: {e}")
+
+
+# --- New Helper to List Embedding Providers ---
+def list_embedding_providers() -> List[str]:
+    """
+    Return the names of all available embedding providers.
+    """
+    return EmbeddingProviderFactory.list_providers()
+
+
+# --- New Helper to List Embedding Models for a Provider ---
+def list_embedding_models_for_provider(provider_name: str, api_bearer_token: str) -> List[str]:
+    """
+    Return available embedding model names for the given provider, using the bearer token.
+    For Ollama, api_bearer_token can be empty or None.
+    """
+    # retrieve actual api key
+    if provider_name == 'ollama':
+        api_key = None
+    else:
+        api_key = get_provider_api_key(api_bearer_token, provider_name)
+    # determine extra params if needed
+    extra = {}
+    if provider_name in ['cloudflare', 'ollama']:
+        extra = PROVIDER_CONFIGS.get(provider_name, {}).get('extra_params', {})
+    # get the provider class and list models
+    provider_cls = EmbeddingProviderFactory.get_provider_class(provider_name)
+    modellist = provider_cls.list_models(api_key=api_key, **extra)
+    return modellist
 
 
 # --- New Helper to List Providers ---
