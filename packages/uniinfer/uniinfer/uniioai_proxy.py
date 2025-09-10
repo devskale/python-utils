@@ -463,7 +463,7 @@ async def create_embeddings(request_input: EmbeddingRequest, request: Request):
 
         # Format the response according to OpenAI spec
         embedding_data = []
-        for i, embedding in enumerate(embeddings_result):
+        for i, embedding in enumerate(embeddings_result['embeddings']):
             embedding_data.append(EmbeddingData(
                 embedding=embedding,
                 index=i
@@ -471,8 +471,8 @@ async def create_embeddings(request_input: EmbeddingRequest, request: Request):
 
         response_data = EmbeddingResponse(
             data=embedding_data,
-            model=provider_model
-            # Usage data is not available from uniioai currently
+            model=provider_model,
+            usage=embeddings_result['usage']
         )
         return response_data
 

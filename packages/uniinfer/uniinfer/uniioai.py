@@ -239,7 +239,7 @@ def get_completion(messages, provider_model_string, temperature=0.7, max_tokens=
 
 # --- Embedding Functions ---
 
-def get_embeddings(input_texts: List[str], provider_model_string: str, provider_api_key: Optional[str] = None, base_url: Optional[str] = None) -> List[List[float]]:
+def get_embeddings(input_texts: List[str], provider_model_string: str, provider_api_key: Optional[str] = None, base_url: Optional[str] = None) -> Dict[str, Any]:
     """
     Initiates an embedding request via uniinfer.
 
@@ -250,7 +250,7 @@ def get_embeddings(input_texts: List[str], provider_model_string: str, provider_
         base_url (str, optional): The base URL for the provider's API (e.g., for Ollama). Defaults to None.
 
     Returns:
-        List[List[float]]: A list of embedding vectors, where each vector is a list of floats.
+        Dict[str, Any]: A dictionary containing 'embeddings' (list of embedding vectors) and 'usage' (token usage information).
 
     Raises:
         ValueError: If the provider_model_string format is invalid.
@@ -289,12 +289,10 @@ def get_embeddings(input_texts: List[str], provider_model_string: str, provider_
         response: EmbeddingResponse = provider.embed(request)
         print("--- Embeddings received ---")
 
-        # Extract just the embedding vectors from the response
-        embeddings = []
-        for embedding_data in response.data:
-            embeddings.append(embedding_data["embedding"])
-
-        return embeddings
+        # Extract the embedding vectors and usage from the response
+        embeddings = [embedding_data["embedding"] for embedding_data in response.data]
+        usage = getattr(response, 'usage', {'prompt_tokens': 0, 'total_tokens': 0})
+        return {'embeddings': embeddings, 'usage': usage}
 
     except (UniInferError, ValueError) as e:
         print(f"An error occurred during embedding request: {e}")
