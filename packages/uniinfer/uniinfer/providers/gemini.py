@@ -6,11 +6,11 @@ from typing import Dict, Any, Iterator, Optional, List
 from ..core import ChatProvider, ChatCompletionRequest, ChatCompletionResponse, ChatMessage
 from ..errors import map_provider_error
 
-# Try to import the google.generativeai package
-# Note: Install with 'pip install google-generativeai' if not available
+# Try to import the google-genai package (latest recommended package)
+# Note: Install with 'pip install google-genai' if not available
 try:
-    import google.generativeai as genai
-    from google.generativeai import types
+    from google import genai
+    from google.genai import types
     HAS_GENAI = True
 except ImportError:
     HAS_GENAI = False
@@ -33,12 +33,12 @@ class GeminiProvider(ChatProvider):
 
         if not HAS_GENAI:
             raise ImportError(
-                "The 'google-generativeai' package is required to use the Gemini provider. "
-                "Install it with 'pip install google-generativeai'"
+                "The 'google-genai' package is required to use the Gemini provider. "
+                "Install it with 'pip install google-genai'"
             )
 
-        # Configure the Gemini client
-        genai.configure(api_key=self.api_key)
+        # Create the Gemini client using the new client-based approach
+        self.client = genai.Client(api_key=self.api_key)
 
         # Save any additional configuration
         self.config = kwargs
@@ -70,8 +70,8 @@ class GeminiProvider(ChatProvider):
         if request.max_tokens is not None:
             config_params["max_output_tokens"] = request.max_tokens
 
-        # Create the config object
-        config = types.GenerationConfig(**config_params)
+        # Create the config object using the new types structure
+        config = types.GenerateContentConfig(**config_params)
 
         # Prepare the content based on non-system messages
         # For simple queries with just one user message, use a simple string
@@ -135,13 +135,11 @@ class GeminiProvider(ChatProvider):
             # Prepare the content and config
             content, config = self._prepare_content_and_config(request)
 
-            # Get the model instance
-            model_instance = genai.GenerativeModel(model)
-
-            # Make the API call
-            response = model_instance.generate_content(
+            # Make the API call using the new client-based approach
+            response = self.client.models.generate_content(
+                model=model,
                 contents=content,
-                generation_config=config
+                config=config
             )
 
             # Check for content filtering
@@ -214,8 +212,8 @@ class GeminiProvider(ChatProvider):
         """
         if not HAS_GENAI:
             raise ImportError(
-                "The 'google-generativeai' package is required to use the Gemini provider. "
-                "Install it with 'pip install google-generativeai'"
+                "The 'google-genai' package is required to use the Gemini provider. "
+                "Install it with 'pip install google-genai'"
             )
 
         # Try to get API key from credgoo if not provided
@@ -230,13 +228,14 @@ class GeminiProvider(ChatProvider):
                 raise ValueError(
                     "Gemini API key is required when credgoo is not available")
 
-        genai.configure(api_key=api_key)
+        # Create a client instance for listing models
+        client = genai.Client(api_key=api_key)
         models = []
 
-        # Get models that support generateContent
-        for m in genai.list_models():
-            if 'generateContent' in m.supported_generation_methods:
-                models.append(m.name)
+        # Get models using the new client-based approach
+        model_list = client.models.list()
+        for model in model_list:
+            models.append(model.name)
 
         return models
 
@@ -268,14 +267,11 @@ class GeminiProvider(ChatProvider):
             # Prepare the content and config
             content, config = self._prepare_content_and_config(request)
 
-            # Get the model instance
-            model_instance = genai.GenerativeModel(model)
-
-            # Make the streaming API call
-            stream = model_instance.generate_content(
+            # Make the streaming API call using the new client-based approach
+            stream = self.client.models.generate_content_stream(
+                model=model,
                 contents=content,
-                generation_config=config,
-                stream=True
+                config=config
             )
 
             # Process the streaming response
