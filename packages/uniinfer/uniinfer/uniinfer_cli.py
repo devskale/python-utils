@@ -12,6 +12,7 @@ from uniinfer import (
 from credgoo import get_api_key
 import argparse
 import random
+import time
 # Cloudflare API Details
 from dotenv import load_dotenv
 import os
@@ -241,13 +242,33 @@ def main():
         model=model,
         streaming=True
     )
-    # Make the request
+    # Make the request with timing statistics
     response_text = ""
+    token_count = 0
+    start_time = time.time()
+    first_token_time = None
+    
     print("\n=== Response ===\n")
     for chunk in uni.stream_complete(request):
         content = chunk.message.content
-        print(content, end="", flush=True)
-        response_text += content
+        if content:  # Only count non-empty content
+            if first_token_time is None:
+                first_token_time = time.time()
+            # Estimate token count (rough approximation: 4 chars = 1 token)
+            token_count += len(content) / 4
+            print(content, end="", flush=True)
+            response_text += content
+    
+    end_time = time.time()
+    
+    # Calculate statistics
+    time_to_first_token = first_token_time - start_time if first_token_time else 0
+    # Calculate tokens per second from first token to end (excluding initial latency)
+    token_generation_time = end_time - first_token_time if first_token_time else 0
+    tokens_per_second = token_count / token_generation_time if token_generation_time > 0 else 0
+    
+    # Print statistics
+    print(f"\n\ntok/s: {tokens_per_second:.2f}          tft: {time_to_first_token:.2f} s")
 
 
 if __name__ == "__main__":
