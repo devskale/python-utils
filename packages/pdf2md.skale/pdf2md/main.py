@@ -137,7 +137,7 @@ def process_directory(input_dir: str, converter: PDFtoMarkdown, args) -> tuple[i
         supported_files = [f for f in os.listdir(input_dir)
                            if not f.startswith('.') and not f.startswith('_') and f.lower().endswith('.pdf')]
         if not supported_files:
-            print(f"No PDF files found in {input_dir}")
+            print(f"_")
             return (0, 0)
     else:
         if 'marker' in args.parsers:
@@ -148,10 +148,10 @@ def process_directory(input_dir: str, converter: PDFtoMarkdown, args) -> tuple[i
                                if not f.startswith('.') and not f.startswith('_') and f.lower().endswith(('.pdf', '.docx', '.xlsx', '.pptx'))]
         if not supported_files:
             print(
-                f"No supported files (PDF/DOCX/XLSX/PPTX) found in {input_dir}")
+                f"_")
             return (0, 0)
 
-    print(f"Found {len(supported_files)} file(s) in {input_dir}")
+    # Found files message removed for condensed output
 
     processed_files = 0
     skipped_files = 0
@@ -160,7 +160,7 @@ def process_directory(input_dir: str, converter: PDFtoMarkdown, args) -> tuple[i
         file_path = os.path.join(input_dir, file)
         base_name = os.path.splitext(file)[0]
 
-        print(f"\n[File {file_idx}/{len(supported_files)}] Processing: {file}")
+        print(f"file {file_idx}/{len(supported_files)}: {file}")
 
         for parser in args.parsers:
             if parser not in converter.extractors:
@@ -200,7 +200,7 @@ def process_directory(input_dir: str, converter: PDFtoMarkdown, args) -> tuple[i
 
             if status == 'success':
                 processed_files += 1
-                print(f"  ✓ Converted to {output_filename} using {parser}")
+                # Converted successfully
 
                 # Update index file after successful conversion
                 index_file_path = os.path.join(input_dir, '.pdf2md_index.json')
@@ -222,14 +222,11 @@ def process_directory(input_dir: str, converter: PDFtoMarkdown, args) -> tuple[i
                 with open(index_file_path, 'w', encoding='utf-8') as index_file:
                     json.dump(index_data, index_file, indent=4, ensure_ascii=False)
             elif status == 'skipped':
-                print(f"  ⊘ Skipped: Existing file")
                 skipped_files += 1
             else:  # status == 'failed'
-                print(f"  ✗ Failed to convert using {parser}")
                 skipped_files += 1
 
-    print(
-        f"\n[Directory: {os.path.basename(input_dir)}] Processed: {processed_files}, Skipped: {skipped_files}")
+    # Directory summary removed for condensed output
 
     return processed_files, skipped_files
 
@@ -471,12 +468,7 @@ def process_unfile(json_file_path: str, num_files: int, converter: PDFtoMarkdown
     # Limit to the requested number of files
     files_to_process = supported_items[:num_files]
     
-    print(f"Processing {len(files_to_process)} unparsed files from {json_file_path}")
-    print(f"Total unparsed files available: {len(unparsed_items)}")
-    print(f"Files supported by chosen parsers: {len(supported_items)}")
-    if len(supported_items) < len(unparsed_items):
-        print(f"Files skipped (unsupported): {len(unparsed_items) - len(supported_items)}")
-    print()
+    # Unfile processing verbose messages removed for condensed output
     
     processed_files = 0
     skipped_files = 0
@@ -484,7 +476,7 @@ def process_unfile(json_file_path: str, num_files: int, converter: PDFtoMarkdown
     for idx, item in enumerate(files_to_process, 1):
         file_path = os.path.join(base_dir, item['path'])
         
-        print(f"[File {idx}/{len(files_to_process)}] Processing: {item['path']}")
+        print(f"file {idx}/{len(files_to_process)}: {item['path']}")
         
         # Check if file exists
         if not os.path.exists(file_path):
@@ -528,7 +520,7 @@ def process_unfile(json_file_path: str, num_files: int, converter: PDFtoMarkdown
             
             if status == 'success':
                 file_processed = True
-                print(f"    ✓ Converted to {output_filename} using {parser}")
+                # Converted to {output_filename} using {parser}
                 
                 # Update index file after successful conversion
                 index_file_path = os.path.join(file_dir, '.pdf2md_index.json')
@@ -550,21 +542,20 @@ def process_unfile(json_file_path: str, num_files: int, converter: PDFtoMarkdown
                 with open(index_file_path, 'w', encoding='utf-8') as index_file:
                     json.dump(index_data, index_file, indent=4, ensure_ascii=False)
             elif status == 'skipped':
-                print(f"    ⊘ Skipped: Existing file")
+                # Skipped: Existing file
+                pass
             else:  # status == 'failed'
-                print(f"    ✗ Failed to convert using {parser}")
+                # Failed to convert using {parser}
+                pass
         
         if file_processed:
             processed_files += 1
         else:
             skipped_files += 1
         
-        print()  # Add blank line between files
+        # Blank line removed for condensed output
     
-    print(f"=== UNFILE PROCESSING SUMMARY ===")
-    print(f"Files processed: {processed_files}")
-    print(f"Files skipped: {skipped_files}")
-    print(f"Total files attempted: {len(files_to_process)}")
+    # Unfile processing summary removed for condensed output
     
     return processed_files, skipped_files
 
@@ -580,7 +571,7 @@ def process_single_file(file_path: str, converter: PDFtoMarkdown, args) -> tuple
     file_name = os.path.basename(file_path)
     base_name = os.path.splitext(file_name)[0]
     
-    print(f"Processing single file: {file_name}")
+    # Processing single file message removed for condensed output
 
     processed_files = 0
     skipped_files = 0
@@ -617,7 +608,7 @@ def process_single_file(file_path: str, converter: PDFtoMarkdown, args) -> tuple
 
         if status == 'success':
             processed_files += 1
-            print(f"  ✓ Converted to {output_filename} using {parser}")
+            # Converted to {output_filename} using {parser}
 
             # Update index file after successful conversion
             index_file_path = os.path.join(file_dir, '.pdf2md_index.json')
@@ -639,13 +630,11 @@ def process_single_file(file_path: str, converter: PDFtoMarkdown, args) -> tuple
             with open(index_file_path, 'w', encoding='utf-8') as index_file:
                 json.dump(index_data, index_file, indent=4, ensure_ascii=False)
         elif status == 'skipped':
-            print(f"  ⊘ Skipped: Existing file")
             skipped_files += 1
         else:  # status == 'failed'
-            print(f"  ✗ Failed to convert using {parser}")
             skipped_files += 1
 
-    print(f"\n[Single File: {file_name}] Processed: {processed_files}, Skipped: {skipped_files}")
+    # Single file summary removed for condensed output
     return processed_files, skipped_files
 
 
@@ -826,13 +815,7 @@ def main():
         else:
             json_file_path = os.path.join(input_path, "un_items.json")
         
-        print(f"Processing {args.unfile} unparsed files from {json_file_path}")
-        print(f"Using parsers: {', '.join(args.parsers)}")
-        print(f"Overwrite existing files: {'Yes' if args.overwrite else 'No'}")
-        print(f"OCR enabled: {'Yes' if args.ocr else 'No'}")
-        if args.ocr:
-            print(f"OCR language: {args.ocr_lang}")
-        print()
+        # Unfile processing messages removed for condensed output
 
         # Check for PaddleOCR on macOS before initializing converter
         if 'paddleocr' in args.parsers and platform.system() == 'Darwin':
@@ -851,7 +834,7 @@ def main():
         # Process files from un_items.json
         processed_files, skipped_files = process_unfile(json_file_path, args.unfile, converter, args)
         
-        print(f"\n✓ Unfile processing complete!")
+        # Unfile processing complete message removed for condensed output
         return
 
     input_path = args.input_path
@@ -899,16 +882,13 @@ def main():
         return
 
     if is_single_file:
-        print(f"\nProcessing single file: {os.path.abspath(input_path)}")
+        # Processing single file message removed for condensed output
+        pass
     else:
-        print(f"\nProcessing files in: {os.path.abspath(input_path)}")
+        # Processing files message removed for condensed output
+        pass
     
-    print(f"Using parsers: {', '.join(args.parsers)}")
-    print(f"Overwrite existing files: {'Yes' if args.overwrite else 'No'}")
-    print(f"OCR enabled: {'Yes' if args.ocr else 'No'}")
-    if args.ocr:
-        print(f"OCR language: {args.ocr_lang}")
-    print()
+    # Parser and option messages removed for condensed output
 
     # Check for PaddleOCR on macOS before initializing converter
     if 'paddleocr' in args.parsers and platform.system() == 'Darwin':
@@ -952,17 +932,15 @@ def main():
                     total_files_to_process += sum(1 for f in files if f.lower().endswith(
                         ('.pdf', '.docx', '.xlsx', '.pptx')))
 
-        print(
-            f"Found {total_dirs + 1} directories and {total_files_to_process} processable files")
-        print("Starting conversion...\n")
+        # Directory and file count message removed for condensed output
+        # Starting conversion message removed for condensed output
 
         for root, dirs, files in os.walk(input_path):
             # Filter directories using consistent logic
             dirs[:] = filter_directories(dirs)
 
             # Process current directory
-            print(
-                f"\n[Directory {processed_dirs + 1}/{total_dirs + 1}] Processing: {root}")
+            print(f"\n{os.path.basename(root)}")
             dir_processed, dir_skipped = process_directory(
                 root, converter, args)
             processed_files += dir_processed
@@ -973,16 +951,14 @@ def main():
             if total_files_to_process > 0:
                 progress_percent = round(
                     (processed_files + skipped_files) / total_files_to_process * 100)
-                print(
-                    f"Overall progress: {progress_percent}% [{processed_files + skipped_files}/{total_files_to_process}] (✓ {processed_files} processed, ✗ {skipped_files} skipped)")
+                # Overall progress: {progress_percent}% [{processed_files + skipped_files}/{total_files_to_process}] (✓ {processed_files} processed, ✗ {skipped_files} skipped)
 
-        print(
-            f"\n=== FINAL SUMMARY ===\nDirectories: {processed_dirs}/{total_dirs + 1} completed ({round(processed_dirs/(total_dirs + 1)*100)}%)\nFiles: {processed_files} processed, {skipped_files} skipped, {processed_files + skipped_files} total")
+        # Final summary removed for condensed output
     else:
         # Process single directory
         process_directory(input_path, converter, args)
 
-    print("\n✓ Conversion complete!")
+    # Conversion complete message removed for condensed output
 
 
 if __name__ == "__main__":

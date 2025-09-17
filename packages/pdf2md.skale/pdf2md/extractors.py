@@ -111,7 +111,8 @@ class LlamaParseExtractor(PDFExtractor):
                 raise ValueError(
                     f"Failed to retrieve LLAMA_CLOUD_API_KEY from credgoo: {str(e)}")
         else:
-            print("Using environment variable API key for llamacloud")
+            # Using environment variable API key for llamacloud
+            pass
 
         if not self.api_key:
             raise ValueError("LLAMA_CLOUD_API_KEY is required for LlamaParse")
@@ -179,8 +180,7 @@ class DoclingExtractor(PDFExtractor):
             )
             result = converter.convert(pdf_path)
             text = result.document.export_to_markdown()
-            print(
-                f"Successfully converted {os.path.basename(pdf_path)} with Docling")
+            # Successfully converted with Docling
             return text, len(text.split('\n\n'))
         except Exception as e:
             print(f"Docling conversion failed for {pdf_path}: {str(e)}")
@@ -280,7 +280,7 @@ class MarkerExtractor(PDFExtractor):
 
             # Store the path to the markdown file for later use
             self.output_md_path = md_path
-            print(f"marker output path: {self.output_md_path}")
+            # marker output path: {self.output_md_path}
 
             return rendered.markdown, len(rendered.markdown.split('\n\n'))
         except Exception as e:
