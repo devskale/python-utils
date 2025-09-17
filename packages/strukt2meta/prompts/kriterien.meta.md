@@ -8,10 +8,12 @@ Dieser Prompt extrahiert die grundlegenden Metadaten einer Ausschreibung, einsch
 
 ```json
 {
-  "schema_version": "3.2-ai-optimized",
+  "schema_version": "3.3-ai-optimized",
   "meta": {
     "auftraggeber": "string",
     "aktenzeichen": "string|null",
+    "ausschreibungsgegenstand": "string",
+    "datum": "string|null",
     "lose": [
       {
         "nummer": "string",
@@ -30,6 +32,8 @@ Generiere ausschließlich das Meta-Tag aus der Ausschreibung mit folgenden Felde
 
 - **auftraggeber**: Name der ausschreibenden Organisation/Behörde
 - **aktenzeichen**: Offizielle Referenznummer der Ausschreibung (falls vorhanden)
+- **ausschreibungsgegenstand**: Beschreibung in einem Satz, was wie ausgeschrieben wird
+- **datum**: Einreichdatum YYYY-MM-DD (falls vorhanden, z.B. "2024-03-15")
 - **lose**: Array aller Lose/Teilaufträge mit detaillierten Informationen
 
 ### Lose-Struktur:
@@ -43,13 +47,15 @@ Generiere ausschließlich das Meta-Tag aus der Ausschreibung mit folgenden Felde
 
 ## BEISPIEL
 
-Für eine Ausschreibung mit 4 Losen:
+Für eine Ausschreibung mit 2 Losen:
 ```json
 {
-  "schema_version": "3.2-ai-optimized",
+  "schema_version": "3.3-ai-optimized",
   "meta": {
     "auftraggeber": "Wiener Wohnen Hausbetreuung GmbH",
     "aktenzeichen": "2023_02002_AAB_EV",
+    "ausschreibungsgegenstand": "Lieferung von Gartengeräten und Rasenpflegeausrüstung für kommunale Grünflächen.",
+    "datum": "2024-03-15",
     "lose": [
       {
         "nummer": "Los 1",
@@ -73,4 +79,6 @@ Für eine Ausschreibung mit 4 Losen:
 - Nur JSON Meta-Tag (keine anderen Inhalte)
 - Keine Markdown-Wrapper
 - Bei fehlendem Aktenzeichen: `null` verwenden
+- Bei fehlendem Datum: `null` verwenden
 - Alle Lose mit vollständigen Informationen erfassen
+- Ausschreibungsgegenstand als zusammenhängender Satz formulieren

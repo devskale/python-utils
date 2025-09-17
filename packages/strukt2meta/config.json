@@ -4,8 +4,8 @@
   "default_input_file": "./default_input.md",
   "index_file_name": ".ofs.index.json",
   "kriterien": {
-    "provider": "gemini",
-    "model": "gemini-2.5-flash",
+    "provider": "tu",
+    "model": "glm-4.5-355b",
     "max_context_tokens": 1000000,
     "max_response_tokens": 64000,
     "max_safe_input_chars": 100000,

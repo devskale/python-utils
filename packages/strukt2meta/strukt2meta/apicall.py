@@ -28,14 +28,14 @@ def call_ai_model(prompt, input_text, verbose=False, json_cleanup=False, task_ty
         # Use kriterien-specific configuration from config.json
         kriterien_config = config.get("kriterien", {})
         provider_name = kriterien_config.get("provider", "tu")
-        model_name = kriterien_config.get("model", "deepseek-r1")
+        model_name = kriterien_config.get("model", "glm-4.5-355b")
         max_context_tokens = kriterien_config.get("max_context_tokens", 32768)
         max_response_tokens = kriterien_config.get(
             "max_response_tokens", 16000)
     else:
         # Default configuration for other tasks
         provider_name = config.get("provider", "tu")
-        model_name = config.get("model", "mistral-small-3.1-24b")
+        model_name = config.get("model", "mistral-small-3.2-24b")
         max_context_tokens = 24000  # Conservative estimate for default tasks
         max_response_tokens = 2048  # Reduced response tokens for default tasks
 
@@ -86,16 +86,31 @@ def call_ai_model(prompt, input_text, verbose=False, json_cleanup=False, task_ty
                     f"⚠️  Document truncated due to length (kept {max_input_chars} chars of {len(input_text)} original chars)")
 
     # Create a chat request
-    request = ChatCompletionRequest(
-        messages=[
-            ChatMessage(role="system", content=prompt),
-            ChatMessage(role="user", content=input_text)
-        ],
-        model=model_name,  # Use model from config
-        temperature=0.7,  # Adjust randomness
-        max_tokens=max_response_tokens,  # Limit the response length
-        streaming=verbose  # Enable streaming if verbose mode is on
-    )
+    if provider_name == "gemini":
+        # For Gemini, prepend system prompt to user message since system_instruction
+        # is not supported in GenerationConfig
+        combined_content = f"{prompt}\n\n{input_text}"
+        request = ChatCompletionRequest(
+            messages=[
+                ChatMessage(role="user", content=combined_content)
+            ],
+            model=model_name,  # Use model from config
+            temperature=0.7,  # Adjust randomness
+            max_tokens=max_response_tokens,  # Limit the response length
+            streaming=verbose  # Enable streaming if verbose mode is on
+        )
+    else:
+        # Standard chat format for other providers
+        request = ChatCompletionRequest(
+            messages=[
+                ChatMessage(role="system", content=prompt),
+                ChatMessage(role="user", content=input_text)
+            ],
+            model=model_name,  # Use model from config
+            temperature=0.7,  # Adjust randomness
+            max_tokens=max_response_tokens,  # Limit the response length
+            streaming=verbose  # Enable streaming if verbose mode is on
+        )
 
     if verbose:
         # Stream the response and write it to the terminal

@@ -50,16 +50,6 @@ class OfsCommand(BaseCommand):
             self._run_all_projects()
         else:
             self._run_standard_mode()
-        # Validate kriterien mode parameters
-        if self.args.mode == 'kriterien':
-            if not self.args.step:
-                raise ValueError(
-                    "--step parameter is required when using --mode kriterien")
-            self.log(
-                f"Running in kriterien mode with step: {self.args.step}", "info")
-            self._run_kriterien_mode()
-        else:
-            self._run_standard_mode()
 
     def _run_all_projects(self) -> None:
         """Execute OFS processing for all projects."""
