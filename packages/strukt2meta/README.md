@@ -62,6 +62,7 @@ Examples with optional leading basedir:
 strukt2meta .klark0 ofs "PROJECT_NAME" --mode kriterien --step meta -v
 strukt2meta /Volumes/data/ofs unlist --num 10 -v
 strukt2meta ofs @all --overwrite  # Process all projects with overwrite
+strukt2meta ofs @all --mode kriterien --step meta  # Run kriterien extraction on all projects
 
 - `kriterien` — Extract structured qualification criteria from tender documents.
   - Supports `--insert` to merge results into an existing JSON key.

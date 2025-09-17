@@ -14,7 +14,7 @@ with open("./config.json", "r") as config_file:
 
 
 def call_ai_model(prompt, input_text, verbose=False, json_cleanup=False, task_type="default"):
-    """Call AI model with task-specific configuration.
+    """Call AI model with task-specific configuration and retry logic.
 
     Args:
         prompt: The system prompt
@@ -44,6 +44,9 @@ def call_ai_model(prompt, input_text, verbose=False, json_cleanup=False, task_ty
         name=provider_name,
         api_key=get_api_key(provider_name)
     )
+
+    # Set max_retries based on provider (Gemini is more prone to failures)
+    max_retries = 5 if provider_name == "gemini" else 3
 
     # Handle long documents by truncating if necessary
 
@@ -112,33 +115,79 @@ def call_ai_model(prompt, input_text, verbose=False, json_cleanup=False, task_ty
             streaming=verbose  # Enable streaming if verbose mode is on
         )
 
-    if verbose:
-        # Stream the response and write it to the terminal
-        print("\n=== Streaming Response ===\n")
-        response_text = ""
-        for chunk in provider.stream_complete(request):
-            content = chunk.message.content
-            print(content, end="", flush=True)
-            response_text += content
-        print("\n=== End of Response ===\n")
+    # Try the API call with retries
+    for attempt in range(max_retries):
+        try:
+            if verbose and attempt > 0:
+                print(f"🔄 Retry attempt {attempt + 1}/{max_retries}")
 
-        # Add 2-second cooldown after AI invocation
-        time.sleep(2)
+            if verbose:
+                # Stream the response and write it to the terminal
+                print("\n=== Streaming Response ===\n")
+                response_text = ""
+                try:
+                    for chunk in provider.stream_complete(request):
+                        content = chunk.message.content
+                        print(content, end="", flush=True)
+                        response_text += content
+                except Exception as e:
+                    print(f"\n⚠️ Streaming error: {e}")
+                    response_text = ""
+                print("\n=== End of Response ===\n")
 
-        if json_cleanup:
-            # Cleanify the streamed response
-            return cleanify_json(response_text)
-        else:
-            return response_text
-    else:
-        # Get the completion response
-        response = provider.complete(request)
+                # Add cooldown after AI invocation (longer for Gemini due to rate limiting)
+                cooldown_time = 5 if provider_name == "gemini" else 2
+                time.sleep(cooldown_time)
 
-        # Add 2-second cooldown after AI invocation
-        time.sleep(2)
+                if json_cleanup and response_text.strip():
+                    # Cleanify the streamed response
+                    result = cleanify_json(response_text)
+                    if result:
+                        return result
+                elif response_text.strip():
+                    return response_text
+            else:
+                # Get the completion response
+                try:
+                    response = provider.complete(request)
+                except Exception as e:
+                    if verbose:
+                        print(f"⚠️ API call error: {e}")
+                    # Continue to retry
+                    continue
 
-        if json_cleanup:
-            # Cleanify the response
-            return cleanify_json(response.message.content)
-        else:
-            return response.message.content
+                # Add cooldown after AI invocation (longer for Gemini due to rate limiting)
+                cooldown_time = 5 if provider_name == "gemini" else 2
+                time.sleep(cooldown_time)
+
+                if json_cleanup and response.message.content.strip():
+                    # Cleanify the response
+                    result = cleanify_json(response.message.content)
+                    if result:
+                        return result
+                elif response.message.content.strip():
+                    return response.message.content
+
+            # If we get here, the response was empty or invalid
+            if attempt < max_retries - 1:
+                if verbose:
+                    print(f"⚠️ Empty or invalid response, retrying in {cooldown_time}s...")
+                time.sleep(cooldown_time)
+            else:
+                if verbose:
+                    print("⚠️ All retry attempts failed")
+                return None
+
+        except Exception as e:
+            if attempt < max_retries - 1:
+                if verbose:
+                    print(f"⚠️ API call failed (attempt {attempt + 1}/{max_retries}): {e}")
+                    cooldown_time = 5 if provider_name == "gemini" else 2
+                    time.sleep(cooldown_time)
+                continue
+            else:
+                if verbose:
+                    print(f"⚠️ All retry attempts failed: {e}")
+                return None
+
+    return None

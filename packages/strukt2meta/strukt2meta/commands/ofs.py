@@ -45,7 +45,12 @@ class OfsCommand(BaseCommand):
                     "--step parameter is required when using --mode kriterien")
             self.log(
                 f"Running in kriterien mode with step: {self.args.step}", "info")
-            self._run_kriterien_mode()
+            
+            # Special handling for @all parameter in kriterien mode
+            if self.args.ofs == "@all":
+                self._run_all_projects_kriterien()
+            else:
+                self._run_kriterien_mode()
         elif self.args.ofs == "@all":
             self._run_all_projects()
         else:
@@ -83,6 +88,39 @@ class OfsCommand(BaseCommand):
 
         except Exception as e:
             self.log(f"Error processing all projects: {str(e)}", "error")
+
+    def _run_all_projects_kriterien(self) -> None:
+        """Execute kriterien processing for all projects."""
+        try:
+            projects = list_projects()
+            if not projects:
+                print("No projects found.")
+                return
+
+            self.log(f"Found {len(projects)} projects to process in kriterien mode", "info")
+
+            for project in projects:
+                self.log(f"Starting kriterien processing for project: {project}", "info")
+                
+                # Find AAB document automatically
+                aab_filename = self._find_aab_document(project)
+                if not aab_filename:
+                    print(f"❌ No AAB document found in project: {project}")
+                    continue
+
+                print(f"📄 Found AAB document: {aab_filename}")
+
+                # Process the AAB document with kriterien prompt
+                success = self._process_kriterien_document(project, aab_filename)
+
+                if success:
+                    print(
+                        f"✅ Kriterien {self.args.step} processing completed successfully for {project}")
+                else:
+                    print(f"❌ Kriterien {self.args.step} processing failed for {project}")
+
+        except Exception as e:
+            self.log(f"Error processing all projects in kriterien mode: {str(e)}", "error")
 
     def _run_standard_mode(self) -> None:
         """Execute standard OFS processing mode."""
