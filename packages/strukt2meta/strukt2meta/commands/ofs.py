@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
+from datetime import datetime
 
 # Import OFS package functions
 try:
@@ -36,7 +37,19 @@ class OfsCommand(BaseCommand):
         self.processed_files = []
 
     def run(self) -> None:
-        """Execute the OFS command for processing OFS structured files."""
+        """Execute the OFS command for processing files."""
+        # Validate kriterien mode parameters
+        if self.args.mode == 'kriterien':
+            if not self.args.step:
+                raise ValueError(
+                    "--step parameter is required when using --mode kriterien")
+            self.log(
+                f"Running in kriterien mode with step: {self.args.step}", "info")
+            self._run_kriterien_mode()
+        elif self.args.ofs == "@all":
+            self._run_all_projects()
+        else:
+            self._run_standard_mode()
         # Validate kriterien mode parameters
         if self.args.mode == 'kriterien':
             if not self.args.step:
@@ -47,6 +60,39 @@ class OfsCommand(BaseCommand):
             self._run_kriterien_mode()
         else:
             self._run_standard_mode()
+
+    def _run_all_projects(self) -> None:
+        """Execute OFS processing for all projects."""
+        try:
+            projects = list_projects()
+            if not projects:
+                print("No projects found.")
+                return
+
+            self.log(f"Found {len(projects)} projects to process", "info")
+
+            for project in projects:
+                self.log(f"Starting processing for project: {project}", "info")
+                
+                # Reset counters for each project
+                self.file_counter = 0
+                self.total_files = 0
+                self.processed_files = []
+
+                # Count total files for this project
+                self._count_total_files(project, None, None)
+
+                # Show total files count
+                print(f"📊 {self.total_files} files to process for {project}")
+
+                # Process all files in the project
+                self._process_project_files(project)
+
+                # Summary for this project
+                print(f"✅ Project {project} complete: {len(self.processed_files)}/{self.total_files} files processed")
+
+        except Exception as e:
+            self.log(f"Error processing all projects: {str(e)}", "error")
 
     def _run_standard_mode(self) -> None:
         """Execute standard OFS processing mode."""
@@ -254,6 +300,21 @@ class OfsCommand(BaseCommand):
             # Generate metadata
             metadata = self._generate_metadata(
                 content, prompt_name, identifier)
+
+            # Add Autor field with LLM provenance
+            if metadata and isinstance(metadata, dict):
+                try:
+                    with open("./config.json", "r") as f:
+                        config = json.load(f)
+                    
+                    # Determine provider and model (default task_type)
+                    provider = config.get("provider", "tu")
+                    model = config.get("model", "mistral-small-3.1-24b")
+                    
+                    date = datetime.now().isoformat()
+                    metadata["Autor"] = f"KI-generiert {provider}@{model}@{prompt_name}@{parser} {date}"
+                except Exception as e:
+                    self.log(f"Warning: Could not add Autor field: {e}", "warning")
 
             if metadata:
                 # Inject metadata into appropriate JSON file
@@ -669,6 +730,23 @@ class OfsCommand(BaseCommand):
             # Generate metadata using kriterien prompt with kriterien task type
             metadata = self._generate_metadata(
                 document_content, prompt_name, doc_identifier, task_type="kriterien")
+
+            # Add Autor field with LLM provenance for kriterien
+            if metadata and isinstance(metadata, dict):
+                try:
+                    with open("./config.json", "r") as f:
+                        config = json.load(f)
+                    
+                    # Determine provider and model for kriterien
+                    kriterien_config = config.get("kriterien", {})
+                    provider = kriterien_config.get("provider", "tu")
+                    model = kriterien_config.get("model", "deepseek-r1")
+                    
+                    date = datetime.now().isoformat()
+                    parser = doc_result.get('parser', 'docling')  # Use parser from doc_result or default
+                    metadata["Autor"] = f"KI-generiert {provider}@{model}@{prompt_name}@{parser} {date}"
+                except Exception as e:
+                    self.log(f"Warning: Could not add Autor field for kriterien: {e}", "warning")
 
             if not metadata:
                 self.log("Failed to generate kriterien metadata", "error")

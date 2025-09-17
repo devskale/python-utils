@@ -1,6 +1,6 @@
 {
   "provider": "tu",
-  "model": "mistral-small-3.1-24b",
+  "model": "mistral-small-3.2-24b",
   "default_input_file": "./default_input.md",
   "index_file_name": ".ofs.index.json",
   "kriterien": {

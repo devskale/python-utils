@@ -61,6 +61,7 @@ Examples with optional leading basedir:
 
 strukt2meta .klark0 ofs "PROJECT_NAME" --mode kriterien --step meta -v
 strukt2meta /Volumes/data/ofs unlist --num 10 -v
+strukt2meta ofs @all --overwrite  # Process all projects with overwrite
 
 - `kriterien` — Extract structured qualification criteria from tender documents.
   - Supports `--insert` to merge results into an existing JSON key.
@@ -92,6 +93,7 @@ strukt2meta ofs PROJECT            # Process all project (A/) and bidder (B/) do
 strukt2meta ofs PROJECT@FILENAME   # Process a single project (A/) file
 strukt2meta ofs PROJECT@BIDDER     # Process all docs for one bidder (BIDDER in B/)
 strukt2meta ofs PROJECT@BIDDER@FILENAME  # Process one bidder file
+strukt2meta ofs @all               # Process all projects in the OFS system
 ```
 
 Additional options:
@@ -100,6 +102,8 @@ Additional options:
 -v / --verbose       Verbose logging (streams more progress info)
 --mode kriterien --step <meta|bdoks|ids>   Run criteria extraction workflow (writes/updates kriterien.json)
 ```
+
+When using `@all`, the command will iterate through all available projects in the OFS system, processing each one sequentially with the same behavior as individual project commands.
 
 Behavior summary:
 - Counts and reports total files before processing.
