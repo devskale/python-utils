@@ -6,7 +6,7 @@ from credgoo import get_api_key
 from ofs.api import list_bidder_docs_json, get_bieterdokumente_list  # type: ignore
 # Agno framework pieces (used to construct the minimal workflow)
 from agno.agent import Agent
-from agno.models.vllm import vLLM
+from agno.models.vllm import VLLM
 # from agno.tools import tool
 # from agno.workflow.v2.workflow import Workflow
 
@@ -21,7 +21,7 @@ except Exception:  # pragma: no cover - optional dependency
  # ---------------- Environment / Model selection -----------------
 PROVIDER = "tu"
 BASE_URL = "https://aqueduct.ai.datalab.tuwien.ac.at/v1"
-MODEL = "deepseek-r1"
+MODEL = "glm-4.5-355b"
 
 api_key = get_api_key(PROVIDER)
 
@@ -89,7 +89,7 @@ def condense_geforderte_doks(required_docs):
 def findMatches(geforderte_dokumente, hochgeladene_docs, runner = 1):
     prompt = f"""
 Du bist ein hilfreicher Assistent, der dabei hilft, geforderte Dokumente mit hochgeladenen Dokumenten abzugleichen.
-Deine Aufgabe ist es, das am besten passende hochgeladene Dokument für jedes geforderte Dokument zu finden.
+Deine Aufgabe ist es, das am besten passende hochgeladene Dokument zu jedem geforderten Dokument zu finden.
 Du erhältst eine Liste von geforderten Dokumenten mit ihren Bezeichnungen.
 
 Wenn nicht anders angegeben gilt: 
@@ -114,7 +114,7 @@ gib eine liste der am besten passenden hochgeladenen Dokumente zurück, die zu d
     "Dateiname": "...",    # der Dateiname des hochgeladenen Dokuments 
      "Name": "...",         # der Name aus meta.name des hochgeladenen Dokuments
      "Kategorie": "...",    # die Kategorie aus meta.kategorie des hochgeladenen Dokuments
-     "Begründung": "..."}},  # die Begründung für die Zuordnung
+     "Begründung": "..."}},  # die kurze aber prägnante Begründung für die Zuordnung
 ]
 
 """
@@ -198,7 +198,7 @@ def main():
     args = parser.parse_args()
 
     agent = Agent(
-        model=vLLM(
+        model=VLLM(
             base_url=BASE_URL,
             api_key=api_key,
             id=MODEL,
