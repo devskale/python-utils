@@ -29,6 +29,9 @@ from strukt2meta.injector import inject_metadata_to_json
 class OfsCommand(BaseCommand):
     """Handle OFS command for processing files in Opinionated File System structure."""
 
+    # Configurable filename for kriterien output
+    KRITERIEN_FILENAME = "projekt.json"
+
     def __init__(self, args):
         """Initialize OFS command with progress tracking."""
         super().__init__(args)
@@ -717,7 +720,7 @@ class OfsCommand(BaseCommand):
             return None
 
     def _process_kriterien_document(self, project: str, filename: str) -> bool:
-        """Process AAB document with kriterien prompt and save to kriterien.json."""
+        """Process AAB document with kriterien prompt and save to projekt.json."""
         try:
             # Determine the prompt name based on step
             # Try different prompt naming conventions
@@ -780,7 +783,7 @@ class OfsCommand(BaseCommand):
                 self.log("Failed to generate kriterien metadata", "error")
                 return False
 
-            # Save to kriterien.json in project root
+            # Save to projekt.json in project root
             success = self._save_kriterien_json(project, metadata)
 
             if success:
@@ -796,7 +799,7 @@ class OfsCommand(BaseCommand):
             return False
 
     def _save_kriterien_json(self, project: str, metadata: dict) -> bool:
-        """Save kriterien metadata to kriterien.json in project root."""
+        """Save kriterien metadata to projekt.json in project root."""
         try:
             project_path = get_path(project)
             if not project_path:
@@ -804,9 +807,9 @@ class OfsCommand(BaseCommand):
                     f"Could not find project path for: {project}", "error")
                 return False
 
-            kriterien_path = Path(project_path) / 'kriterien.json'
+            kriterien_path = Path(project_path) / self.KRITERIEN_FILENAME
 
-            # Load existing kriterien.json if it exists
+            # Load existing projekt.json if it exists
             existing_data = {}
             if kriterien_path.exists():
                 try:
@@ -814,7 +817,7 @@ class OfsCommand(BaseCommand):
                         existing_data = json.load(f)
                 except json.JSONDecodeError:
                     self.log(
-                        "Warning: Existing kriterien.json is invalid, creating new file", "warning")
+                        f"Warning: Existing {self.KRITERIEN_FILENAME} is invalid, creating new file", "warning")
                     existing_data = {}
 
             # Update with new step data
@@ -824,9 +827,9 @@ class OfsCommand(BaseCommand):
             with open(kriterien_path, 'w', encoding='utf-8') as f:
                 json.dump(existing_data, f, indent=2, ensure_ascii=False)
 
-            self.log(f"Saved kriterien.json to: {kriterien_path}", "info")
+            self.log(f"Saved {self.KRITERIEN_FILENAME} to: {kriterien_path}", "info")
             return True
 
         except Exception as e:
-            self.log(f"Error saving kriterien.json: {e}", "error")
+            self.log(f"Error saving {self.KRITERIEN_FILENAME}: {e}", "error")
             return False

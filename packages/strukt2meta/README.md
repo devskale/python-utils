@@ -101,7 +101,7 @@ Additional options:
 ```
 --overwrite          Re-process files even if index already has metadata fields
 -v / --verbose       Verbose logging (streams more progress info)
---mode kriterien --step <meta|bdoks|ids>   Run criteria extraction workflow (writes/updates kriterien.json)
+--mode kriterien --step <meta|bdoks|ids>   Run criteria extraction workflow (writes/updates projekt.json)
 ```
 
 When using `@all`, the command will iterate through all available projects in the OFS system, processing each one sequentially with the same behavior as individual project commands.
@@ -119,7 +119,7 @@ Output line format (standard mode):
 
 Kriterien mode (`--mode kriterien`):
 - Resolves the AAB / tender base document heuristically (keywords or first document) and runs step-specific prompts (meta, bdoks, ids) if available (looks for `prompts/kriterien.<step>.md`).
-- Writes/updates `kriterien.json` in the project root, merging each step under its own key.
+- Writes/updates `projekt.json` in the project root, merging each step under its own key.
 
 Supported content types (via `ofs`): pdf / docx / markdown that resolve to readable text. Image-only files (jpg/png) will typically show `FAIL - read error` unless an upstream OCR/markdown conversion pipeline populates text for them.
 

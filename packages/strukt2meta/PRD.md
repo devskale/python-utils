@@ -908,7 +908,7 @@ Implemented specialized kriterien mode for the OFS command to automatically extr
 
 #### Output Management
 
-- Saves results to `kriterien.json` in project root directory
+- Saves results to `projekt.json` in project root directory
 - Merges with existing kriterien data if file already exists
 - Organizes data by step (meta, bdoks, ids)
 - Preserves existing data when adding new steps
@@ -928,7 +928,7 @@ strukt2meta ofs "2025-04 Lampen" --mode kriterien --step ids
 
 ### Output Structure
 
-The kriterien.json file structure:
+The projekt.json file structure:
 
 ```json
 {
