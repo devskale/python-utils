@@ -5,7 +5,32 @@
 - OFS (Opinionated Filesystem) python package installiert
 - LLM-Zugang (API-Key) konfiguriert über Umgebungsvariablen / Secrets
 
+# Agentic Workflows für Vergabeprozesse
+
+## Agent Playground
+
+### agentBieterDokDa
+
+Dies ist ein Agent, der:
+
+- Projektverzeichnis@Bieterverzeichnis (Variable) verwendet
+- Die Auditliste liest
+- Durch die Audit-Tags loopt
+  - Wenn das Kriterium mit einem Dokument prüfbar ist, dann:
+    - Sucht die Dokumentenliste (inkl. Metadaten) des Bieters
+    - Nutzt uniinfer mit einem Modell, z.B. tu@deepseek-r1
+      - Promptet Kriterium, Projektbeschreibung (kurz, Dokumentenliste)
+    - Listet die passenden Dokumente (mit Konfidenz)
+- Gibt eine Zusammenfassung aus
+
+Nutzt:
+- ofs package
+- uniinfer package
+- credgoo package
+
 ## DokDa Agent — Detaillierter Workflow zur Kriterien-Lesung und Dokumentenbewertung
+
+*Hinweis: Dies ist eine Playground-Implementierung mit Terminal-UI für interaktive Kriterienprüfung. Die Produktionsskripte sind MatchaFlow und AuditFlow.*
 
 Dieses Repository enthält den "DokDa"-Agent (`agentos/agentBieterDokDa.py`), der Bieter‑Dokumente gegen Vergabe‑Kriterien automatisch prüft und bewertet. Der Agent kombiniert Metadaten‑Analyse, eine kleine Terminal‑UI und LLM‑Aufrufe. Im Folgenden wird der Ablauf Schritt für Schritt beschrieben.
 
@@ -147,67 +172,6 @@ Dieses Repository enthält auch das Skript `matchaFlow.py`, das den Abgleich zwi
 - Bei Fehlern (z.B. fehlende API-Keys) wird das Skript abgebrochen.
 - Für große Dokumentlisten kann `--limit` verwendet werden, um die Verarbeitung zu beschleunigen.
 - Die LLM-Ergebnisse sind assistierend und sollten manuell validiert werden.
-
-## 12) CheckaFlow — Automatisierte Kriterienbewertung mit LLM
-
-Dieses Repository enthält auch das Skript `checkaFlow.py`, das eine automatisierte Bewertung von Vergabekriterien durchführt. Es nutzt ein LLM, um für jedes Audit-Kriterium relevante Dokumente zu finden und zu bewerten, ob das Kriterium erfüllt ist.
-
-### Funktionsweise
-- Das Skript lädt die Audit-Kriterien über `get_kriterien_audit_json(project, bidder)`.
-- Es holt die hochgeladenen Bieter-Dokumente über `list_bidder_docs_json(project, bidder, include_metadata=True)`.
-- Für jedes Kriterium führt es zwei Schritte aus:
-  1. **Schritt 1 - Dokumentenfindung**: Das LLM identifiziert relevante Dokumente basierend auf Metadaten (Name, Kategorie, Begründung).
-  2. **Schritt 2 - Kriterienbewertung**: Das LLM prüft den Dokumentinhalt und bewertet, ob das Kriterium erfüllt ist.
-- Die Ergebnisse werden in einer JSON-Datei gespeichert: `{project}.{bidder}.assessments.json`.
-
-### Voraussetzungen
-- Dieselben wie oben (Python 3.8+, OFS, LLM-Zugang).
-- Zusätzlich: Installation von `credgoo` und `agno` (für LLM-Integration).
-- Optional: `json_repair` für robustes JSON-Parsing.
-
-### Verwendung
-- Führe das Skript über die Kommandozeile aus:
-  ```
-  python checkaFlow.py project@bidder [--limit N] [--out PATH]
-  ```
-  - `project@bidder`: Der Identifier, z.B. `Gartengeräte@Bieter1`.
-  - `--limit N`: Optionale Begrenzung der zu verarbeitenden Kriterien (Standard: 10).
-  - `--out PATH`: Optionaler Pfad für die JSON-Ausgabedatei.
-- Beispiel:
-  ```
-  python checkaFlow.py Gartengeräte@Bieter1 --limit 5
-  ```
-  Dies verarbeitet die ersten 5 Kriterien und speichert die Bewertungen in `Gartengeräte.Bieter1.assessments.json`.
-
-### Ausgabe
-- Die Konsole zeigt den Fortschritt mit Kriterien-IDs, Typen und Namen.
-- Für jedes Kriterium werden gefundene Dokumente mit Begründungen angezeigt.
-- Die finale JSON-Datei enthält eine strukturierte Bewertung pro Kriterium.
-- Beispiel-Ausgabe-Struktur:
-  ```json
-  {
-    "project": "Gartengeräte",
-    "bidder": "Bieter1",
-    "count": 5,
-    "results": [
-      {
-        "id": "E_BERUFL_001",
-        "doc_names": ["Nachweis_Zuverlässigkeit.pdf"],
-        "assessment": {
-          "erfüllt": "ja",
-          "begründung": "Das Dokument enthält die erforderlichen Nachweise zur Zuverlässigkeit gemäß BVergG."
-        }
-      }
-    ]
-  }
-  ```
-
-### Hinweise
-- Das Skript verwendet einen zweistufigen Ansatz: Metadaten-Filtration gefolgt von inhaltsbasierter Bewertung.
-- Bei Fehlern (z.B. fehlende API-Keys oder Dokumente) wird das Skript abgebrochen oder überspringt einzelne Kriterien.
-- Die `--limit` Option hilft bei der Verarbeitung großer Kriterienlisten.
-- Die LLM-Bewertungen sind assistierend und sollten für rechtliche Entscheidungen manuell validiert werden.
-- Das Skript ist besonders nützlich für die automatisierte Vorprüfung von Bieterunterlagen in Vergabeverfahren.
 
 ## AuditFlow — Automatisierte Kriterienbewertung mit LLM
 
