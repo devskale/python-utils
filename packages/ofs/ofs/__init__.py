@@ -60,7 +60,7 @@ from .index import (
     generate_un_items_list,
 )
 
-# Kriterien Sync / Audit API (mirrors kriterien-sync & kriterien-audit CLI)
+# Kriterien Sync / Audit API (mirrors projekt-sync & kriterien-audit CLI)
 from .kriterien_sync import (
     SourceKriterium,
     SyncStats,

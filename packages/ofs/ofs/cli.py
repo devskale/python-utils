@@ -171,22 +171,22 @@ def create_parser() -> argparse.ArgumentParser:
         help="Output full JSON result instead of just content"
     )
 
-    # kriterien command
-    kriterien_parser = subparsers.add_parser(
-        "kriterien",
+    # projekt command
+    projekt_parser = subparsers.add_parser(
+        "projekt",
         help="Analyze criteria from JSON files for a project"
     )
-    kriterien_parser.add_argument(
+    projekt_parser.add_argument(
         "project",
         help="Project name (AUSSCHREIBUNGNAME)"
     )
-    kriterien_subparsers = kriterien_parser.add_subparsers(
-        dest="kriterien_action",
-        help="Kriterien analysis actions"
+    projekt_subparsers = projekt_parser.add_subparsers(
+        dest="projekt_action",
+        help="Projekt analysis actions"
     )
 
-    # kriterien pop command
-    pop_parser = kriterien_subparsers.add_parser(
+    # projekt pop command
+    pop_parser = projekt_subparsers.add_parser(
         "pop",
         help="Show next unproven criteria"
     )
@@ -201,20 +201,20 @@ def create_parser() -> argparse.ArgumentParser:
         help="If provided, operate on bidder audit file (zustand==synchronisiert) instead of project source"
     )
 
-    # kriterien tree command
-    tree_parser = kriterien_subparsers.add_parser(
+    # projekt tree command
+    tree_parser = projekt_subparsers.add_parser(
         "tree",
         help="Show criteria tree organized by typ and kategorie"
     )
 
-    # kriterien md command
-    md_parser = kriterien_subparsers.add_parser(
+    # projekt md command
+    md_parser = projekt_subparsers.add_parser(
         "md",
         help="Show criteria as structured markdown list"
     )
 
-    # kriterien tag command
-    tag_parser = kriterien_subparsers.add_parser(
+    # projekt tag command
+    tag_parser = projekt_subparsers.add_parser(
         "tag",
         help="Show criterion by tag ID or list all tags"
     )
@@ -224,17 +224,17 @@ def create_parser() -> argparse.ArgumentParser:
         help="Specific tag ID to show (e.g., F_SUB_001). If omitted, shows all available tags"
     )
 
-    # New: kriterien-sync as dedicated top-level (allows order: ofs kriterien sync <project> <bidder?>)
-    kriterien_sync_parser = subparsers.add_parser(
-        "kriterien-sync",
+        # New: projekt-sync as dedicated top-level (allows order: ofs projekt sync <project> <bidder?>)
+    projekt_sync_parser = subparsers.add_parser(
+        "projekt-sync",
         help="Synchronize project criteria into bidder audit files (create/idempotent)"
     )
-    kriterien_sync_parser.add_argument(
+    projekt_sync_parser.add_argument(
         "project",
         nargs="?",
         help="Project name whose criteria file will be synchronized (omit to sync ALL projects)"
     )
-    kriterien_sync_parser.add_argument(
+    projekt_sync_parser.add_argument(
         "bidder",
         nargs="?",
         help="Optional bidder name. If omitted, all bidders of the project are synchronized"
@@ -573,9 +573,9 @@ def handle_read_doc(identifier: str, parser_name: Optional[str] = None, as_json:
     print(content)
 
 
-def handle_kriterien(project: str, action: str, limit: Optional[int] = None, tag_id: Optional[str] = None, bidder: Optional[str] = None) -> None:
+def handle_projekt(project: str, action: str, limit: Optional[int] = None, tag_id: Optional[str] = None, bidder: Optional[str] = None) -> None:
     """
-    Handle the kriterien command.
+    Handle the projekt command.
 
     Args:
         project (str): Project name
@@ -632,7 +632,7 @@ def _sync_single_bidder(project_path: str, project: str, bidder: str) -> dict:
     return base
 
 
-def handle_kriterien_sync(project: Optional[str], bidder: Optional[str] = None) -> None:
+def handle_projekt_sync(project: Optional[str], bidder: Optional[str] = None) -> None:
     """Synchronize kriterien into bidder audit file(s).
 
     Modes:
@@ -877,25 +877,25 @@ def main(argv: Optional[list[str]] = None) -> int:
             handle_tree(args.directories)
         elif args.command == "read-doc":
             handle_read_doc(args.identifier, args.parser, args.json)
-        elif args.command == "kriterien":
-            if not args.kriterien_action:
+        elif args.command == "projekt":
+            if not args.projekt_action:
                 logger.error(
-                    "kriterien command requires an action (pop, tree, tag)")
+                    "projekt command requires an action (pop, tree, tag)")
                 return 1
-            # Legacy request pattern: ofs kriterien sync <project> <bidder?>
-            if args.kriterien_action == "sync":
-                # transform into kriterien-sync top-level usage
+            # Legacy request pattern: ofs projekt sync <project> <bidder?>
+            if args.projekt_action == "sync":
+                # transform into projekt-sync top-level usage
                 bidder = None
                 # If an extra positional was provided after project, argparse would not parse it; so we just inform user.
-                logger.error("Nutzen Sie bitte: ofs kriterien-sync <projekt> [<bieter>] (neuer Befehl)")
+                logger.error("Nutzen Sie bitte: ofs projekt-sync <projekt> [<bieter>] (neuer Befehl)")
                 return 1
             limit = getattr(args, 'limit', None)
             bidder = getattr(args, 'bidder', None)
             tag_id = getattr(args, 'tag_id', None)
-            handle_kriterien(
-                args.project, args.kriterien_action, limit, tag_id, bidder)
-        elif args.command == "kriterien-sync":
-            handle_kriterien_sync(args.project, getattr(args, 'bidder', None))
+            handle_projekt(
+                args.project, args.projekt_action, limit, tag_id, bidder)
+        elif args.command == "projekt-sync":
+            handle_projekt_sync(args.project, getattr(args, 'bidder', None))
         elif args.command == "kriterien-audit":
             handle_kriterien_audit(
                 args.ereignis,

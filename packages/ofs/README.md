@@ -29,10 +29,10 @@ ofs list-bidders "ProjectName"
 ofs tree
 
 # Analyze criteria for a project
-ofs kriterien "ProjectName" pop
+ofs projekt "ProjectName" pop
 
 # Sync criteria across all projects and bidders
-ofs kriterien-sync
+ofs projekt-sync
 ```
 
 ## Configuration
@@ -89,14 +89,14 @@ ofs tree -d                          # Show directories only
 
 ```bash
 # Analyze criteria
-ofs kriterien "Project" pop          # Show next unproven criteria
-ofs kriterien "Project" tree         # Show criteria hierarchy
-ofs kriterien "Project" tag "ID"     # Show specific criterion
+ofs projekt "Project" pop          # Show next unproven criteria
+ofs projekt "Project" tree         # Show criteria hierarchy
+ofs projekt "Project" tag "ID"     # Show specific criterion
 
 # Sync criteria to bidder audits
-ofs kriterien-sync                   # Sync all projects/bidders
-ofs kriterien-sync "Project"         # Sync all bidders in project
-ofs kriterien-sync "Project" "Bidder" # Sync specific bidder
+ofs projekt-sync                   # Sync all projects/bidders
+ofs projekt-sync "Project"         # Sync all bidders in project
+ofs projekt-sync "Project" "Bidder" # Sync specific bidder
 
 # Record audit events
 ofs kriterien-audit ki "Project" "Bidder" "CRITERION_ID"
