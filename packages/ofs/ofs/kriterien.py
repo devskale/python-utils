@@ -120,11 +120,16 @@ def find_kriterien_file(project_name: str) -> Optional[str]:
         # For each candidate, if it's a file and JSON -> return
         # If it's a dir -> look for common filenames and any file with 'kriterien' in its name.
         common_filenames = [
-            "kriterien.json",
-            os.path.join("kriterien", "kriterien.json"),
-            os.path.join("A", "kriterien.json"),
-            "kriterien.all.json",
-            os.path.join("kriterien", "kriterien.all.json"),
+            "projekt.json",
+            "audit.json",
+            os.path.join("kriterien", "projekt.json"),
+            os.path.join("kriterien", "audit.json"),
+            os.path.join("A", "projekt.json"),
+            os.path.join("A", "audit.json"),
+            "projekt.all.json",
+            "audit.all.json",
+            os.path.join("kriterien", "projekt.all.json"),
+            os.path.join("kriterien", "audit.all.json"),
         ]
 
         for candidate in normalized:
@@ -140,12 +145,6 @@ def find_kriterien_file(project_name: str) -> Optional[str]:
                 p = os.path.join(candidate, fn)
                 if os.path.isfile(p):
                     return os.path.abspath(p)
-
-            # walk and pick any file having 'kriterien' in the filename
-            for root, _, files in os.walk(candidate):
-                for f in files:
-                    if "kriterien" in f.lower() and f.lower().endswith(".json"):
-                        return os.path.abspath(os.path.join(root, f))
 
         # nothing found
         return None

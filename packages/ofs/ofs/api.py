@@ -64,7 +64,7 @@ def kriterien_sync(project: str, bidder: Optional[str] = None) -> Dict[str, Any]
 
     kriterien_file = find_kriterien_file(project)
     if not kriterien_file:
-        raise RuntimeError(f"Keine kriterien.json für Projekt '{project}' gefunden")
+        raise RuntimeError(f"Keine Kriterien-Datei für Projekt '{project}' gefunden")
     source = load_kriterien_source(kriterien_file)
 
     def _sync_one(b: str) -> Dict[str, Any]:
@@ -368,7 +368,7 @@ __all__ += ['get_kriterien_audit_json']
 def get_kriterium_description(project: str, kriterium_id: str) -> Dict[str, Any]:
     """Return a minimal description object for a criterion from the project source.
 
-    Looks up kriterien.json (or equivalent) and searches for the matching id/tag.
+    Looks up criteria file (or equivalent) and searches for the matching id/tag.
     Returns { id, name, raw } where name may be derived from known fields; raw is the full dict.
     Raises RuntimeError if project or file not found; returns empty structure if ID missing.
     """
@@ -377,7 +377,7 @@ def get_kriterium_description(project: str, kriterium_id: str) -> Dict[str, Any]
         raise RuntimeError(f"Projekt '{project}' nicht gefunden")
     k_file = find_kriterien_file(project)
     if not k_file:
-        raise RuntimeError(f"Keine kriterien.json für Projekt '{project}' gefunden")
+        raise RuntimeError(f"Keine Kriterien-Datei für Projekt '{project}' gefunden")
     data = load_kriterien(k_file)
     k_list = extract_kriterien_list(data)
     for k in k_list:
@@ -406,25 +406,25 @@ def get_kriterium_description(project: str, kriterium_id: str) -> Dict[str, Any]
 __all__ += ['get_kriterium_description']
 
 def get_bieterdokumente_list(project: str) -> List[Dict[str, Any]]:
-    """Return the list of 'bdoks.bieterdokumente' from a project's kriterien.json.
+    """Return the list of 'bdoks.bieterdokumente' from a project's criteria file.
 
     Args:
         project: Project name
 
     Returns:
         A list of dicts representing the required bidder documents as defined under
-        the key path bdoks.bieterdokumente in kriterien.json. If the key is missing,
+        the key path bdoks.bieterdokumente in criteria file. If the key is missing,
         returns an empty list.
 
     Raises:
-        RuntimeError if the project path or kriterien.json file is not found.
+        RuntimeError if the project path or criteria file is not found.
     """
     project_path = get_path(project)
     if not project_path or not os.path.isdir(project_path):
         raise RuntimeError(f"Projekt '{project}' nicht gefunden")
     k_file = find_kriterien_file(project)
     if not k_file:
-        raise RuntimeError(f"Keine kriterien.json für Projekt '{project}' gefunden")
+        raise RuntimeError(f"Keine Kriterien-Datei für Projekt '{project}' gefunden")
     data = load_kriterien(k_file)
     bdoks = data.get('bdoks') if isinstance(data, dict) else None
     if not isinstance(bdoks, dict):

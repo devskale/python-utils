@@ -151,7 +151,7 @@ def derive_zustand(entry: Dict[str, Any]) -> str:
 
 
 def load_kriterien_source(kriterien_file: str) -> Dict[str, SourceKriterium]:
-    """Parse the project kriterien.json and return mapping id -> SourceKriterium.
+    """Parse the project criteria file and return mapping id -> SourceKriterium.
 
     Only the fields needed for sync (id, status, prio) are extracted.
     Missing status/prio tolerated.

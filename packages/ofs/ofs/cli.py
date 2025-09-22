@@ -232,7 +232,7 @@ def create_parser() -> argparse.ArgumentParser:
     kriterien_sync_parser.add_argument(
         "project",
         nargs="?",
-        help="Project name whose kriterien.json will be synchronized (omit to sync ALL projects)"
+        help="Project name whose criteria file will be synchronized (omit to sync ALL projects)"
     )
     kriterien_sync_parser.add_argument(
         "bidder",
@@ -619,7 +619,7 @@ def _sync_single_bidder(project_path: str, project: str, bidder: str) -> dict:
     # Load source
     kriterien_file = find_kriterien_file(project)
     if not kriterien_file:
-        raise RuntimeError(f"Keine kriterien.json für Projekt '{project}' gefunden")
+        raise RuntimeError(f"Keine Kriterien-Datei für Projekt '{project}' gefunden")
     source = load_kriterien_source(kriterien_file)
     audit = load_or_init_audit(project_path, bidder)
     stats = reconcile_full(audit, source)
