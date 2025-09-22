@@ -28,7 +28,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime, timezone
 
 # Reuse existing kriterien loader
-from .kriterien import load_kriterien, extract_kriterien_list
+from .kriterien import load_kriterien, extract_kriterien_list, find_kriterien_file
 
 ISOFormat = str
 
@@ -198,6 +198,10 @@ def load_or_init_audit(project_path: str, bidder: str) -> Dict[str, Any]:
             "bieter": bidder,
         },
         "kriterien": [],
+        # Neuer Bereich für Bieterdokumente-Anforderungen (bdoks)
+        # Struktur analog zu kriterien: Liste von Einträgen mit id (abgeleitet) + audit.verlauf
+        # id-Konvention: aus Beilage-Nummer wenn vorhanden, sonst slugifizierte Bezeichnung
+        "bdoks": [],
     }
 
 
@@ -280,7 +284,33 @@ def _update_entry_from_source(entry: Dict[str, Any], sk: SourceKriterium) -> boo
     return True
 
 
-def reconcile_full(audit: Dict[str, Any], source: Dict[str, SourceKriterium]) -> SyncStats:
+def _load_bdoks_for_project(project_name: str) -> List[Dict[str, Any]]:
+    """Lightweight Loader für bdoks.bieterdokumente ohne Import-Zyklus.
+
+    Versucht projekt.json / kriterien.json (was find_kriterien_file zurückgibt) zu lesen
+    und extrahiert bdoks.bieterdokumente.
+    Fehler werden abgefangen und führen zu einer leeren Liste.
+    """
+    try:
+        kfile = find_kriterien_file(project_name)
+        if not kfile:
+            return []
+        data = load_kriterien(kfile)
+        if not isinstance(data, dict):
+            return []
+        bdoks = data.get("bdoks")
+        if not isinstance(bdoks, dict):
+            return []
+        bdocs = bdoks.get("bieterdokumente")
+        if isinstance(bdocs, list):
+            return [x for x in bdocs if isinstance(x, dict)]
+    except Exception:
+        return []
+    return []
+
+
+def reconcile_full(audit: Dict[str, Any], source: Dict[str, SourceKriterium], *, include_bdoks: bool = True,
+                   bdoks_list: Optional[List[Dict[str, Any]]] = None) -> SyncStats:
     """Create + Update + Remove reconciliation.
 
     - Creates missing entries (kopiert)
@@ -347,6 +377,90 @@ def reconcile_full(audit: Dict[str, Any], source: Dict[str, SourceKriterium]) ->
         # Update zustand values for all (cheap) to reflect any resets or final changes
         for e in audit.get("kriterien", []):
             e.setdefault("audit", {})["zustand"] = derive_zustand(e)
+
+    # --- Neuer Teil: bdoks Synchronisation ---
+    bdocs_source: List[Dict[str, Any]] = []
+    if include_bdoks:
+        if bdoks_list is not None:
+            bdocs_source = [x for x in bdoks_list if isinstance(x, dict)]
+        else:
+            project_name = audit.get("meta", {}).get("projekt")
+            if project_name:
+                bdocs_source = _load_bdoks_for_project(project_name)
+
+    if include_bdoks and isinstance(bdocs_source, list):
+        bdoks_audit: List[Dict[str, Any]] = audit.setdefault("bdoks", [])
+        idx_bd: Dict[str, Dict[str, Any]] = {}
+        for e in bdoks_audit:
+            bid = e.get("id")
+            if bid and bid not in idx_bd:
+                idx_bd[str(bid)] = e
+
+        def _derive_id(item: Dict[str, Any]) -> str:
+            beilage = item.get("beilage_nummer") or item.get("beilage") or item.get("nummer")
+            if beilage:
+                return str(beilage).strip()
+            # Fallback: Bezeichnung sluggen grob
+            bezeichnung = item.get("bezeichnung") or item.get("name") or "unbenannt"
+            slug = str(bezeichnung).lower().strip()
+            slug = "_".join(ch for ch in slug.replace("/", " ").replace("-", " ").split())
+            return f"DOC_{slug[:40]}"
+
+        # Create / Update pass (aktuell nur create + in-place Feld-Aktualisierung ohne Event wenn unverändert)
+        for raw in bdocs_source:
+            if not isinstance(raw, dict):
+                continue
+            doc_id = _derive_id(raw)
+            existing = idx_bd.get(doc_id)
+            if not existing:
+                new_entry = {
+                    "id": doc_id,
+                    "quelle": {
+                        k: raw.get(k) for k in [
+                            "anforderungstyp", "dokumenttyp", "bezeichnung", "beilage_nummer", "beschreibung",
+                            "unterzeichnung_erforderlich", "fachliche_pruefung"
+                        ]
+                    },
+                    "audit": {"zustand": "synchronisiert", "verlauf": []},
+                }
+                append_event(new_entry, "kopiert", quelle_status=None)
+                bdoks_audit.append(new_entry)
+                idx_bd[doc_id] = new_entry
+                changed_any = True
+            else:
+                # Prüfen ob sich Quelldaten geändert haben -> kopiert Event + Update
+                quelle = existing.setdefault("quelle", {})
+                # simple field sync
+                fields = [
+                    "anforderungstyp", "dokumenttyp", "bezeichnung", "beilage_nummer", "beschreibung",
+                    "unterzeichnung_erforderlich", "fachliche_pruefung"
+                ]
+                changed_local = False
+                for f in fields:
+                    new_val = raw.get(f)
+                    if quelle.get(f) != new_val:
+                        quelle[f] = new_val
+                        changed_local = True
+                if changed_local:
+                    append_event(existing, "kopiert", quelle_status=None)
+                    changed_any = True
+
+        # Entfernen: Markiere fehlende als status="entfernt" (setzt Flag im Eintrag)
+        source_ids = {_derive_id(r) for r in bdocs_source if isinstance(r, dict)}
+        for entry in bdoks_audit:
+            eid = entry.get("id")
+            if not eid:
+                continue
+            if eid not in source_ids:
+                if entry.get("status") == "entfernt":
+                    continue
+                entry["status"] = "entfernt"
+                append_event(entry, "entfernt", quelle_status=None, update_state=False)
+                changed_any = True
+
+        # Sort: nach id stabil
+        if changed_any:
+            bdoks_audit.sort(key=lambda e: e.get("id") or "")
 
     stats.wrote_file = changed_any
     return stats

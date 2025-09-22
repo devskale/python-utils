@@ -622,7 +622,7 @@ def _sync_single_bidder(project_path: str, project: str, bidder: str) -> dict:
         raise RuntimeError(f"Keine Kriterien-Datei für Projekt '{project}' gefunden")
     source = load_kriterien_source(kriterien_file)
     audit = load_or_init_audit(project_path, bidder)
-    stats = reconcile_full(audit, source)
+    stats = reconcile_full(audit, source, include_bdoks=True)
     write_audit_if_changed(project_path, bidder, audit, stats.wrote_file)
     base = stats.as_dict()
     base.update({

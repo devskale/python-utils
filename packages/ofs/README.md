@@ -98,6 +98,8 @@ ofs projekt-sync                   # Sync all projects/bidders
 ofs projekt-sync "Project"         # Sync all bidders in project
 ofs projekt-sync "Project" "Bidder" # Sync specific bidder
 
+Nach dem Sync enthält jede `audit.json` jetzt zusätzlich zum Abschnitt `kriterien` auch einen Abschnitt `bdoks` (Bieter-Dokumentenanforderungen) aus `projekt.json` (`bdoks.bieterdokumente`). Die Synchronisation ist idempotent: unveränderte Dokumentanforderungen erzeugen keine zusätzlichen Events. Entfernte Dokumentanforderungen werden mit `status: "entfernt"` markiert und erhalten ein einmaliges `entfernt`-Event.
+
 # Record audit events
 ofs kriterien-audit ki "Project" "Bidder" "CRITERION_ID"
 ofs kriterien-audit mensch "Project" "Bidder" "CRITERION_ID"

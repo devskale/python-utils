@@ -69,7 +69,7 @@ def kriterien_sync(project: str, bidder: Optional[str] = None) -> Dict[str, Any]
 
     def _sync_one(b: str) -> Dict[str, Any]:
         audit = load_or_init_audit(project_path, b)
-        stats = reconcile_full(audit, source)
+        stats = reconcile_full(audit, source, include_bdoks=True)
         write_audit_if_changed(project_path, b, audit, stats.wrote_file)
         base = stats.as_dict()
         base.update({
