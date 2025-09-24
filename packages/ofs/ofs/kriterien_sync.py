@@ -28,7 +28,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime, timezone
 
 # Reuse existing kriterien loader
-from .kriterien import load_kriterien, extract_kriterien_list, find_kriterien_file
+from .kriterien import load_kriterien, extract_kriterien_list
 
 ISOFormat = str
 
@@ -150,12 +150,13 @@ def derive_zustand(entry: Dict[str, Any]) -> str:
     return "synchronisiert"
 
 
-def load_kriterien_source(kriterien_file: str) -> Dict[str, SourceKriterium]:
-    """Parse the project criteria file and return mapping id -> SourceKriterium.
+def load_kriterien_source(project_path: str) -> Dict[str, SourceKriterium]:
+    """Parse the project criteria from projekt.json and return mapping id -> SourceKriterium.
 
     Only the fields needed for sync (id, status, prio) are extracted.
     Missing status/prio tolerated.
     """
+    kriterien_file = os.path.join(project_path, "projekt.json")
     data = load_kriterien(kriterien_file)
     k_list = extract_kriterien_list(data)
     out: Dict[str, SourceKriterium] = {}
@@ -199,8 +200,7 @@ def load_or_init_audit(project_path: str, bidder: str) -> Dict[str, Any]:
         },
         "kriterien": [],
         # Neuer Bereich für Bieterdokumente-Anforderungen (bdoks)
-        # Struktur analog zu kriterien: Liste von Einträgen mit id (abgeleitet) + audit.verlauf
-        # id-Konvention: aus Beilage-Nummer wenn vorhanden, sonst slugifizierte Bezeichnung
+        # Struktur analog zu kriterien: Liste von Einträgen mit id (aus Quelle) + audit.verlauf
         "bdoks": [],
     }
 
@@ -284,18 +284,18 @@ def _update_entry_from_source(entry: Dict[str, Any], sk: SourceKriterium) -> boo
     return True
 
 
-def _load_bdoks_for_project(project_name: str) -> List[Dict[str, Any]]:
-    """Lightweight Loader für bdoks.bieterdokumente ohne Import-Zyklus.
+def _load_bdoks_for_project(project_path: str) -> List[Dict[str, Any]]:
+    """Lightweight Loader für bdoks.bieterdokumente aus projekt.json.
 
-    Versucht projekt.json / kriterien.json (was find_kriterien_file zurückgibt) zu lesen
-    und extrahiert bdoks.bieterdokumente.
+    Lädt bdoks.bieterdokumente aus projekt.json.
     Fehler werden abgefangen und führen zu einer leeren Liste.
     """
     try:
-        kfile = find_kriterien_file(project_name)
-        if not kfile:
+        pfile = os.path.join(project_path, "projekt.json")
+        if not os.path.isfile(pfile):
             return []
-        data = load_kriterien(kfile)
+        with open(pfile, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
         if not isinstance(data, dict):
             return []
         bdoks = data.get("bdoks")
@@ -309,7 +309,7 @@ def _load_bdoks_for_project(project_name: str) -> List[Dict[str, Any]]:
     return []
 
 
-def reconcile_full(audit: Dict[str, Any], source: Dict[str, SourceKriterium], *, include_bdoks: bool = True,
+def reconcile_full(audit: Dict[str, Any], source: Dict[str, SourceKriterium], project_path: str, *, include_bdoks: bool = True,
                    bdoks_list: Optional[List[Dict[str, Any]]] = None) -> SyncStats:
     """Create + Update + Remove reconciliation.
 
@@ -384,9 +384,7 @@ def reconcile_full(audit: Dict[str, Any], source: Dict[str, SourceKriterium], *,
         if bdoks_list is not None:
             bdocs_source = [x for x in bdoks_list if isinstance(x, dict)]
         else:
-            project_name = audit.get("meta", {}).get("projekt")
-            if project_name:
-                bdocs_source = _load_bdoks_for_project(project_name)
+            bdocs_source = _load_bdoks_for_project(project_path)
 
     if include_bdoks and isinstance(bdocs_source, list):
         bdoks_audit: List[Dict[str, Any]] = audit.setdefault("bdoks", [])
@@ -396,21 +394,13 @@ def reconcile_full(audit: Dict[str, Any], source: Dict[str, SourceKriterium], *,
             if bid and bid not in idx_bd:
                 idx_bd[str(bid)] = e
 
-        def _derive_id(item: Dict[str, Any]) -> str:
-            beilage = item.get("beilage_nummer") or item.get("beilage") or item.get("nummer")
-            if beilage:
-                return str(beilage).strip()
-            # Fallback: Bezeichnung sluggen grob
-            bezeichnung = item.get("bezeichnung") or item.get("name") or "unbenannt"
-            slug = str(bezeichnung).lower().strip()
-            slug = "_".join(ch for ch in slug.replace("/", " ").replace("-", " ").split())
-            return f"DOC_{slug[:40]}"
-
-        # Create / Update pass (aktuell nur create + in-place Feld-Aktualisierung ohne Event wenn unverändert)
+        # Create / Update pass (use existing id from source)
         for raw in bdocs_source:
             if not isinstance(raw, dict):
                 continue
-            doc_id = _derive_id(raw)
+            doc_id = raw.get("id")
+            if not doc_id:
+                continue  # Skip if no id
             existing = idx_bd.get(doc_id)
             if not existing:
                 new_entry = {
@@ -446,7 +436,7 @@ def reconcile_full(audit: Dict[str, Any], source: Dict[str, SourceKriterium], *,
                     changed_any = True
 
         # Entfernen: Markiere fehlende als status="entfernt" (setzt Flag im Eintrag)
-        source_ids = {_derive_id(r) for r in bdocs_source if isinstance(r, dict)}
+        source_ids = {r.get("id") for r in bdocs_source if isinstance(r, dict) and r.get("id")}
         for entry in bdoks_audit:
             eid = entry.get("id")
             if not eid:

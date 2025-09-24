@@ -44,7 +44,7 @@ from .kriterien_sync import (
     append_event,
     derive_zustand,
 )
-from .kriterien import find_kriterien_file
+
 
 # Module logger
 logger = setup_logger(__name__)
@@ -617,12 +617,12 @@ def handle_projekt(project: str, action: str, limit: Optional[int] = None, tag_i
 def _sync_single_bidder(project_path: str, project: str, bidder: str) -> dict:
     """Run create/idempotent sync for a single bidder and return stats dict."""
     # Load source
-    kriterien_file = find_kriterien_file(project)
-    if not kriterien_file:
-        raise RuntimeError(f"Keine Kriterien-Datei für Projekt '{project}' gefunden")
-    source = load_kriterien_source(kriterien_file)
+    projekt_file = os.path.join(project_path, "projekt.json")
+    if not os.path.isfile(projekt_file):
+        raise RuntimeError(f"projekt.json für Projekt '{project}' nicht gefunden")
+    source = load_kriterien_source(project_path)
     audit = load_or_init_audit(project_path, bidder)
-    stats = reconcile_full(audit, source, include_bdoks=True)
+    stats = reconcile_full(audit, source, project_path, include_bdoks=True)
     write_audit_if_changed(project_path, bidder, audit, stats.wrote_file)
     base = stats.as_dict()
     base.update({

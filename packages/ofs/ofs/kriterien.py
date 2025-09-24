@@ -51,102 +51,21 @@ def load_kriterien(file_path: str) -> Dict[str, Any]:
         return json.load(fh)
 
 
-def _collect_repo_kriterien_candidates(project_name: str) -> List[str]:
-    """
-    Heuristic: look under repository-local "kriterien/" directory for matching folders.
-    """
-    candidates: List[str] = []
-    try:
-        repo_root = os.path.abspath(os.getcwd())
-        repo_k_root = os.path.join(repo_root, "kriterien")
-        if os.path.isdir(repo_k_root):
-            # direct folder tries
-            candidates.append(os.path.join(repo_k_root, project_name))
-            candidates.append(os.path.join(repo_k_root, project_name.lower()))
-            candidates.append(os.path.join(repo_k_root, project_name.replace(" ", "_")))
-            candidates.append(os.path.join(repo_k_root, project_name.replace(" ", "-")))
-            # fuzzy matches
-            for entry in os.listdir(repo_k_root):
-                entry_path = os.path.join(repo_k_root, entry)
-                if os.path.isdir(entry_path):
-                    if entry.lower() in project_name.lower() or project_name.lower() in entry.lower():
-                        candidates.append(entry_path)
-    except Exception:
-        # best-effort heuristic, ignore problems
-        pass
-    return candidates
+
 
 
 def find_kriterien_file(project_name: str) -> Optional[str]:
     """
-    Find a kriterien JSON file for the given project name.
+    Find projekt.json for the given project name.
 
-    Tries several locations, returning the first matching file path:
-    - path / file returned by get_path(project_name)
-    - common filenames inside candidate project folders under the OFS root
-    - repository-local kriterien/* candidates
+    Only checks for projekt.json in the project directory.
     """
     try:
-        ofs_root = get_ofs_root()
-        project_hint = get_path(project_name)
-        candidates: List[str] = []
-
-        # If get_path returned an absolute path, use it
-        if project_hint:
-            if os.path.isabs(project_hint):
-                candidates.append(project_hint)
-            else:
-                # try the hint as-is (may include ".dir/...")
-                candidates.append(project_hint)
-                if ofs_root:
-                    candidates.append(os.path.join(ofs_root, project_hint))
-                    candidates.append(os.path.join(ofs_root, project_name))
-                    candidates.append(os.path.join(ofs_root, ".dir", project_name))
-
-        # Add repo-local heuristics
-        candidates.extend(_collect_repo_kriterien_candidates(project_name))
-
-        # Normalize and dedupe while preserving order
-        seen = set()
-        normalized: List[str] = []
-        for c in candidates:
-            if not c:
-                continue
-            # keep as given (may be file or directory)
-            if c not in seen:
-                normalized.append(c)
-                seen.add(c)
-
-        # For each candidate, if it's a file and JSON -> return
-        # If it's a dir -> look for common filenames and any file with 'kriterien' in its name.
-        common_filenames = [
-            "projekt.json",
-            "audit.json",
-            os.path.join("kriterien", "projekt.json"),
-            os.path.join("kriterien", "audit.json"),
-            os.path.join("A", "projekt.json"),
-            os.path.join("A", "audit.json"),
-            "projekt.all.json",
-            "audit.all.json",
-            os.path.join("kriterien", "projekt.all.json"),
-            os.path.join("kriterien", "audit.all.json"),
-        ]
-
-        for candidate in normalized:
-            # If candidate points directly to a file
-            if os.path.isfile(candidate) and candidate.lower().endswith(".json"):
-                return os.path.abspath(candidate)
-
-            if not os.path.isdir(candidate):
-                continue
-
-            # check explicit common filenames
-            for fn in common_filenames:
-                p = os.path.join(candidate, fn)
-                if os.path.isfile(p):
-                    return os.path.abspath(p)
-
-        # nothing found
+        project_path = get_path(project_name)
+        if project_path and os.path.isdir(project_path):
+            projekt_file = os.path.join(project_path, "projekt.json")
+            if os.path.isfile(projekt_file):
+                return os.path.abspath(projekt_file)
         return None
     except Exception:
         return None
@@ -579,10 +498,10 @@ def get_kriterien_tag_json(project_name: str, tag_id: Optional[str] = None) -> D
 def get_kriterien_md(project_name: str) -> str:
     """
     Generate a markdown-formatted output of the criteria list organized by typ and kategorie.
-    
+
     Args:
         project_name (str): Project name
-        
+
     Returns:
         str: Markdown-formatted criteria list or error message
     """
@@ -590,22 +509,22 @@ def get_kriterien_md(project_name: str) -> str:
         k_file = find_kriterien_file(project_name)
         if not k_file:
             return f"Error: No kriterien file found for project '{project_name}'"
-        
+
         data = load_kriterien(k_file)
         k_list = extract_kriterien_list(data)
-        
+
         if not k_list:
             return f"# Kriterien für {project_name}\n\nNo criteria found in the data."
-        
+
         tree = build_kriterien_tree_from_list(k_list)
         unproven = get_unproven_kriterien_from_list(k_list)
         total = len(k_list)
         proven_count = total - len(unproven)
-        
+
         lines: List[str] = []
         lines.append(f"# Kriterien für {project_name}")
         lines.append("")
-        
+
         # Add project metadata from data
         meta_info = data.get('meta', {})
         if isinstance(meta_info, dict) and 'meta' in meta_info:
@@ -614,7 +533,7 @@ def get_kriterien_md(project_name: str) -> str:
                 lines.append(f"**Auftraggeber:** {project_meta['auftraggeber']}")
             if 'aktenzeichen' in project_meta:
                 lines.append(f"**Aktenzeichen:** {project_meta['aktenzeichen']}")
-            
+
             # Add lose information
             if 'lose' in project_meta and isinstance(project_meta['lose'], list):
                 lines.append("")
@@ -630,12 +549,12 @@ def get_kriterien_md(project_name: str) -> str:
                             lines.append(f"  - Beschreibung: {beschreibung}")
                         if bewertung:
                             lines.append(f"  - Bewertungsprinzip: {bewertung}")
-        
+
         lines.append("")
         lines.append(f"**Status:** {proven_count} von {total} Kriterien geprüft ({len(unproven)} verbleibend)")
         lines.append(f"**Quelle:** `{k_file}`")
         lines.append("")
-        
+
         # Generate table of contents
         lines.append("## Inhaltsverzeichnis")
         lines.append("")
@@ -644,36 +563,36 @@ def get_kriterien_md(project_name: str) -> str:
             for kategorie in sorted(tree[typ].keys()):
                 lines.append(f"  - [Kategorie: {kategorie}](#{kategorie.lower().replace(' ', '-')})")
         lines.append("")
-        
+
         # Generate detailed sections
         for typ in sorted(tree.keys()):
             # Calculate total criteria count for this typ
             typ_total = sum(len(kriterien_list) for kriterien_list in tree[typ].values())
             lines.append(f"## Typ: {typ} ({typ_total})")
 #            lines.append("")
-            
+
             for kategorie in sorted(tree[typ].keys()):
                 kriterien_list = tree[typ][kategorie]
                 unproven_in_cat = [k for k in kriterien_list if (k.get("pruefung") or {}).get("status") is None]
                 proven_in_cat = len(kriterien_list) - len(unproven_in_cat)
-                
+
                 lines.append(f"   {kategorie} ({len(kriterien_list)}):")
 #                lines.append("")
 #                lines.append(f"**Status:** {proven_in_cat} von {len(kriterien_list)} geprüft")
 #                lines.append("")
-                
+
                 # Sort criteria by ID for consistent output
                 sorted_kriterien = sorted(kriterien_list, key=lambda k: k.get('id', ''))
-                
+
                 for kriterium in sorted_kriterien:
                     k_id = kriterium.get('id', 'N/A')
                     k_name = kriterium.get('name') or kriterium.get('kriterium') or kriterium.get('bezeichnung') or kriterium.get('anforderung', '(Kein Name)')
-                    
+
                     # Determine status
                     pruefung = kriterium.get('pruefung', {})
                     status = pruefung.get('status')
                     prio = pruefung.get('prio') or kriterium.get('prio')
-                    
+
                     if status is None:
                         status_icon = "❓"
                         status_text = "Ungeprüft"
@@ -689,17 +608,17 @@ def get_kriterien_md(project_name: str) -> str:
                     else:
                         status_icon = "❓"
                         status_text = f"Status: {status}"
-                    
+
                     # Priority indicator
                     prio_text = ""
                     if prio:
                         if isinstance(prio, int) and prio > 0:
                             prio_text = f" (Priorität: {prio})"
-                    
+
                     lines.append(f"      {k_id} | {k_name} ")
  #                   lines.append("")
  #                   lines.append(f"**Status:** {status_text}{prio_text}")
-                    
+
                     # Add requirement/description if available
                     anforderung = kriterium.get('anforderung')
                     beschreibung = kriterium.get('beschreibung') or kriterium.get('description')
@@ -707,21 +626,21 @@ def get_kriterien_md(project_name: str) -> str:
 #                        lines.append(f"**Anforderung:** {anforderung}")
 #                    elif beschreibung:
 #                        lines.append(f"**Beschreibung:** {beschreibung}")
-                    
+
                     # Add additional fields if available
 #                    if 'schwellenwert' in kriterium and kriterium['schwellenwert']:
 #                        lines.append(f"**Schwellenwert:** {kriterium['schwellenwert']}")
-                    
+
 #                    if 'gewichtung_punkte' in kriterium and kriterium['gewichtung_punkte']:
 #                        lines.append(f"**Gewichtung:** {kriterium['gewichtung_punkte']} Punkte")
-                    
+
 #                    if 'geltung_lose' in kriterium and kriterium['geltung_lose']:
 #                        lose_text = ', '.join(kriterium['geltung_lose'])
 #                        lines.append(f"**Geltung Lose:** {lose_text}")
-                    
+
 #                    if 'quelle' in kriterium and kriterium['quelle']:
 #                        lines.append(f"**Quelle:** {kriterium['quelle']}")
-                    
+
                     # Add proof information if available
 #                    if pruefung:
 #                        if 'datum' in pruefung and pruefung['datum']:
@@ -730,14 +649,14 @@ def get_kriterien_md(project_name: str) -> str:
 #                            lines.append(f"**Bemerkung:** {pruefung['bemerkung']}")
 #                        if 'pruefer' in pruefung and pruefung['pruefer']:
 #                            lines.append(f"**Prüfer:** {pruefung['pruefer']}")
-                    
+
 #                    lines.append("")
-                
+
 #                lines.append("---")
 #                lines.append("")
-        
+
         return "\n".join(lines)
-        
+
     except Exception as e:
         return f"Error: {str(e)}"
 

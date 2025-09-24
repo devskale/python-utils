@@ -34,7 +34,6 @@ from .core import (
     read_doc,
 )
 from .kriterien import (
-    find_kriterien_file,
     get_kriterien_pop_json_bidder,
     get_kriterien_pop_json,
     load_kriterien,
@@ -62,14 +61,14 @@ def kriterien_sync(project: str, bidder: Optional[str] = None) -> Dict[str, Any]
     if not project_path or not os.path.isdir(project_path):
         raise RuntimeError(f"Projekt '{project}' nicht gefunden")
 
-    kriterien_file = find_kriterien_file(project)
-    if not kriterien_file:
-        raise RuntimeError(f"Keine Kriterien-Datei für Projekt '{project}' gefunden")
-    source = load_kriterien_source(kriterien_file)
+    projekt_file = os.path.join(project_path, "projekt.json")
+    if not os.path.isfile(projekt_file):
+        raise RuntimeError(f"projekt.json für Projekt '{project}' nicht gefunden")
+    source = load_kriterien_source(project_path)
 
     def _sync_one(b: str) -> Dict[str, Any]:
         audit = load_or_init_audit(project_path, b)
-        stats = reconcile_full(audit, source, include_bdoks=True)
+        stats = reconcile_full(audit, source, project_path, include_bdoks=True)
         write_audit_if_changed(project_path, b, audit, stats.wrote_file)
         base = stats.as_dict()
         base.update({
@@ -366,18 +365,18 @@ def get_kriterien_audit_json(project: str, bidder: str, must_exist: bool = False
 __all__ += ['get_kriterien_audit_json']
 
 def get_kriterium_description(project: str, kriterium_id: str) -> Dict[str, Any]:
-    """Return a minimal description object for a criterion from the project source.
+    """Return a minimal description object for a criterion from projekt.json.
 
-    Looks up criteria file (or equivalent) and searches for the matching id/tag.
+    Looks up projekt.json and searches for the matching id/tag.
     Returns { id, name, raw } where name may be derived from known fields; raw is the full dict.
     Raises RuntimeError if project or file not found; returns empty structure if ID missing.
     """
     project_path = get_path(project)
     if not project_path or not os.path.isdir(project_path):
         raise RuntimeError(f"Projekt '{project}' nicht gefunden")
-    k_file = find_kriterien_file(project)
-    if not k_file:
-        raise RuntimeError(f"Keine Kriterien-Datei für Projekt '{project}' gefunden")
+    k_file = os.path.join(project_path, "projekt.json")
+    if not os.path.isfile(k_file):
+        raise RuntimeError(f"projekt.json für Projekt '{project}' nicht gefunden")
     data = load_kriterien(k_file)
     k_list = extract_kriterien_list(data)
     for k in k_list:
@@ -406,25 +405,25 @@ def get_kriterium_description(project: str, kriterium_id: str) -> Dict[str, Any]
 __all__ += ['get_kriterium_description']
 
 def get_bieterdokumente_list(project: str) -> List[Dict[str, Any]]:
-    """Return the list of 'bdoks.bieterdokumente' from a project's criteria file.
+    """Return the list of 'bdoks.bieterdokumente' from projekt.json.
 
     Args:
         project: Project name
 
     Returns:
         A list of dicts representing the required bidder documents as defined under
-        the key path bdoks.bieterdokumente in criteria file. If the key is missing,
+        the key path bdoks.bieterdokumente in projekt.json. If the key is missing,
         returns an empty list.
 
     Raises:
-        RuntimeError if the project path or criteria file is not found.
+        RuntimeError if the project path or projekt.json is not found.
     """
     project_path = get_path(project)
     if not project_path or not os.path.isdir(project_path):
         raise RuntimeError(f"Projekt '{project}' nicht gefunden")
-    k_file = find_kriterien_file(project)
-    if not k_file:
-        raise RuntimeError(f"Keine Kriterien-Datei für Projekt '{project}' gefunden")
+    k_file = os.path.join(project_path, "projekt.json")
+    if not os.path.isfile(k_file):
+        raise RuntimeError(f"projekt.json für Projekt '{project}' nicht gefunden")
     data = load_kriterien(k_file)
     bdoks = data.get('bdoks') if isinstance(data, dict) else None
     if not isinstance(bdoks, dict):
