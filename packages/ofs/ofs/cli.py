@@ -224,7 +224,7 @@ def create_parser() -> argparse.ArgumentParser:
         help="Specific tag ID to show (e.g., F_SUB_001). If omitted, shows all available tags"
     )
 
-        # New: projekt-sync as dedicated top-level (allows order: ofs projekt sync <project> <bidder?>)
+    # New: projekt-sync as dedicated top-level (allows order: ofs projekt sync <project> <bidder?>)
     projekt_sync_parser = subparsers.add_parser(
         "projekt-sync",
         help="Synchronize project criteria into bidder audit files (create/idempotent)"
@@ -252,7 +252,8 @@ def create_parser() -> argparse.ArgumentParser:
     )
     audit_parser.add_argument("project", help="Project name")
     audit_parser.add_argument("bidder", help="Bidder name")
-    audit_parser.add_argument("kriterium_id", help="Criterion ID (z.B. F_FORM_001)")
+    audit_parser.add_argument(
+        "kriterium_id", help="Criterion ID (z.B. F_FORM_001)")
     audit_parser.add_argument(
         "--akteur", default="cli", help="Actor/author of the event (default: cli)"
     )
@@ -685,7 +686,8 @@ def _sync_single_bidder(project_path: str, project: str, bidder: str) -> dict:
     # Load source
     projekt_file = os.path.join(project_path, "projekt.json")
     if not os.path.isfile(projekt_file):
-        raise RuntimeError(f"projekt.json für Projekt '{project}' nicht gefunden")
+        raise RuntimeError(
+            f"projekt.json für Projekt '{project}' nicht gefunden")
     source = load_kriterien_source(project_path)
     audit = load_or_init_audit(project_path, bidder)
     stats = reconcile_full(audit, source, project_path, include_bdoks=True)
@@ -749,7 +751,8 @@ def handle_projekt_sync(project: Optional[str], bidder: Optional[str] = None) ->
     else:
         bidders = list_bidders(project)
         if not bidders:
-            logger.error(f"Keine Bieter im Projekt '{project}' gefunden (B/ leer?)")
+            logger.error(
+                f"Keine Bieter im Projekt '{project}' gefunden (B/ leer?)")
             sys.exit(1)
         for b in bidders:
             try:
@@ -779,7 +782,8 @@ def handle_kriterien_audit(ereignis: str, project: str, bidder: str, kriterium_i
     entries = audit.get("kriterien", [])
     entry = next((e for e in entries if e.get("id") == kriterium_id), None)
     if not entry:
-        logger.error(f"Kriterium '{kriterium_id}' nicht in Audit von Bieter '{bidder}' gefunden (vorher sync ausführen?)")
+        logger.error(
+            f"Kriterium '{kriterium_id}' nicht in Audit von Bieter '{bidder}' gefunden (vorher sync ausführen?)")
         sys.exit(1)
 
     if ereignis == "show":
@@ -842,7 +846,7 @@ def handle_kriterien_audit(ereignis: str, project: str, bidder: str, kriterium_i
 def handle_json_read(project: str, filename: str, key: Optional[str] = None, bidder: Optional[str] = None) -> None:
     """
     Handle the json read command.
-    
+
     Args:
         project: Project name
         filename: JSON filename (projekt.json or audit.json)
@@ -850,21 +854,22 @@ def handle_json_read(project: str, filename: str, key: Optional[str] = None, bid
         bidder: Optional bidder name (required for audit.json)
     """
     from .json_manager import read_json_file, read_audit_json
-    
+
     try:
         if filename == "audit.json" and bidder:
             # Use specific bidder audit.json
             result = read_audit_json(project, bidder, key)
         elif filename == "audit.json" and not bidder:
-            logger.error("Bidder name is required for audit.json files. Use --bidder option.")
+            logger.error(
+                "Bidder name is required for audit.json files. Use --bidder option.")
             sys.exit(1)
         else:
             # Use general JSON file reader
             result = read_json_file(project, filename, key)
-        
+
         # Output the result as JSON
         print(json.dumps(result, indent=2, ensure_ascii=False))
-        
+
     except FileNotFoundError as e:
         logger.error(f"File not found: {e}")
         sys.exit(1)
@@ -879,11 +884,11 @@ def handle_json_read(project: str, filename: str, key: Optional[str] = None, bid
         sys.exit(1)
 
 
-def handle_json_update(project: str, filename: str, key: str, value: str, 
-                      bidder: Optional[str] = None, no_backup: bool = False) -> None:
+def handle_json_update(project: str, filename: str, key: str, value: str,
+                       bidder: Optional[str] = None, no_backup: bool = False) -> None:
     """
     Handle the json update command.
-    
+
     Args:
         project: Project name
         filename: JSON filename (projekt.json or audit.json)
@@ -893,25 +898,28 @@ def handle_json_update(project: str, filename: str, key: str, value: str,
         no_backup: Whether to skip creating backup
     """
     from .json_manager import update_json_file, update_audit_json
-    
+
     # Try to parse value as JSON, fall back to string
     try:
         parsed_value = json.loads(value)
     except json.JSONDecodeError:
         # If it's not valid JSON, treat as string
         parsed_value = value
-    
+
     try:
         if filename == "audit.json" and bidder:
             # Use specific bidder audit.json
-            success = update_audit_json(project, bidder, key, parsed_value, create_backup=not no_backup)
+            success = update_audit_json(
+                project, bidder, key, parsed_value, create_backup=not no_backup)
         elif filename == "audit.json" and not bidder:
-            logger.error("Bidder name is required for audit.json files. Use --bidder option.")
+            logger.error(
+                "Bidder name is required for audit.json files. Use --bidder option.")
             sys.exit(1)
         else:
             # Use general JSON file updater
-            success = update_json_file(project, filename, key, parsed_value, create_backup=not no_backup)
-        
+            success = update_json_file(
+                project, filename, key, parsed_value, create_backup=not no_backup)
+
         if success:
             result = {
                 "project": project,
@@ -922,12 +930,12 @@ def handle_json_update(project: str, filename: str, key: str, value: str,
             }
             if bidder:
                 result["bidder"] = bidder
-            
+
             print(json.dumps(result, indent=2, ensure_ascii=False))
         else:
             logger.error("Update failed")
             sys.exit(1)
-            
+
     except FileNotFoundError as e:
         logger.error(f"File not found: {e}")
         sys.exit(1)
@@ -964,7 +972,8 @@ def handle_index(action: str, directory: str, recursive: bool = False, force: bo
         if ofs_root:
             directory = ofs_root
         else:
-            logger.error("OFS root not found. Please run from an OFS project directory.")
+            logger.error(
+                "OFS root not found. Please run from an OFS project directory.")
             sys.exit(1)
 
     # Convert relative path to absolute path
@@ -1056,7 +1065,8 @@ def main(argv: Optional[list[str]] = None) -> int:
                 # transform into projekt-sync top-level usage
                 bidder = None
                 # If an extra positional was provided after project, argparse would not parse it; so we just inform user.
-                logger.error("Nutzen Sie bitte: ofs projekt-sync <projekt> [<bieter>] (neuer Befehl)")
+                logger.error(
+                    "Nutzen Sie bitte: ofs projekt-sync <projekt> [<bieter>] (neuer Befehl)")
                 return 1
             limit = getattr(args, 'limit', None)
             bidder = getattr(args, 'bidder', None)
@@ -1100,7 +1110,7 @@ def main(argv: Optional[list[str]] = None) -> int:
                 logger.error(
                     "json command requires an action (read, update)")
                 return 1
-            
+
             if args.json_action == "read":
                 handle_json_read(
                     args.project,

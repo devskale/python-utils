@@ -78,6 +78,7 @@ Create a python library to access, edit and navigate the opinionated filesystem 
   - **Reserved directory filtering** - Excludes 'md/' and 'archive/' directories from tree output
   - **Reserved file filtering** - Excludes '.json' and '.md' files from tree output
 - [x] **Documentation synchronization**:
+
   - Updated `README.md` to reflect current implementation
   - Synchronized CLI usage examples with actual functionality
   - Updated Python API documentation with all available functions
@@ -85,6 +86,7 @@ Create a python library to access, edit and navigate the opinionated filesystem 
   - Updated architecture section to reflect modular design
 
 - [x] **Configuration file integration**:
+
   - Fixed `ofs root` command to return actual base directory path instead of project directory
   - Fixed `ofs index update` command to use configured base directory from `ofs.config.json`
   - Enhanced `get_ofs_root()` function to resolve and return the actual base directory path
@@ -98,6 +100,7 @@ Create a python library to access, edit and navigate the opinionated filesystem 
   - Improved user feedback showing exactly which files were affected during index operations
   - Maintains backward compatibility while providing more informative output
 - [x] **Enhanced index update verbosity**:
+
   - Added OFS root directory display: `ofs root: <path>`
   - Added project count: `N projects checked`
   - Added bidder directory count: `M Bidder dirs checked`
@@ -121,7 +124,7 @@ This function is the core of the document reading capability. It intelligently s
 
 **Features:**
 
-- **Dual Format Support:** 
+- **Dual Format Support:**
   - `Project@Filename` for tender documents (automatically uses 'A' directory)
   - `Project@Bidder@Filename` for bidder documents
 - **Intelligent Parser Selection:** Uses `_select_parser` to choose the best parser based on the `.ofs.index.json` metadata.
