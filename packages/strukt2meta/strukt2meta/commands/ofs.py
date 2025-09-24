@@ -342,7 +342,7 @@ class OfsCommand(BaseCommand):
                     provider = config.get("provider", "tu")
                     model = config.get("model", "mistral-small-3.2-24b")
 
-                    date = datetime.now().strftime('%Y-%m-%dT%H:%M')
+                    date = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
                     metadata["Autor"] = f"KI-generiert {provider}@{model}@{prompt_name}@{parser} {date}"
                 except Exception as e:
                     self.log(f"Warning: Could not add Autor field: {e}", "warning")
@@ -773,7 +773,7 @@ class OfsCommand(BaseCommand):
                     provider = kriterien_config.get("provider", "tu")
                     model = kriterien_config.get("model", "glm-4.5-355b")
 
-                    date = datetime.now().strftime('%Y-%m-%dT%H:%M')
+                    date = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
                     parser = doc_result.get('parser', 'docling')  # Use parser from doc_result or default
                     metadata["Autor"] = f"KI-generiert {provider}@{model}@{prompt_name}@{parser} {date}"
                 except Exception as e:
