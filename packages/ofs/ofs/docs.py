@@ -310,8 +310,7 @@ def list_bidder_docs_json(project_name: str, bidder_name: str, include_metadata:
                     else:
                         # Include minimal view fields when available
                         doc_entry.update({
-                            "kategorie": meta.get("kategorie"),
-                            "meta_name": meta.get("name"),
+                            "meta": meta,
                         })
 
                     result["documents"].append(doc_entry)
@@ -750,7 +749,7 @@ def _select_parser(requested_parser: Optional[str], available_parsers: Dict[str,
 def read_doc(identifier: str, parser: Optional[str] = None) -> Dict[str, Any]:
     """
     Read a document content by identifier.
-    
+
     Supports two formats:
     - 'Project@Bidder@Filename' for bidder documents
     - 'Project@Filename' for tender documents (automatically uses 'A' as bidder)
@@ -839,11 +838,12 @@ def read_doc(identifier: str, parser: Optional[str] = None) -> Dict[str, Any]:
 
     # Generate possible markdown filenames based on naming conventions
     base_name = Path(filename).stem  # filename without extension
-    
+
     # Special case for 'md' parser: look for md/basename.md
     if selected_parser == 'md':
         possible_md_files = [
-            f"{base_name}.md",                        # Special case: basename.md for 'md' parser
+            # Special case: basename.md for 'md' parser
+            f"{base_name}.md",
             f"{base_name}.{selected_parser}.md",      # filename.parser.md
             f"{base_name}_{selected_parser}.md",      # filename_parser.md
             f"{filename}.{selected_parser}.md",       # filename.ext.parser.md

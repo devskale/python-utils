@@ -231,4 +231,136 @@ The OFS package has been decomposed from a single large `core.py` file (~1,500 l
 - **Code Organization**: Clear separation of concerns
 - **Development**: Faster development with focused modules
 - **Backward Compatibility**: Zero breaking changes for existing users
+
+## API Reference
+
+### Document Listing Functions
+
+#### `list_bidder_docs_json(project_name: str, bidder_name: str, include_metadata: bool = False) -> Dict[str, Any]`
+
+**Location**: `ofs/docs.py`
+
+Lists all documents for a specific bidder in a project in JSON format.
+
+**Parameters:**
+- `project_name` (str): Name of the project (AUSSCHREIBUNGNAME)
+- `bidder_name` (str): Name of the bidder (BIETERNAME)
+- `include_metadata` (bool): Whether to include full metadata and file details (default: False)
+
+**Returns:**
+A dictionary with the following structure:
+
+**Minimal view (include_metadata=False):**
+```json
+{
+  "project": "ProjectName",
+  "bidder": "BidderName",
+  "documents": [
+    {
+      "name": "document.pdf",
+      "kategorie": "Eignungsnachweise",
+      "meta_name": "Firmenbuchauszug"
+    }
+  ],
+  "count": 10,
+  "total_documents": 10
+}
+```
+
+**Full metadata view (include_metadata=True):**
+```json
+{
+  "project": "ProjectName",
+  "bidder": "BidderName",
+  "documents": [
+    {
+      "name": "document.pdf",
+      "path": "/path/to/document.pdf",
+      "size": 106365,
+      "type": ".pdf",
+      "parsers": {
+        "det": ["marker", "docling", "pdfplumber"],
+        "default": "docling",
+        "status": ""
+      },
+      "meta": {
+        "name": "Firmenbuchauszug",
+        "kategorie": "Eignungsnachweise",
+        "begründung": "Explanation for categorization"
+      }
+    }
+  ],
+  "count": 10,
+  "total_documents": 10
+}
+```
+
+**Supported File Types:**
+- PDF files (`.pdf`)
+- Image files (`.jpg`, `.jpeg`, `.png`, `.gif`, `.bmp`, `.tiff`, `.tif`, `.svg`, `.webp`)
+- Office documents (`.doc`, `.docx`, `.xls`, `.xlsx`, `.ppt`, `.pptx`, `.odt`, `.ods`, `.odp`)
+- Text formats (`.txt`, `.md`, `.rtf`, `.csv`, `.xml`)
+
+**Note:** JSON files are excluded as they are reserved for internal/index data.
+
+#### `get_bieterdokumente_list(project: str) -> List[Dict[str, Any]]`
+
+**Location**: `ofs/api.py`
+
+Returns the list of required bidder documents as defined in `projekt.json` under the key path `bdoks.bieterdokumente`.
+
+**Parameters:**
+- `project` (str): Project name
+
+**Returns:**
+A list of dictionaries representing the required bidder documents. Each dictionary contains:
+
+```json
+[
+  {
+    "id": "ANGE_AHV_001",
+    "anforderungstyp": "Pflichtdokument",
+    "dokumenttyp": "Angebot",
+    "bezeichnung": "Angebotshauptteil der Vergabeplattform",
+    "beilage_nummer": null,
+    "beschreibung": "Ausgefüllter und signierter Hauptteil des Angebots über die elektronische Vergabeplattform",
+    "unterzeichnung_erforderlich": true,
+    "fachliche_pruefung": false,
+    "gültigkeit": "nicht älter als 6 Monate"
+  }
+]
+```
+
+**Document Fields:**
+- `id`: Unique identifier for the document requirement
+- `anforderungstyp`: Type of requirement ("Pflichtdokument", "Bedarfsfall")
+- `dokumenttyp`: Document type ("Angebot", "Formblatt", "Nachweis", "Zusatzdokument")
+- `bezeichnung`: Document title/name
+- `beilage_nummer`: Attachment number (can be null)
+- `beschreibung`: Detailed description of the document
+- `unterzeichnung_erforderlich`: Whether signature is required (boolean)
+- `fachliche_pruefung`: Whether technical review is required (boolean)
+- `gültigkeit`: Validity period or requirements
+
+**Error Handling:**
+- Returns empty list `[]` if `bdoks.bieterdokumente` key is missing
+- Raises `RuntimeError` if project path or `projekt.json` is not found
+
+**Usage Examples:**
+```python
+from ofs.api import get_bieterdokumente_list
+from ofs.docs import list_bidder_docs_json
+
+# Get required documents for a project
+required_docs = get_bieterdokumente_list("ProjectName")
+print(f"Project requires {len(required_docs)} document types")
+
+# Get actual submitted documents for a bidder
+submitted_docs = list_bidder_docs_json("ProjectName", "BidderName")
+print(f"Bidder submitted {submitted_docs['count']} documents")
+
+# Compare required vs submitted (basic example)
+required_ids = {doc['id'] for doc in required_docs}
+submitted_names = {doc['name'] for doc in submitted_docs['documents']}
+```
 ```

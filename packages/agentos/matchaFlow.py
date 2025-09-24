@@ -25,66 +25,6 @@ MODEL = "glm-4.5-355b"
 
 api_key = get_api_key(PROVIDER)
 
-def condense_bieterdocs(bidder_docs):
-    """Return a simple view of bidder docs focusing on meta.name and meta.kategorie.
-
-    Accepts either:
-      - a dict with a "files" (or "docs"/"items") list
-      - or a plain list of file dicts
-
-    Produces a list of entries with: filename, name (meta.name or name), kategorie (meta.kategorie).
-    """
-    # Normalize to a list of file entries
-    items = []
-    if isinstance(bidder_docs, dict):
-        for key in ("files", "docs", "items", "results", "documents"):
-            if key in bidder_docs and isinstance(bidder_docs[key], list):
-                items = bidder_docs[key]
-                break
-    elif isinstance(bidder_docs, list):
-        items = bidder_docs
-
-    out = []
-    for doc in items:
-        if isinstance(doc, str):
-            out.append({
-                "filename": doc,
-                "name": doc,
-                "kategorie": None,
-            })
-            continue
-        if not isinstance(doc, dict):
-            continue
-        meta = doc.get("meta") or {}
-        filename = doc.get("name") or doc.get("filename") or ""
-        name = meta.get("name") or filename or doc.get("title")
-        kategorie = meta.get("kategorie")
-        out.append({
-            "name": name,
-            "kategorie": kategorie,
-            "filename": filename,
-        })
-    return out
-
-
-def condense_geforderte_doks(required_docs):
-    """Return only bezeichnung, beilage_nummer (if present), and kategorie.
-
-    Input is expected to be a list of dicts as returned by get_bieterdokumente_list.
-    """
-    out = []
-    if not isinstance(required_docs, list):
-        return out
-    for d in required_docs:
-        if not isinstance(d, dict):
-            continue
-        out.append({
-            "bezeichnung": d.get("bezeichnung"),
-            "beilage_nummer": d.get("beilage_nummer"),
-            "kategorie": d.get("kategorie"),
-        })
-    return out
-
 
 def findMatches(geforderte_dokumente, hochgeladene_docs, runner = 1):
     prompt = f"""
@@ -92,7 +32,7 @@ Du bist ein hilfreicher Assistent, der dabei hilft, geforderte Dokumente mit hoc
 Deine Aufgabe ist es, das am besten passende hochgeladene Dokument zu jedem geforderten Dokument zu finden.
 Du erhältst eine Liste von geforderten Dokumenten mit ihren Bezeichnungen.
 
-Wenn nicht anders angegeben gilt: 
+Wenn nicht anders angegeben gilt:
 - ist das ausschreibende Unternehmen die "Wiener Wohnen Hausbetreuung Gmbh", ein Unternehmen aus Österreich.
 - ist der Bieter ein Unternehmen aus Österreich, das an der Ausschreibung teilnimmt.
 - ist der Bieter ein Einzalbieter, keine Bieter- oder Arbeitsgemeinschaft.
@@ -111,7 +51,7 @@ Die liste mit den hochgeladenen Bieterdokumenten ist:
 gib eine liste der am besten passenden hochgeladenen Dokumente zurück, die zu dem geforderten Dokument passen.
 "matches": [
     {{
-    "Dateiname": "...",    # der Dateiname des hochgeladenen Dokuments 
+    "Dateiname": "...",    # der Dateiname des hochgeladenen Dokuments
      "Name": "...",         # der Name aus meta.name des hochgeladenen Dokuments
      "Kategorie": "...",    # die Kategorie aus meta.kategorie des hochgeladenen Dokuments
      "Begründung": "..."}},  # die kurze aber prägnante Begründung für die Zuordnung
@@ -216,7 +156,7 @@ def main():
     project, bidder = identifier.split("@", 1)
 
     try:
-        hochgeladene_dokumente = list_bidder_docs_json(project, bidder, include_metadata=True)
+        hochgeladene_dokumente = list_bidder_docs_json(project, bidder, include_metadata=False)
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)
@@ -240,8 +180,12 @@ def main():
         mPrompt = findMatches(
               gefordertes_doc, hochgeladene_dokumente, i)
         # Show only the first 100 characters of the prompt for preview
-        preview = mPrompt[:100].replace("\n", " ") + ("..." if len(mPrompt) > 100 else "")
+        preview = mPrompt[:100].replace("\n", " ")
+        if len(mPrompt) > 100:
+            preview += "..."
         print(f"Prompt preview: {preview}")
+        print(f"gDok: {str(gefordertes_doc)[:100]}...")
+        print(f"hDok: {str(hochgeladene_dokumente['documents'])[:400]}...")
         response = agent.run(
             mPrompt,
             stream=False,  # capture final text only
