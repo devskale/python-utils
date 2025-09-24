@@ -4,6 +4,16 @@ import re
 from ofs.core import read_json_file, read_audit_json
 
 
+def evaluate_fstring(template, **locals_dict):
+    """Evaluate template as f-string with provided locals."""
+    globals_dict = {"json": json}
+    globals_dict.update(locals_dict)
+    try:
+        return eval(f'f"""{template}"""', globals_dict)
+    except Exception as e:
+        raise ValueError(f"Error evaluating f-string in prompt template: {e}")
+
+
 def get_nested_value(data, key_path):
     """Get nested value from dict using dot-separated key path, case insensitive."""
     keys = key_path.split('.')
@@ -26,14 +36,14 @@ def get_nested_value(data, key_path):
 
 def kontextBuilder(identifier, promptid, **kwargs):
     """
-    A utility function to load a prompt template and inject OFS data for @projekt.KEY and @audit.KEY patterns.
+    A utility function to load a prompt template, inject OFS data for @projekt.KEY and @audit.KEY patterns, and evaluate {expressions} as f-strings.
 
     Parameters:
     identifier: A unique identifier in the form PROJEKT(@BIETER). Used to fetch project and audit data.
     promptid: The prompt ID, corresponding to the filename in the prompts directory (without .md extension).
-    **kwargs: Not used in this version.
+    **kwargs: Additional variables available in f-string evaluation (e.g., geforderte_dokumente, hochgeladene_docs).
     Returns:
-        The prompt template string with injected data.
+        The prompt template string with injected and evaluated data.
     """
     if "@" not in identifier:
         raise ValueError("Identifier must be in the form PROJEKT(@BIETER)")
@@ -69,11 +79,15 @@ def kontextBuilder(identifier, promptid, **kwargs):
     except FileNotFoundError:
         raise ValueError(f"Prompt template '{promptid}.md' not found in prompts directory.")
 
-    # Inject data using regex replacement
+    # Evaluate as f-string first to interpolate {expressions}
+    locals_dict = {"projekt_data": projekt_data, "audit_data": audit_data, **kwargs}
+    template = evaluate_fstring(template, **locals_dict)
+
+    # Then inject @projekt.KEY and @audit.KEY data
     template = re.sub(r'@(\w+)\.([^@\s]+)', replace_placeholder, template)
 
     print(f"Identifier: {identifier}")
     print(f"Kwargs: {kwargs}")
-    print(f"Loaded and injected prompt template for {identifier} using {promptid}:")
+    print(f"Loaded, injected, and evaluated prompt template for {identifier} using {promptid}:")
     print(template)
     return template

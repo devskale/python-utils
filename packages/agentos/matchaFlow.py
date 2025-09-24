@@ -9,6 +9,7 @@ from agno.agent import Agent
 from agno.models.vllm import VLLM
 # from agno.tools import tool
 # from agno.workflow.v2.workflow import Workflow
+from kontextBuilder import kontextBuilder
 
 # Optional JSON repair for messy LLM outputs
 try:
@@ -26,39 +27,8 @@ MODEL = "glm-4.5-355b"
 api_key = get_api_key(PROVIDER)
 
 
-def findMatches(geforderte_dokumente, hochgeladene_docs, runner = 1):
-    prompt = f"""
-Du bist ein hilfreicher Assistent, der dabei hilft, geforderte Dokumente mit hochgeladenen Dokumenten abzugleichen.
-Deine Aufgabe ist es, das am besten passende hochgeladene Dokument zu jedem geforderten Dokument zu finden.
-Du erhältst eine Liste von geforderten Dokumenten mit ihren Bezeichnungen.
-
-Wenn nicht anders angegeben gilt:
-- ist das ausschreibende Unternehmen die "Wiener Wohnen Hausbetreuung Gmbh", ein Unternehmen aus Österreich.
-- ist der Bieter ein Unternehmen aus Österreich, das an der Ausschreibung teilnimmt.
-- ist der Bieter ein Einzalbieter, keine Bieter- oder Arbeitsgemeinschaft.
-- sind die hochgeladenen Dokumente von einem Bieter, der an der Ausschreibung teilnimmt.
-- sind die hochgeladenen Dokumente in deutscher Sprache.
-- bietet der Bieter für alle Lose an.
-- ist der Bieter der Hauptauftragnehmer
-- Es gibt keine Subunternehmer.
-
-Das geforderte Dokument ist:
-{json.dumps(geforderte_dokumente, indent=2, ensure_ascii=False)}
-
-Die liste mit den hochgeladenen Bieterdokumenten ist:
-{json.dumps(hochgeladene_docs, indent=2, ensure_ascii=False)}
-
-gib eine liste der am besten passenden hochgeladenen Dokumente zurück, die zu dem geforderten Dokument passen.
-"matches": [
-    {{
-    "Dateiname": "...",    # der Dateiname des hochgeladenen Dokuments
-     "Name": "...",         # der Name aus meta.name des hochgeladenen Dokuments
-     "Kategorie": "...",    # die Kategorie aus meta.kategorie des hochgeladenen Dokuments
-     "Begründung": "..."}},  # die kurze aber prägnante Begründung für die Zuordnung
-]
-
-"""
-    return prompt
+def findMatches(identifier, geforderte_dokumente, hochgeladene_docs, runner = 1):
+    return kontextBuilder(identifier, "matchgDok", geforderte_dokumente=geforderte_dokumente, hochgeladene_docs=hochgeladene_docs)
 
 
 def extract_json_clean(text: str):
@@ -162,8 +132,8 @@ def main():
         sys.exit(1)
 
     geforderte_dokumente = get_bieterdokumente_list(project)
-    print(f"Geforderte Bieterdokumente: {len(geforderte_dokumente)}")
-    print(f"Hochgeladene Bieterdokumente: {len(hochgeladene_dokumente['documents'])}")
+    print(f"gDoks: {len(geforderte_dokumente)}")
+    print(f"bDoks: {len(hochgeladene_dokumente['documents'])}")
     #print(json.dumps(hochgeladene_dokumente, indent=2, ensure_ascii=False))
     #print(json.dumps(geforderte_dokumente, indent=2, ensure_ascii=False))
     # Build a matched list for the first N required docs
@@ -177,7 +147,7 @@ def main():
         print(f"{i}/{len(geforderte_dokumente)} - {gefordertes_doc.get('bezeichnung')}")
         # ask llm if bieterdoc matches a gefordertes_doc
         # if yes, print match, if no, print no match
-        mPrompt = findMatches(
+        mPrompt = findMatches(identifier,
               gefordertes_doc, hochgeladene_dokumente, i)
         # Show only the first 100 characters of the prompt for preview
         preview = mPrompt[:100].replace("\n", " ")
