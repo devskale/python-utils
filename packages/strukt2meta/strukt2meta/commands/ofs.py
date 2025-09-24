@@ -48,7 +48,7 @@ class OfsCommand(BaseCommand):
                     "--step parameter is required when using --mode kriterien")
             self.log(
                 f"Running in kriterien mode with step: {self.args.step}", "info")
-            
+
             # Special handling for @all parameter in kriterien mode
             if self.args.ofs == "@all":
                 self._run_all_projects_kriterien()
@@ -71,7 +71,7 @@ class OfsCommand(BaseCommand):
 
             for project in projects:
                 self.log(f"Starting processing for project: {project}", "info")
-                
+
                 # Reset counters for each project
                 self.file_counter = 0
                 self.total_files = 0
@@ -104,7 +104,7 @@ class OfsCommand(BaseCommand):
 
             for project in projects:
                 self.log(f"Starting kriterien processing for project: {project}", "info")
-                
+
                 # Find AAB document automatically
                 aab_filename = self._find_aab_document(project)
                 if not aab_filename:
@@ -337,12 +337,12 @@ class OfsCommand(BaseCommand):
                 try:
                     with open("./config.json", "r") as f:
                         config = json.load(f)
-                    
+
                     # Determine provider and model (default task_type)
                     provider = config.get("provider", "tu")
-                    model = config.get("model", "mistral-small-3.1-24b")
-                    
-                    date = datetime.now().isoformat()
+                    model = config.get("model", "mistral-small-3.2-24b")
+
+                    date = datetime.now().strftime('%Y-%m-%dT%H:%M')
                     metadata["Autor"] = f"KI-generiert {provider}@{model}@{prompt_name}@{parser} {date}"
                 except Exception as e:
                     self.log(f"Warning: Could not add Autor field: {e}", "warning")
@@ -767,13 +767,13 @@ class OfsCommand(BaseCommand):
                 try:
                     with open("./config.json", "r") as f:
                         config = json.load(f)
-                    
+
                     # Determine provider and model for kriterien
                     kriterien_config = config.get("kriterien", {})
                     provider = kriterien_config.get("provider", "tu")
-                    model = kriterien_config.get("model", "deepseek-r1")
-                    
-                    date = datetime.now().isoformat()
+                    model = kriterien_config.get("model", "glm-4.5-355b")
+
+                    date = datetime.now().strftime('%Y-%m-%dT%H:%M')
                     parser = doc_result.get('parser', 'docling')  # Use parser from doc_result or default
                     metadata["Autor"] = f"KI-generiert {provider}@{model}@{prompt_name}@{parser} {date}"
                 except Exception as e:

@@ -8,18 +8,16 @@ Dieser Prompt extrahiert die erforderlichen Bieterdokumente aus Ausschreibungsun
 
 ```json
 {
-  "schema_version": "3.4-ai-optimized",
+  "schema_version": "3.3-ai-optimized",
   "bieterdokumente": [
     {
       "anforderungstyp": "Pflichtdokument|Bedarfsfall",
-      "dokumenttyp": "Angebot|Nachweis|Zusatzdokument|Formblatt|Anderes",
+      "dokumenttyp": "Angebot|Nachweis|Zusatzdokument|Formblatt",
       "bezeichnung": "string",
       "beilage_nummer": "string|null",
       "beschreibung": "string",
       "unterzeichnung_erforderlich": "boolean",
-      "fachliche_pruefung": "boolean",
-      "id": "string",
-      "gültigkeit": "string"
+      "fachliche_pruefung": "boolean"
     }
   ]
 }
@@ -31,7 +29,6 @@ Extrahiere alle erforderlichen Bieterdokumente aus dem Abschnitt "INHALT UND FOR
 
 ### Dokumentenstruktur:
 
-- **id**: Eindeutige, strukturierte Dokumenten-ID im Format 'TYP_KURZBEZ_NUM' (z.B. 'ANGE_AHV_001' für Angebotshauptteil, 'FORM_BIEGE_001' für Bietergemeinschaften, 'FORM_ARGE_001' für Arbeitsgemeinschaften, 'FORM_SUB_001' für Subunternehmer).
 - **anforderungstyp**:
   - "Pflichtdokument" = Immer erforderlich
   - "Bedarfsfall" = Nur bei bestimmten Umständen erforderlich
@@ -47,7 +44,6 @@ Extrahiere alle erforderlichen Bieterdokumente aus dem Abschnitt "INHALT UND FOR
 - **beschreibung**: Detaillierte Beschreibung des Dokuments und seiner Funktion
 - **unterzeichnung_erforderlich**: Ob das Dokument signiert werden muss
 - **fachliche_pruefung**: Ob fachliche Prüfung durch Steuerberater/Wirtschaftsprüfer erforderlich
-- **gültigkeit**: Gültigkeitsdauer oder -bedingung (z.B. "nicht älter als 6 Monate")
 
 ## TYPISCHE BIETERDOKUMENTE
 
@@ -85,51 +81,43 @@ Extrahiere alle erforderlichen Bieterdokumente aus dem Abschnitt "INHALT UND FOR
 
 ```json
 {
-  "schema_version": "3.4-ai-optimized",
+  "schema_version": "3.3-ai-optimized",
   "bieterdokumente": [
     {
-      "id": "ANGE_AHV_001",
       "anforderungstyp": "Pflichtdokument",
       "dokumenttyp": "Angebot",
       "bezeichnung": "Angebotshauptteil der Vergabeplattform",
       "beilage_nummer": null,
       "beschreibung": "Ausgefüllter und signierter Hauptteil des Angebots über die elektronische Vergabeplattform",
       "unterzeichnung_erforderlich": true,
-      "fachliche_pruefung": false,
-      "gültigkeit": "nicht älter als 6 Monate"
+      "fachliche_pruefung": false
     },
     {
-      "id": "FORM_ARGE_001",
       "anforderungstyp": "Bedarfsfall",
       "dokumenttyp": "Formblatt",
       "bezeichnung": "Erklärung für Bieter- und Arbeitsgemeinschaften",
       "beilage_nummer": "Beilage 01",
       "beschreibung": "Erforderlich bei Bieter- oder Arbeitsgemeinschaften zur Darstellung der Zusammenarbeit",
       "unterzeichnung_erforderlich": true,
-      "fachliche_pruefung": false,
-      "gültigkeit": "unbefristet"
+      "fachliche_pruefung": false
     },
     {
-      "id": "FORM_LV_001",
       "anforderungstyp": "Pflichtdokument",
       "dokumenttyp": "Formblatt",
       "bezeichnung": "Leistungsverzeichnis und Preisblatt",
       "beilage_nummer": "Beilage 04",
       "beschreibung": "Ausgefülltes Formblatt mit Preisangaben für alle ausgeschriebenen Leistungen",
       "unterzeichnung_erforderlich": false,
-      "fachliche_pruefung": false,
-      "gültigkeit": "zum Zeitpunkt der Angebotsabgabe"
+      "fachliche_pruefung": false
     },
     {
-      "id": "NACH_LF_001",
       "anforderungstyp": "Pflichtdokument",
       "dokumenttyp": "Nachweis",
       "bezeichnung": "Leistungsfähigkeit Dienstnehmer und Umsätze",
       "beilage_nummer": "Beilage 05",
       "beschreibung": "Von Steuerberater oder Wirtschaftsprüfer bestätigtes Formblatt zur finanziellen Leistungsfähigkeit",
       "unterzeichnung_erforderlich": true,
-      "fachliche_pruefung": true,
-      "gültigkeit": "nicht älter als 12 Monate"
+      "fachliche_pruefung": true
     }
   ]
 }
