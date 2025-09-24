@@ -1,0 +1,1793 @@
+{
+  "meta": {
+    "schema_version": "1.0-bieter-kriterien",
+    "projekt": "2025-04 Lampen",
+    "bieter": "Lampion GmbH"
+  },
+  "kriterien": [
+    {
+      "id": "E_BERUFL_001",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124360Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485128Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_BERUFL_002",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124362Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485349Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_BERUFL_003",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124364Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485352Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_BERUFL_004",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124366Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485355Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_BERUFL_005",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124368Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485356Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_BERUFL_006",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124370Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485358Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_BERUFL_007",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124372Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485360Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_BERUFL_008",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124374Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485361Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_BERUFL_009",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124376Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485363Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_BERUFL_010",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124378Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485364Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_BERUFL_011",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124380Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485366Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_BERUFL_012",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124382Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485367Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_DOK_001",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124396Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485369Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_DOK_002",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124398Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485370Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_DOK_003",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124400Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485372Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_DOK_004",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124402Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485373Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_DOK_005",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124404Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485375Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_DOK_006",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124406Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485376Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_TECH_001",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124384Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485378Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_TECH_002",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124386Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485380Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_WIRT_001",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124388Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485381Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_WIRT_002",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124390Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485383Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_WIRT_003",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124392Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485384Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "E_WIRT_004",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124394Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485386Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_BIEGE_001",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124188Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485387Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_BIEGE_002",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124306Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485391Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_BIEGE_003",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124311Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485392Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_BIEGE_004",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124314Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485394Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_BIEGE_005",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124316Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485396Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_BIEGE_006",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124318Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485397Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_DOK_001",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124339Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485399Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_DOK_002",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124341Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485400Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_DOK_003",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124343Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485402Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_DOK_004",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124344Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485403Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_DOK_005",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124346Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485405Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_DOK_006",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124348Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485406Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_DOK_007",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124350Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485407Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_DOK_008",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124352Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485409Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_FORM_001",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124321Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485410Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_FORM_002",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124323Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485412Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_FORM_003",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124325Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485413Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_FORM_004",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124327Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485415Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_FORM_005",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124329Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485416Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_FORM_006",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124331Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485418Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_FORM_007",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124333Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485419Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_FORM_008",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124335Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485421Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_FORM_009",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124337Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485422Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_FRIST_001",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124354Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485424Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_FRIST_002",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124356Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485425Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "F_FRIST_003",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124358Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485427Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "Z_PREIS_001",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124408Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485428Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "Z_QUAL_001",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124410Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485430Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "Z_QUAL_002",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124412Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485431Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "Z_QUAL_003",
+      "status": "entfernt",
+      "prio": null,
+      "bewertung": null,
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124414Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          },
+          {
+            "zeit": "2025-09-24T09:13:16.485433Z",
+            "ereignis": "entfernt",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    }
+  ],
+  "bdoks": [
+    {
+      "id": "ANGE_AHV_001",
+      "quelle": {
+        "anforderungstyp": "Pflichtdokument",
+        "dokumenttyp": "Angebot",
+        "bezeichnung": "Angebotshauptteil der Vergabeplattform",
+        "beilage_nummer": null,
+        "beschreibung": "Ausgefüllter und signierter Hauptteil des Angebots über die elektronische Vergabeplattform",
+        "unterzeichnung_erforderlich": true,
+        "fachliche_pruefung": false
+      },
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-09-24T09:13:16.485561Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "FORM_BIEGE_001",
+      "quelle": {
+        "anforderungstyp": "Bedarfsfall",
+        "dokumenttyp": "Formblatt",
+        "bezeichnung": "Erklärung für Bieter- und Arbeitsgemeinschaften",
+        "beilage_nummer": "Beilage 01",
+        "beschreibung": "Erforderlich bei Bieter- oder Arbeitsgemeinschaften zur Darstellung der Zusammenarbeit und Aufgabenverteilung",
+        "unterzeichnung_erforderlich": true,
+        "fachliche_pruefung": false
+      },
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-09-24T09:13:16.485566Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "FORM_ISO_001",
+      "quelle": {
+        "anforderungstyp": "Bedarfsfall",
+        "dokumenttyp": "Formblatt",
+        "bezeichnung": "Zuschlagskriterium ISO-Zertifizierungen",
+        "beilage_nummer": "Beilage 08",
+        "beschreibung": "Ausgefülltes Formblatt zur Angabe von ISO-Zertifizierungen für die Bewertung nach Zuschlagskriterien",
+        "unterzeichnung_erforderlich": true,
+        "fachliche_pruefung": false
+      },
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-09-24T09:13:16.485586Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "FORM_LF_002",
+      "quelle": {
+        "anforderungstyp": "Bedarfsfall",
+        "dokumenttyp": "Formblatt",
+        "bezeichnung": "Zuschlagskriterium Lieferfrist",
+        "beilage_nummer": "Beilage 09",
+        "beschreibung": "Ausgefülltes Formblatt zur Angabe einer verkürzten Lieferfrist für die Bewertung nach Zuschlagskriterien",
+        "unterzeichnung_erforderlich": true,
+        "fachliche_pruefung": false
+      },
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-09-24T09:13:16.485588Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "FORM_LV_001",
+      "quelle": {
+        "anforderungstyp": "Pflichtdokument",
+        "dokumenttyp": "Formblatt",
+        "bezeichnung": "Leistungsverzeichnis und Preisblatt",
+        "beilage_nummer": "Beilage 04",
+        "beschreibung": "Ausgefülltes Formblatt mit Preisangaben für alle ausgeschriebenen Leistungen",
+        "unterzeichnung_erforderlich": false,
+        "fachliche_pruefung": false
+      },
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-09-24T09:13:16.485575Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "FORM_SAN_001",
+      "quelle": {
+        "anforderungstyp": "Pflichtdokument",
+        "dokumenttyp": "Formblatt",
+        "bezeichnung": "Erklärung SanktionenVO",
+        "beilage_nummer": "Beilage 07",
+        "beschreibung": "Unterfertigtes Formblatt zur Erklärung gemäß Sanktionenverordnung",
+        "unterzeichnung_erforderlich": true,
+        "fachliche_pruefung": false
+      },
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-09-24T09:13:16.485583Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "FORM_SUB_001",
+      "quelle": {
+        "anforderungstyp": "Bedarfsfall",
+        "dokumenttyp": "Formblatt",
+        "bezeichnung": "Subunternehmerliste",
+        "beilage_nummer": "Beilage 02",
+        "beschreibung": "Auflistung der Subunternehmer mit Angabe des jeweiligen Anteils an der Gesamtleistung",
+        "unterzeichnung_erforderlich": true,
+        "fachliche_pruefung": false
+      },
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-09-24T09:13:16.485569Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "FORM_SUB_002",
+      "quelle": {
+        "anforderungstyp": "Bedarfsfall",
+        "dokumenttyp": "Formblatt",
+        "bezeichnung": "Verpflichtungserklärung Subunternehmer",
+        "beilage_nummer": "Beilage 03",
+        "beschreibung": "Ausgefüllte und vom Subunternehmer unterfertigte Verpflichtungserklärung",
+        "unterzeichnung_erforderlich": true,
+        "fachliche_pruefung": false
+      },
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-09-24T09:13:16.485572Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "NACH_BAO_001",
+      "quelle": {
+        "anforderungstyp": "Pflichtdokument",
+        "dokumenttyp": "Nachweis",
+        "bezeichnung": "Rückstandsbescheinigung gemäß § 229a BAO",
+        "beilage_nummer": null,
+        "beschreibung": "Nachweis der Erfüllung der Verpflichtung zur Zahlung der Steuern und Abgaben",
+        "unterzeichnung_erforderlich": false,
+        "fachliche_pruefung": false
+      },
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-09-24T09:13:16.485601Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "NACH_BON_001",
+      "quelle": {
+        "anforderungstyp": "Pflichtdokument",
+        "dokumenttyp": "Nachweis",
+        "bezeichnung": "Bonitätsauskunft",
+        "beilage_nummer": null,
+        "beschreibung": "Aktuelle Auskunft des Kreditschutzverbandes von 1870 (KSV) oder vergleichbares Rating einer europäischen Bonitätsauskunft/Ratingagentur",
+        "unterzeichnung_erforderlich": false,
+        "fachliche_pruefung": false
+      },
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-09-24T09:13:16.485603Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "NACH_FBU_001",
+      "quelle": {
+        "anforderungstyp": "Pflichtdokument",
+        "dokumenttyp": "Nachweis",
+        "bezeichnung": "Firmenbuchauszug",
+        "beilage_nummer": null,
+        "beschreibung": "Nachweis gemäß § 33 des Firmenbuchgesetzes",
+        "unterzeichnung_erforderlich": false,
+        "fachliche_pruefung": false
+      },
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-09-24T09:13:16.485596Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "NACH_GEW_001",
+      "quelle": {
+        "anforderungstyp": "Pflichtdokument",
+        "dokumenttyp": "Nachweis",
+        "bezeichnung": "Nachweis der Befugnis",
+        "beilage_nummer": null,
+        "beschreibung": "Auszug aus dem Gewerbeinformationssystem Austria (GISA) oder Auszug aus dem Mitgliederverzeichnis der Wirtschaftskammer",
+        "unterzeichnung_erforderlich": false,
+        "fachliche_pruefung": false
+      },
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-09-24T09:13:16.485610Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "NACH_INS_001",
+      "quelle": {
+        "anforderungstyp": "Pflichtdokument",
+        "dokumenttyp": "Nachweis",
+        "bezeichnung": "Auszug aus der Insolvenzdatei",
+        "beilage_nummer": null,
+        "beschreibung": "Nachweis gemäß § 256 der Insolvenzordnung",
+        "unterzeichnung_erforderlich": false,
+        "fachliche_pruefung": false
+      },
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-09-24T09:13:16.485593Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "NACH_LF_001",
+      "quelle": {
+        "anforderungstyp": "Pflichtdokument",
+        "dokumenttyp": "Nachweis",
+        "bezeichnung": "Leistungsfähigkeit Dienstnehmer und Umsätze",
+        "beilage_nummer": "Beilage 05",
+        "beschreibung": "Von Steuerberater oder Wirtschaftsprüfer bestätigtes Formblatt zur finanziellen und technischen Leistungsfähigkeit",
+        "unterzeichnung_erforderlich": true,
+        "fachliche_pruefung": true
+      },
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-09-24T09:13:16.485578Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "NACH_REF_001",
+      "quelle": {
+        "anforderungstyp": "Pflichtdokument",
+        "dokumenttyp": "Nachweis",
+        "bezeichnung": "Leistungsfähigkeit Referenzen",
+        "beilage_nummer": "Beilage 06",
+        "beschreibung": "Ausgefülltes Formblatt mit Referenzprojekten, unterfertigt vom historischen Auftraggeber",
+        "unterzeichnung_erforderlich": true,
+        "fachliche_pruefung": false
+      },
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-09-24T09:13:16.485581Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "NACH_STR_001",
+      "quelle": {
+        "anforderungstyp": "Pflichtdokument",
+        "dokumenttyp": "Nachweis",
+        "bezeichnung": "Strafregisterbescheinigung",
+        "beilage_nummer": null,
+        "beschreibung": "Nachweis der strafrechtlichen Unbescholtenheit gemäß § 10 des Strafregistergesetzes 1968",
+        "unterzeichnung_erforderlich": false,
+        "fachliche_pruefung": false
+      },
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-09-24T09:13:16.485591Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "NACH_SVA_001",
+      "quelle": {
+        "anforderungstyp": "Pflichtdokument",
+        "dokumenttyp": "Nachweis",
+        "bezeichnung": "Kontoauszug oder Unbedenklichkeitsbescheinigung der Sozialversicherungsanstalt",
+        "beilage_nummer": null,
+        "beschreibung": "Nachweis der Erfüllung der Verpflichtungen zur Zahlung der Sozialversicherungsbeiträge",
+        "unterzeichnung_erforderlich": false,
+        "fachliche_pruefung": false
+      },
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-09-24T09:13:16.485598Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    },
+    {
+      "id": "NACH_VERS_001",
+      "quelle": {
+        "anforderungstyp": "Pflichtdokument",
+        "dokumenttyp": "Nachweis",
+        "bezeichnung": "Betriebshaftpflichtversicherung",
+        "beilage_nummer": null,
+        "beschreibung": "Aktuelle Nachweise des Abschlusses einer aufrechten Betriebshaftpflichtversicherung mit einer Deckungssumme von mindestens EUR 1.000.000,00 pro Schadenfall sowie Nachweis über die Bezahlung der letztfälligen Prämie",
+        "unterzeichnung_erforderlich": false,
+        "fachliche_pruefung": false
+      },
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-09-24T09:13:16.485607Z",
+            "ereignis": "kopiert",
+            "quelle_status": null,
+            "ergebnis": null,
+            "akteur": "system"
+          }
+        ]
+      }
+    }
+  ]
+}

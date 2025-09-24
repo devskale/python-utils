@@ -103,6 +103,18 @@ Create a python library to access, edit and navigate the opinionated filesystem 
   - Added bidder directory count: `M Bidder dirs checked`
   - Implemented helper functions `_is_project_directory()` and `_is_bidder_directory()` for accurate counting
 
+- [x] **JSON File Management System** (`ofs/json_manager.py`):
+  - `read_json_file(project, filename, key=None)` - Read complete JSON files or specific keys
+  - `read_audit_json(project, bidder, key=None)` - Read audit.json files with bidder context
+  - `update_json_file(project, filename, key, value, create_backup=True)` - Update JSON files with atomic operations
+  - `update_audit_json(project, bidder, key, value, create_backup=True)` - Update audit.json with bidder context
+  - Support for nested key paths using dot notation (e.g., `meta.version`, `criteria.0.status`)
+  - Atomic write operations with temporary files for data safety
+  - Automatic backup creation with timestamp for rollback capability
+  - Comprehensive error handling for file not found, invalid JSON, and key errors
+  - CLI integration: `ofs json read <project> <file> [key]` and `ofs json update <project> <file> <key> <value>`
+  - Full test coverage with 24 passing tests covering all functionality and edge cases
+
 ### `read_doc(doc_id, parser=None)`
 
 This function is the core of the document reading capability. It intelligently selects the appropriate parser based on the document type and available parsers, and extracts content from pre-parsed Markdown files located in `md/` subfolders.
@@ -140,6 +152,7 @@ content = ofs.read_doc('Aufsitzrasenmäher@Bieter1@LSD-BG.pdf', parser='pdfplumb
 
 - [ ] Metadata sidecar file handling and editing
 - [ ] Index file management and updates
+- [ ] JSON schema validation for `projekt.json` and `audit.json`
 - [ ] File editing capabilities with metadata preservation
 - [ ] Rich filesystem navigation with breadcrumbs
 - [ ] Documentation generation from metadata

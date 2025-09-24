@@ -69,6 +69,14 @@ from .index import (
     process_index_file,
 )
 
+# Import from json_manager module
+from .json_manager import (
+    read_json_file,
+    read_audit_json,
+    update_json_file,
+    update_audit_json,
+)
+
 # Re-export all functions for backward compatibility
 __all__ = [
     # Path functions
@@ -115,7 +123,13 @@ __all__ = [
     "print_index_stats",
     "load_index_from_directory",
     "process_index_file",
-
+    
+    # JSON management functions
+    "read_json_file",
+    "read_audit_json",
+    "update_json_file",
+    "update_audit_json",
+    
     # Private functions (for internal use)
     "_load_ofs_index",
     "_search_in_directory",

@@ -379,6 +379,72 @@ def create_parser() -> argparse.ArgumentParser:
         help="Disable recursive processing"
     )
 
+    # json command
+    json_parser = subparsers.add_parser(
+        "json",
+        help="Manage JSON files (projekt.json, audit.json) in OFS structure"
+    )
+    json_subparsers = json_parser.add_subparsers(
+        dest="json_action",
+        help="JSON management actions"
+    )
+
+    # json read command
+    json_read_parser = json_subparsers.add_parser(
+        "read",
+        help="Read JSON files or specific keys from them"
+    )
+    json_read_parser.add_argument(
+        "project",
+        help="Project name (AUSSCHREIBUNGNAME)"
+    )
+    json_read_parser.add_argument(
+        "filename",
+        choices=["projekt.json", "audit.json"],
+        help="JSON filename to read"
+    )
+    json_read_parser.add_argument(
+        "key",
+        nargs="?",
+        help="Optional dot-separated key path (e.g., 'meta.version')"
+    )
+    json_read_parser.add_argument(
+        "--bidder",
+        help="Bidder name (required for audit.json)"
+    )
+
+    # json update command
+    json_update_parser = json_subparsers.add_parser(
+        "update",
+        help="Update specific keys in JSON files"
+    )
+    json_update_parser.add_argument(
+        "project",
+        help="Project name (AUSSCHREIBUNGNAME)"
+    )
+    json_update_parser.add_argument(
+        "filename",
+        choices=["projekt.json", "audit.json"],
+        help="JSON filename to update"
+    )
+    json_update_parser.add_argument(
+        "key",
+        help="Dot-separated key path to update (e.g., 'meta.version')"
+    )
+    json_update_parser.add_argument(
+        "value",
+        help="New value to set (will be parsed as JSON if possible)"
+    )
+    json_update_parser.add_argument(
+        "--bidder",
+        help="Bidder name (required for audit.json)"
+    )
+    json_update_parser.add_argument(
+        "--no-backup",
+        action="store_true",
+        help="Skip creating backup before update"
+    )
+
     return parser
 
 
@@ -773,6 +839,109 @@ def handle_kriterien_audit(ereignis: str, project: str, bidder: str, kriterium_i
     }, indent=2, ensure_ascii=False))
 
 
+def handle_json_read(project: str, filename: str, key: Optional[str] = None, bidder: Optional[str] = None) -> None:
+    """
+    Handle the json read command.
+    
+    Args:
+        project: Project name
+        filename: JSON filename (projekt.json or audit.json)
+        key: Optional key path to read
+        bidder: Optional bidder name (required for audit.json)
+    """
+    from .json_manager import read_json_file, read_audit_json
+    
+    try:
+        if filename == "audit.json" and bidder:
+            # Use specific bidder audit.json
+            result = read_audit_json(project, bidder, key)
+        elif filename == "audit.json" and not bidder:
+            logger.error("Bidder name is required for audit.json files. Use --bidder option.")
+            sys.exit(1)
+        else:
+            # Use general JSON file reader
+            result = read_json_file(project, filename, key)
+        
+        # Output the result as JSON
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        
+    except FileNotFoundError as e:
+        logger.error(f"File not found: {e}")
+        sys.exit(1)
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON: {e}")
+        sys.exit(1)
+    except KeyError as e:
+        logger.error(f"Key not found: {e}")
+        sys.exit(1)
+    except Exception as e:
+        logger.error(f"Error reading JSON: {e}")
+        sys.exit(1)
+
+
+def handle_json_update(project: str, filename: str, key: str, value: str, 
+                      bidder: Optional[str] = None, no_backup: bool = False) -> None:
+    """
+    Handle the json update command.
+    
+    Args:
+        project: Project name
+        filename: JSON filename (projekt.json or audit.json)
+        key: Key path to update
+        value: New value (will be parsed as JSON if possible)
+        bidder: Optional bidder name (required for audit.json)
+        no_backup: Whether to skip creating backup
+    """
+    from .json_manager import update_json_file, update_audit_json
+    
+    # Try to parse value as JSON, fall back to string
+    try:
+        parsed_value = json.loads(value)
+    except json.JSONDecodeError:
+        # If it's not valid JSON, treat as string
+        parsed_value = value
+    
+    try:
+        if filename == "audit.json" and bidder:
+            # Use specific bidder audit.json
+            success = update_audit_json(project, bidder, key, parsed_value, create_backup=not no_backup)
+        elif filename == "audit.json" and not bidder:
+            logger.error("Bidder name is required for audit.json files. Use --bidder option.")
+            sys.exit(1)
+        else:
+            # Use general JSON file updater
+            success = update_json_file(project, filename, key, parsed_value, create_backup=not no_backup)
+        
+        if success:
+            result = {
+                "project": project,
+                "filename": filename,
+                "key": key,
+                "value": parsed_value,
+                "updated": True
+            }
+            if bidder:
+                result["bidder"] = bidder
+            
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+        else:
+            logger.error("Update failed")
+            sys.exit(1)
+            
+    except FileNotFoundError as e:
+        logger.error(f"File not found: {e}")
+        sys.exit(1)
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON: {e}")
+        sys.exit(1)
+    except ValueError as e:
+        logger.error(f"Invalid value or key path: {e}")
+        sys.exit(1)
+    except Exception as e:
+        logger.error(f"Error updating JSON: {e}")
+        sys.exit(1)
+
+
 def handle_index(action: str, directory: str, recursive: bool = False, force: bool = False, max_age: int = 24,
                  json_output: bool = False, output_file: str = None) -> None:
     """
@@ -926,6 +1095,31 @@ def main(argv: Optional[list[str]] = None) -> int:
 
             handle_index(args.index_action, directory, recursive,
                          force, max_age, json_output, output_file)
+        elif args.command == "json":
+            if not args.json_action:
+                logger.error(
+                    "json command requires an action (read, update)")
+                return 1
+            
+            if args.json_action == "read":
+                handle_json_read(
+                    args.project,
+                    args.filename,
+                    getattr(args, 'key', None),
+                    getattr(args, 'bidder', None)
+                )
+            elif args.json_action == "update":
+                handle_json_update(
+                    args.project,
+                    args.filename,
+                    args.key,
+                    args.value,
+                    getattr(args, 'bidder', None),
+                    getattr(args, 'no_backup', False)
+                )
+            else:
+                logger.error(f"Unknown json action: {args.json_action}")
+                return 1
         else:
             logger.error(f"Unknown command: {args.command}")
             return 1

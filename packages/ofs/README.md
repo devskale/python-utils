@@ -149,16 +149,17 @@ OFS organizes documents in a specific directory structure:
 ├── ProjectName/                       # Project folder
 │   ├── .ofs.index.json               # Project index
 │   ├── A/                            # Tender documents
+│   │   ├── .ofs.index.json
 │   │   ├── document.pdf
 │   │   └── md/                       # Processed versions
 │   │       └── document.docling.md
 │   ├── B/                            # Bidder documents
 │   │   ├── BidderName/
+│   │   │   ├── .ofs.index.json
 │   │   │   ├── bid.pdf
 │   │   │   └── md/
-│   │   └── audit.json               # Criteria audit
-│   ├── projekt.json                 # Project metadata
-│   └── kriterien.json               # Evaluation criteria
+│   │   └── audit.json               # Bieter audit
+│   └── projekt.json                 # Projekt Info
 └── archive/                          # Archived projects
 ```
 
@@ -196,23 +197,102 @@ OFS includes a comprehensive criteria evaluation system:
 ## Metadata Files
 
 ### projekt.json
-Project-level metadata including contracting authority, deadlines, and descriptions.
 
-### kriterien.json
-Evaluation criteria with formal requirements, suitability checks, and award criteria.
+**Location**: `PROJEKTNAME/projekt.json`
+
+Das projekt.json File enthält umfassendes Know-how über das Projekt und wird teilweise durch LLM generiert. Es beinhaltet:
+
+- **Meta-Informationen**: Schema-Version, Auftraggeber, Aktenzeichen, Ausschreibungsgegenstand
+- **Projekt-Details**: Datum, Lose-Beschreibungen, Bewertungsprinzipien
+- **Bieter-Dokumentenanforderungen (bdoks)**: Vollständige Liste aller erforderlichen Dokumente mit:
+  - Anforderungstyp (Pflichtdokument, Bedarfsfall)
+  - Dokumenttyp (Angebot, Formblatt, Nachweis, Zusatzdokument)
+  - Bezeichnung und Beschreibung
+  - Unterzeichnungsanforderungen
+  - Gültigkeitsdauer
+- **Kriterien-IDs**: Strukturierte Auflistung aller Bewertungskriterien (Formal, Eignung, Zuschlag)
+
+Beispiel-Struktur:
+
+```json
+{
+  "meta": {
+    "schema_version": "3.3-ai-optimized",
+    "meta": {
+      "auftraggeber": "Wiener Wohnen Hausbetreuung GmbH",
+      "aktenzeichen": "2022_10001_AAB_EV",
+      "ausschreibungsgegenstand": "Beschaffung von Reinigungsmaterialien"
+    }
+  },
+  "bdoks": {
+    "bieterdokumente": [...]
+  },
+  "ids": {
+    "kriterien": [...]
+  }
+}
+```
 
 ### audit.json
-Per-bidder audit trail tracking criteria review status and events.
+
+**Location**: `PROJEKTNAME/B/BIETERNAME/audit.json`
+
+Das audit.json File beinhaltet die Bieter-Audit-Informationen und dokumentiert den kompletten Bewertungsprozess für jeden Bieter. Es enthält:
+
+- **Meta-Informationen**: Schema-Version, Projekt- und Bieter-Bezeichnung
+- **Kriterien-Audit**: Für jedes Bewertungskriterium:
+  - Status (z.B. "entfernt", "geprüft", "freigegeben")
+  - Priorität und Bewertung
+  - Vollständiger Audit-Trail mit Zeitstempel
+  - Ereignis-Historie (kopiert, entfernt, geprüft, etc.)
+  - Akteur-Information (system, KI, Mensch)
+- **Bieter-Dokumentenanforderungen (bdoks)**: Synchronisiert aus projekt.json
+- **Audit-Verlauf**: Chronologische Dokumentation aller Änderungen
+
+Beispiel-Struktur:
+
+```json
+{
+  "meta": {
+    "schema_version": "1.0-bieter-kriterien",
+    "projekt": "2025-04 Lampen",
+    "bieter": "Lampion GmbH"
+  },
+  "kriterien": [
+    {
+      "id": "E_BERUFL_001",
+      "status": "entfernt",
+      "audit": {
+        "zustand": "synchronisiert",
+        "verlauf": [
+          {
+            "zeit": "2025-08-21T14:24:55.124360Z",
+            "ereignis": "kopiert",
+            "akteur": "system"
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+### kriterien.json
+
+Evaluation criteria with formal requirements, suitability checks, and award criteria.
 
 ### .ofs.index.json
+
 Directory index files tracking document parsing status and available processors.
 
 ## Development
 
 ### Requirements
+
 - Python >= 3.12
 
 ### Project Structure
+
 ```
 ofs/
 ├── ofs/                    # Main package
@@ -226,6 +306,7 @@ ofs/
 ```
 
 ### Running Tests
+
 ```bash
 python -m pytest tests/
 ```
