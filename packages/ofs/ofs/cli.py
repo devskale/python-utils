@@ -441,9 +441,9 @@ def create_parser() -> argparse.ArgumentParser:
         help="Bidder name (required for audit.json)"
     )
     json_update_parser.add_argument(
-        "--no-backup",
+        "--backup",
         action="store_true",
-        help="Skip creating backup before update"
+        help="Create backup before update"
     )
 
     return parser
@@ -885,7 +885,7 @@ def handle_json_read(project: str, filename: str, key: Optional[str] = None, bid
 
 
 def handle_json_update(project: str, filename: str, key: str, value: str,
-                       bidder: Optional[str] = None, no_backup: bool = False) -> None:
+                       bidder: Optional[str] = None, backup: bool = False) -> None:
     """
     Handle the json update command.
 
@@ -895,7 +895,7 @@ def handle_json_update(project: str, filename: str, key: str, value: str,
         key: Key path to update
         value: New value (will be parsed as JSON if possible)
         bidder: Optional bidder name (required for audit.json)
-        no_backup: Whether to skip creating backup
+        backup: Whether to create backup before update
     """
     from .json_manager import update_json_file, update_audit_json
 
@@ -910,7 +910,7 @@ def handle_json_update(project: str, filename: str, key: str, value: str,
         if filename == "audit.json" and bidder:
             # Use specific bidder audit.json
             success = update_audit_json(
-                project, bidder, key, parsed_value, create_backup=not no_backup)
+                project, bidder, key, parsed_value, create_backup=backup)
         elif filename == "audit.json" and not bidder:
             logger.error(
                 "Bidder name is required for audit.json files. Use --bidder option.")
@@ -918,7 +918,7 @@ def handle_json_update(project: str, filename: str, key: str, value: str,
         else:
             # Use general JSON file updater
             success = update_json_file(
-                project, filename, key, parsed_value, create_backup=not no_backup)
+                project, filename, key, parsed_value, create_backup=backup)
 
         if success:
             result = {
@@ -1125,7 +1125,7 @@ def main(argv: Optional[list[str]] = None) -> int:
                     args.key,
                     args.value,
                     getattr(args, 'bidder', None),
-                    getattr(args, 'no_backup', False)
+                    getattr(args, 'backup', False)
                 )
             else:
                 logger.error(f"Unknown json action: {args.json_action}")

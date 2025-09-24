@@ -109,13 +109,14 @@ Create a python library to access, edit and navigate the opinionated filesystem 
 - [x] **JSON File Management System** (`ofs/json_manager.py`):
   - `read_json_file(project, filename, key=None)` - Read complete JSON files or specific keys
   - `read_audit_json(project, bidder, key=None)` - Read audit.json files with bidder context
-  - `update_json_file(project, filename, key, value, create_backup=True)` - Update JSON files with atomic operations
-  - `update_audit_json(project, bidder, key, value, create_backup=True)` - Update audit.json with bidder context
+  - `update_json_file(project, filename, key, value, create_backup=False)` - Update JSON files with atomic operations
+  - `update_audit_json(project, bidder, key, value, create_backup=False)` - Update audit.json with bidder context
   - Support for nested key paths using dot notation (e.g., `meta.version`, `criteria.0.status`)
   - Atomic write operations with temporary files for data safety
-  - Automatic backup creation with timestamp for rollback capability
+  - **BREAKING CHANGE**: Backup creation is now opt-in (default: `create_backup=False`) for improved performance
+  - Backup creation available when explicitly enabled with `create_backup=True` parameter
+  - CLI integration: `ofs json read <project> <file> [key]` and `ofs json update <project> <file> <key> <value> [--backup]`
   - Comprehensive error handling for file not found, invalid JSON, and key errors
-  - CLI integration: `ofs json read <project> <file> [key]` and `ofs json update <project> <file> <key> <value>`
   - Full test coverage with 24 passing tests covering all functionality and edge cases
 
 ### `read_doc(doc_id, parser=None)`

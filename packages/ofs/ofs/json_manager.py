@@ -141,7 +141,7 @@ def read_audit_json(project: str, bidder: str, key_path: Optional[str] = None) -
 
 
 def update_json_file(project: str, filename: str, key_path: str, value: Any,
-                     create_backup: bool = True) -> bool:
+                     create_backup: bool = False) -> bool:
     """
     Update a specific key in a JSON file with atomic write operations.
 
@@ -150,7 +150,7 @@ def update_json_file(project: str, filename: str, key_path: str, value: Any,
         filename: The JSON filename ('projekt.json' or 'audit.json')
         key_path: Dot-separated path to the key to update (e.g., 'meta.version')
         value: The new value to set
-        create_backup: Whether to create a backup before updating
+        create_backup: Whether to create a backup before updating (default: False)
 
     Returns:
         True if update was successful
@@ -215,7 +215,7 @@ def update_json_file(project: str, filename: str, key_path: str, value: Any,
 
 
 def update_audit_json(project: str, bidder: str, key_path: str, value: Any,
-                      create_backup: bool = True) -> bool:
+                       create_backup: bool = False) -> bool:
     """
     Update a specific key in audit.json for a specific bidder.
 
@@ -224,7 +224,7 @@ def update_audit_json(project: str, bidder: str, key_path: str, value: Any,
         bidder: The bidder name (BIETERNAME)
         key_path: Dot-separated path to the key to update
         value: The new value to set
-        create_backup: Whether to create a backup before updating
+        create_backup: Whether to create a backup before updating (default: False)
 
     Returns:
         True if update was successful

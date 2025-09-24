@@ -71,9 +71,9 @@ def test_projekt_json_api():
         updated_nested = read_json_file("Samples", "projekt.json", "api_test_data.nested.level1.level2")
         print(f"   Updated nested value: {updated_nested}")
         
-        # Test 8: Update without backup
-        print("\n8. Updating without backup:")
-        result = update_json_file("Samples", "projekt.json", "api_test_data.api_test", False, create_backup=False)
+        # Test 8: Update with backup (explicit)
+        print("\n8. Updating with backup:")
+        result = update_json_file("Samples", "projekt.json", "api_test_data.api_test", False, create_backup=True)
         print(f"   Update result: {result}")
         
         # Restore original version

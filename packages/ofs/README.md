@@ -125,8 +125,8 @@ ofs json update "ProjectName" projekt.json meta.meta.lose.0.nummer "Updated Los"
 # Update audit.json for specific bidder
 ofs json update "ProjectName" audit.json meta.bieter "NewBidderName" --bidder "OldBidderName"
 
-# Update without creating backup
-ofs json update "ProjectName" projekt.json meta.version "1.0" --no-backup
+# Update with backup creation
+ofs json update "ProjectName" projekt.json meta.version "1.0" --backup
 ```
 
 #### JSON Command Examples
@@ -258,8 +258,8 @@ result = update_json_file("ProjectName", "projekt.json", "meta.meta.lose.0.numme
 # Update audit.json for specific bidder
 result = update_audit_json("ProjectName", "BidderName", "meta.bieter", "New Bidder Name")
 
-# Update without creating backup
-result = update_json_file("ProjectName", "projekt.json", "meta.version", "1.0", create_backup=False)
+# Update with backup creation
+result = update_json_file("ProjectName", "projekt.json", "meta.version", "1.0", create_backup=True)
 ```
 
 #### Complete Example: Project Analysis
@@ -454,14 +454,14 @@ ofs kriterien-audit freigabe "ProjectName" "BidderName" "CRITERION_ID"
 #### 4. Data Backup and Recovery
 
 ```bash
-# All updates create automatic backups by default
+# Updates do not create backups by default (for performance)
 ofs json update "ProjectName" projekt.json meta.schema_version "3.4-updated"
+
+# Create backup when needed for important changes
+ofs json update "ProjectName" projekt.json meta.schema_version "3.4-updated" --backup
 
 # Check backup files
 ls -la .dir/ProjectName/projekt.json.backup.*
-
-# Update without backup (use carefully)
-ofs json update "ProjectName" projekt.json temp.data "test" --no-backup
 ```
 
 ### Python Integration Examples
@@ -598,8 +598,8 @@ def bulk_update_schema_versions(projects, new_version):
             current_version = read_json_file(project, "projekt.json", "meta.schema_version")
             print(f"Project {project}: {current_version} -> {new_version}")
             
-            # Update to new version
-            result = update_json_file(project, "projekt.json", "meta.schema_version", new_version)
+            # Update to new version (with backup for schema changes)
+            result = update_json_file(project, "projekt.json", "meta.schema_version", new_version, create_backup=True)
             results[project] = "success" if result else "failed"
             
         except Exception as e:
