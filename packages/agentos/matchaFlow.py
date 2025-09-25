@@ -95,6 +95,45 @@ def extract_json_clean(text: str):
     return None
 
 
+def get_bdoks_from_audit(project, bidder):
+    """
+    Read the bdoks from audit.json for the given project and bidder,
+    and transform them into the geforderte_dokumente format.
+
+    Args:
+        project (str): The project name
+        bidder (str): The bidder name
+
+    Returns:
+        list: List of geforderte dokumente with id, bezeichnung, kategorie, beschreibung, etc.
+    """
+    try:
+        audit = get_kriterien_audit_json(project, bidder)
+        bdoks = audit.get("bdoks", [])
+    except Exception as e:
+        print(f"Error reading audit.json for {project}@{bidder}: {e}")
+        return []
+
+    geforderte_dokumente = []
+    for bdok in bdoks:
+        # Transform bdok to gefordertes_doc format
+        # bdok has 'id' and 'quelle' with the details
+        gefordertes_doc = {
+            'id': bdok.get('id'),
+            'bezeichnung': bdok.get('quelle', {}).get('bezeichnung'),
+            'kategorie': bdok.get('quelle', {}).get('kategorie'),
+            'beschreibung': bdok.get('quelle', {}).get('beschreibung'),
+            'fachliche_pruefung': bdok.get('quelle', {}).get('fachliche_pruefung'),
+            # Include audit info if needed
+            'status': bdok.get('audit', {}).get('status'),
+            'prio': bdok.get('audit', {}).get('prio'),
+            'bewertung': bdok.get('audit', {}).get('bewertung'),
+        }
+        geforderte_dokumente.append(gefordertes_doc)
+
+    return geforderte_dokumente
+
+
 def main():
     """Minimal utility:
 
@@ -106,11 +145,13 @@ def main():
         description="List bidder docs JSON for project@bidder")
     parser.add_argument("identifier", help="project@bidder")
     parser.add_argument("--limit", type=int, default=100,
-                        help="Number of required docs to process (default: 3)")
+                        help="Number of required docs to process (default: 100)")
     parser.add_argument(
         "--id", help="Specific required document ID to check (optional)")
     parser.add_argument("--verbose", action="store_true",
                         help="Enable verbose output for debugging")
+    parser.add_argument("--test", action="store_true",
+                        help="Test mode: build prompts but skip LLM calls")
     args = parser.parse_args()
 
     # Set up logging
@@ -145,7 +186,11 @@ def main():
         print(f"Error: {e}")
         sys.exit(1)
 
-    geforderte_dokumente = get_bieterdokumente_list(project)
+    # geforderte_dokumente = get_bieterdokumente_list(project)
+    geforderte_dokumente = get_bdoks_from_audit(project, bidder)
+    if not geforderte_dokumente:
+        # Fallback to projekt.json if audit bdoks is empty
+        geforderte_dokumente = get_bieterdokumente_list(project)
     assert geforderte_dokumente, f"No geforderte dokumente found for project {project}"
     print(f"gDoks: {len(geforderte_dokumente)}")
     print(f"bDoks: {len(hochgeladene_dokumente['documents'])}")
@@ -181,25 +226,31 @@ def main():
         logging.info(f"gDok: {str(gefordertes_doc)[:100]}...")
         logging.info(
             f"hDok: {str(hochgeladene_dokumente['documents'])[:400]}...")
-        response = agent.run(
-            mPrompt,
-            stream=False,  # capture final text only
-            markdown=False,
-            show_message=False
-        )
-        # Parse the response into JSON (clean) and attach to current required doc
-        content = getattr(response, "content", response)
-        result = extract_json_clean(
-            content if isinstance(content, str) else str(content))
-        matches = None
-        if isinstance(result, dict) and "matches" in result:
-            matches = result["matches"]
-        elif isinstance(result, list):
-            matches = result
+
+        if args.test:
+            # Test mode: skip LLM call
+            logging.info("Test mode: skipping LLM call")
+            matches = []
         else:
-            logging.warning(
-                "Could not extract matches JSON cleanly; storing raw content.")
-            matches = content
+            response = agent.run(
+                mPrompt,
+                stream=False,  # capture final text only
+                markdown=False,
+                show_message=False
+            )
+            # Parse the response into JSON (clean) and attach to current required doc
+            content = getattr(response, "content", response)
+            result = extract_json_clean(
+                content if isinstance(content, str) else str(content))
+            matches = None
+            if isinstance(result, dict) and "matches" in result:
+                matches = result["matches"]
+            elif isinstance(result, list):
+                matches = result
+            else:
+                logging.warning(
+                    "Could not extract matches JSON cleanly; storing raw content.")
+                matches = content
 
         # Add matches to the current required doc and to the aggregate list
         # gefordertes_doc["matches"] = matches  # Removed to avoid duplication

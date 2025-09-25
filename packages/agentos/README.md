@@ -148,12 +148,13 @@ Dieses Repository enthält auch das Skript `matchaFlow.py`, das den Abgleich zwi
 
 - Führe das Skript über die Kommandozeile aus:
   ```
-  python matchaFlow.py project@bidder [--limit N] [--id ID] [--verbose]
+  python matchaFlow.py project@bidder [--limit N] [--id ID] [--verbose] [--test]
   ```
   - `project@bidder`: Der Identifier, z.B. `Entrümpelung@Musterfirma`.
   - `--limit N`: Optionale Begrenzung der zu verarbeitenden geforderten Dokumente (Standard: 100).
   - `--id ID`: Optionale Angabe einer spezifischen erforderlichen Dokument-ID zur Überprüfung.
   - `--verbose`: Aktiviert ausführliche Ausgabe für Debugging.
+  - `--test`: Testmodus: Erstellt Prompts aber überspringt LLM-Aufrufe.
 - Beispiel:
   ```
   python matchaFlow.py Entrümpelung@Musterfirma --limit 5
@@ -164,6 +165,11 @@ Dieses Repository enthält auch das Skript `matchaFlow.py`, das den Abgleich zwi
   python matchaFlow.py test@test --id FORM_SUB_001
   ```
   Dies überprüft nur das geforderte Dokument mit der ID `FORM_SUB_001`.
+- Beispiel im Testmodus:
+  ```
+  python matchaFlow.py test@test --test --limit 3
+  ```
+  Dies erstellt Prompts für die ersten 3 Dokumente aber ruft das LLM nicht auf.
 
 ### Ausgabe
 
