@@ -105,6 +105,8 @@ def main():
     parser.add_argument("identifier", help="project@bidder")
     parser.add_argument("--limit", type=int, default=100,
                         help="Number of required docs to process (default: 3)")
+    parser.add_argument(
+        "--id", help="Specific required document ID to check (optional)")
     args = parser.parse_args()
 
     agent = Agent(
@@ -135,6 +137,14 @@ def main():
     assert geforderte_dokumente, f"No geforderte dokumente found for project {project}"
     print(f"gDoks: {len(geforderte_dokumente)}")
     print(f"bDoks: {len(hochgeladene_dokumente['documents'])}")
+
+    if args.id:
+        geforderte_dokumente = [
+            d for d in geforderte_dokumente if d.get('id') == args.id]
+        assert geforderte_dokumente, f"No geforderte dokumente found with id {args.id}"
+        print("Das geforderte Dokument ist:")
+        print(json.dumps(
+            geforderte_dokumente[0], indent=2, ensure_ascii=False))
     # print(json.dumps(hochgeladene_dokumente, indent=2, ensure_ascii=False))
     # print(json.dumps(geforderte_dokumente, indent=2, ensure_ascii=False))
     # Build a matched list for the first N required docs
@@ -177,7 +187,7 @@ def main():
             matches = content
 
         # Add matches to the current required doc and to the aggregate list
-        gefordertes_doc["matches"] = matches
+        # gefordertes_doc["matches"] = matches  # Removed to avoid duplication
         matched_list.append({
             "gefordertes_doc": gefordertes_doc,
             "matches": matches,
