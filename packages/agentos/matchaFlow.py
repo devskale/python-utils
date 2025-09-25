@@ -2,6 +2,7 @@ import argparse
 import json
 import re
 import sys
+import logging
 from credgoo import get_api_key
 from ofs.api import list_bidder_docs_json, get_bieterdokumente_list  # type: ignore
 # Agno framework pieces (used to construct the minimal workflow)
@@ -107,7 +108,17 @@ def main():
                         help="Number of required docs to process (default: 3)")
     parser.add_argument(
         "--id", help="Specific required document ID to check (optional)")
+    parser.add_argument("--verbose", action="store_true",
+                        help="Enable verbose output for debugging")
     args = parser.parse_args()
+
+    # Set up logging
+    if args.verbose:
+        logging.basicConfig(level=logging.INFO,
+                            format='%(levelname)s: %(message)s')
+    else:
+        logging.basicConfig(level=logging.WARNING,
+                            format='%(levelname)s: %(message)s')
 
     agent = Agent(
         model=VLLM(
@@ -155,7 +166,8 @@ def main():
     for i, gefordertes_doc in enumerate(geforderte_dokumente, start=1):
         if limit and i > limit:
             break
-        print(f"{i}/{len(geforderte_dokumente)} - {gefordertes_doc.get('bezeichnung')}")
+        logging.info(
+            f"{i}/{len(geforderte_dokumente)} - {gefordertes_doc.get('bezeichnung')}")
         # ask llm if bieterdoc matches a gefordertes_doc
         # if yes, print match, if no, print no match
         mPrompt = findMatches(identifier,
@@ -164,9 +176,10 @@ def main():
         preview = mPrompt[:100].replace("\n", " ")
         if len(mPrompt) > 100:
             preview += "..."
-        print(f"Prompt preview: {preview}")
-        print(f"gDok: {str(gefordertes_doc)[:100]}...")
-        print(f"hDok: {str(hochgeladene_dokumente['documents'])[:400]}...")
+        logging.info(f"Prompt preview: {preview}")
+        logging.info(f"gDok: {str(gefordertes_doc)[:100]}...")
+        logging.info(
+            f"hDok: {str(hochgeladene_dokumente['documents'])[:400]}...")
         response = agent.run(
             mPrompt,
             stream=False,  # capture final text only
@@ -183,7 +196,8 @@ def main():
         elif isinstance(result, list):
             matches = result
         else:
-            print("Warning: Could not extract matches JSON cleanly; storing raw content.")
+            logging.warning(
+                "Could not extract matches JSON cleanly; storing raw content.")
             matches = content
 
         # Add matches to the current required doc and to the aggregate list
@@ -209,55 +223,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-''' HOCHGELADENE DOKUMENTE JSON BEISPIEL
-{
-  "project": "Entrümpelung",
-  "bidder": "Musterfirma",
-  "documents": [
-    {
-      "name": "AN Entrümpel pp d12.pdf",
-      "path": ".dir/Entrümpelung/B/Musterfirma/AN Entrümpel pp d12.pdf",
-      "size": 168821,
-      "type": ".pdf",
-      "parsers": {
-        "det": [
-          "marker",
-          "md",
-          "ocr",
-          "docling",
-          "easyocr",
-          "llamaparse",
-          "pdfplumber"
-        ],
-        "default": "docling",
-        "status": ""
-      },
-      "meta": {
-        "name": "Umsatzzahlen_Bieter",
-        "kategorie": "Nachweis Leistungsfähigkeit",
-        "begründung": "Enthält explizit Umsatzzahlen pro Projekt oder Auftrag, was typisch für Nachweis Leistungsfähigkeit ist."
-      }
-    },
-    '''
-
-''' GEFORDERTE DOKUMENTE BEISPIEL
-[
-  {
-    "kategorie": "Pflichtdokument",
-    "bezeichnung": "Angebotshauptteil der Vergabeplattform",
-    "beilage_nummer": null,
-    "beschreibung": "Ausgefüllter und signierter Hauptteil des Angebots über die elektronische Vergabeplattform, in welchem der Gesamtpreis einzutragen ist.",
-    "unterzeichnung_erforderlich": true,
-    "fachliche_pruefung": false
-  },
-  {
-    "kategorie": "Bedarfsfall",
-    "bezeichnung": "Erklärung für Bieter- und Arbeitsgemeinschaften",
-    "beilage_nummer": "Beilage 01",
-    "beschreibung": "Erforderlich bei Bieter- oder Arbeitsgemeinschaften zur Auflistung der Mitglieder, Gründe für die Bildung und Aufgaben der einzelnen Unternehmer. Muss von sämtlichen Mitgliedern rechtsgültig elektronisch unterfertigt werden.",
-    "unterzeichnung_erforderlich": true,
-    "fachliche_pruefung": false
-  },
-'''

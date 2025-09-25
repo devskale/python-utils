@@ -34,6 +34,7 @@ def get_nested_value(data, key_path):
             return None
     return current
 
+
 def kontextBuilder(identifier, promptid, **kwargs):
     """
     A utility function to load a prompt template, inject OFS data for @projekt.KEY and @audit.KEY patterns, and evaluate {expressions} as f-strings.
@@ -57,7 +58,8 @@ def kontextBuilder(identifier, promptid, **kwargs):
         """Replace @projekt.KEY or @audit.KEY with JSON value."""
         full_match = match.group(0)
         source = match.group(1)  # 'projekt' or 'audit'
-        key_path = match.group(2)  # the key path like 'meta' or 'meta.schema_version'
+        # the key path like 'meta' or 'meta.schema_version'
+        key_path = match.group(2)
 
         if source == 'projekt':
             data = projekt_data
@@ -72,22 +74,26 @@ def kontextBuilder(identifier, promptid, **kwargs):
 
         return json.dumps(value, indent=2, ensure_ascii=False)
 
-    prompt_path = os.path.join(os.path.dirname(__file__), "prompts", f"{promptid}.md")
+    prompt_path = os.path.join(os.path.dirname(
+        __file__), "prompts", f"{promptid}.md")
     try:
         with open(prompt_path, 'r', encoding='utf-8') as f:
             template = f.read()
     except FileNotFoundError:
-        raise ValueError(f"Prompt template '{promptid}.md' not found in prompts directory.")
+        raise ValueError(
+            f"Prompt template '{promptid}.md' not found in prompts directory.")
 
     # Evaluate as f-string first to interpolate {expressions}
-    locals_dict = {"projekt_data": projekt_data, "audit_data": audit_data, **kwargs}
+    locals_dict = {"projekt_data": projekt_data,
+                   "audit_data": audit_data, **kwargs}
     template = evaluate_fstring(template, **locals_dict)
 
     # Then inject @projekt.KEY and @audit.KEY data
     template = re.sub(r'@(\w+)\.([^@\s]+)', replace_placeholder, template)
 
-    print(f"Identifier: {identifier}")
-    print(f"Kwargs: {kwargs}")
-    print(f"Loaded, injected, and evaluated prompt template for {identifier} using {promptid}:")
-    print(template)
+    # print(f"Identifier: {identifier}")
+    # print(f"Kwargs: {kwargs}")
+    print(
+        f"Loaded, injected, and evaluated prompt template for {identifier} using {promptid}:")
+    # print(template)
     return template
