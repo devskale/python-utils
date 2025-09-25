@@ -1,0 +1,5 @@
+{
+  "BASE_DIR": "../../.dir",
+  "INDEX_FILE": ".ofs.index.json",
+  "METADATA_SUFFIX": ".meta.json"
+}

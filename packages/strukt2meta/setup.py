@@ -20,6 +20,10 @@ setup(
     python_requires=">=3.8",
     install_requires=[
         "requests",  # Dependency for AI model access
+        "uniinfer @ file:../uniinfer",
+        "credgoo @ file:../credgoo",
+        "ofs @ file:../ofs",
+        "json_repair",
     ],
     entry_points={
         'console_scripts': [

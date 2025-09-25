@@ -1,0 +1,7 @@
+agno
+-e ../ofs
+-e ../credgoo
+-e ../strukt2meta
+-e ../uniinfer
+json_repair
+openai

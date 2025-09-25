@@ -17,8 +17,6 @@ try:
 except Exception:  # pragma: no cover - optional dependency
     repair_json = None  # type: ignore
 
-
-
  # ---------------- Environment / Model selection -----------------
 PROVIDER = "tu"
 BASE_URL = "https://aqueduct.ai.datalab.tuwien.ac.at/v1"
@@ -27,7 +25,7 @@ MODEL = "glm-4.5-355b"
 api_key = get_api_key(PROVIDER)
 
 
-def findMatches(identifier, geforderte_dokumente, hochgeladene_docs, runner = 1):
+def findMatches(identifier, geforderte_dokumente, hochgeladene_docs, runner=1):
     return kontextBuilder(identifier, "matchgDok", geforderte_dokumente=geforderte_dokumente, hochgeladene_docs=hochgeladene_docs)
 
 
@@ -102,9 +100,11 @@ def main():
     - Calls ofs.api.list_bidder_docs_json(project, bidder)
     - Prints the returned JSON nicely
     """
-    parser = argparse.ArgumentParser(description="List bidder docs JSON for project@bidder")
+    parser = argparse.ArgumentParser(
+        description="List bidder docs JSON for project@bidder")
     parser.add_argument("identifier", help="project@bidder")
-    parser.add_argument("--limit", type=int, default=100, help="Number of required docs to process (default: 3)")
+    parser.add_argument("--limit", type=int, default=100,
+                        help="Number of required docs to process (default: 3)")
     args = parser.parse_args()
 
     agent = Agent(
@@ -113,11 +113,10 @@ def main():
             api_key=api_key,
             id=MODEL,
             max_retries=3,
-            #stream=True,
+            # stream=True,
         ),
         tools=[],
     )
-
 
     identifier = args.identifier
     if "@" not in identifier:
@@ -126,16 +125,18 @@ def main():
     project, bidder = identifier.split("@", 1)
 
     try:
-        hochgeladene_dokumente = list_bidder_docs_json(project, bidder, include_metadata=False)
+        hochgeladene_dokumente = list_bidder_docs_json(
+            project, bidder, include_metadata=False)
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)
 
     geforderte_dokumente = get_bieterdokumente_list(project)
+    assert geforderte_dokumente, f"No geforderte dokumente found for project {project}"
     print(f"gDoks: {len(geforderte_dokumente)}")
     print(f"bDoks: {len(hochgeladene_dokumente['documents'])}")
-    #print(json.dumps(hochgeladene_dokumente, indent=2, ensure_ascii=False))
-    #print(json.dumps(geforderte_dokumente, indent=2, ensure_ascii=False))
+    # print(json.dumps(hochgeladene_dokumente, indent=2, ensure_ascii=False))
+    # print(json.dumps(geforderte_dokumente, indent=2, ensure_ascii=False))
     # Build a matched list for the first N required docs
     limit = max(0, int(args.limit))
     matched_list = []
@@ -148,7 +149,7 @@ def main():
         # ask llm if bieterdoc matches a gefordertes_doc
         # if yes, print match, if no, print no match
         mPrompt = findMatches(identifier,
-              gefordertes_doc, hochgeladene_dokumente, i)
+                              gefordertes_doc, hochgeladene_dokumente, i)
         # Show only the first 100 characters of the prompt for preview
         preview = mPrompt[:100].replace("\n", " ")
         if len(mPrompt) > 100:
@@ -164,7 +165,8 @@ def main():
         )
         # Parse the response into JSON (clean) and attach to current required doc
         content = getattr(response, "content", response)
-        result = extract_json_clean(content if isinstance(content, str) else str(content))
+        result = extract_json_clean(
+            content if isinstance(content, str) else str(content))
         matches = None
         if isinstance(result, dict) and "matches" in result:
             matches = result["matches"]
@@ -193,6 +195,7 @@ def main():
         print(f"Saved matched list to {out_file}")
     except Exception as e:
         print(f"Error saving matched list to {out_file}: {e}")
+
 
 if __name__ == "__main__":
     main()
