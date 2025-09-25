@@ -4,8 +4,10 @@ import os
 import re
 import sys
 import logging
+from datetime import datetime
 from credgoo import get_api_key
 from ofs.api import list_bidder_docs_json, get_bieterdokumente_list, get_kriterien_audit_json  # type: ignore
+from ofs.json_manager import update_json_file, update_audit_json
 # Agno framework pieces (used to construct the minimal workflow)
 from agno.agent import Agent
 from agno.models.vllm import VLLM
@@ -203,6 +205,9 @@ def main():
     print(f"gDoks: {len(geforderte_dokumente)}")
     print(f"bDoks: {len(hochgeladene_dokumente['documents'])}")
 
+    # Load audit for logging match events
+    audit = get_kriterien_audit_json(project, bidder)
+
     if args.id:
         geforderte_dokumente = [
             d for d in geforderte_dokumente if d.get('id') == args.id]
@@ -270,9 +275,34 @@ def main():
             "matches": matches,
         })
 
+        # Log match event to audit.json verlauf
+        if not args.test:
+            bdok = next(
+                (b for b in audit["bdoks"] if b["id"] == gefordertes_doc["id"]), None)
+            if bdok:
+                verlauf = bdok["audit"]["verlauf"]
+                event = {
+                    "zeit": datetime.now().isoformat(),
+                    "ereignis": "match",
+                    "quelle_status": bdok["audit"].get("status"),
+                    "ergebnis": f"Found {len(matches) if isinstance(matches, list) else 'N/A'} matches",
+                    "akteur": "matchaFlow"
+                }
+                verlauf.append(event)
+                # Add matches to the bdok
+                bdok["matches"] = matches
+
     # Print the aggregated matched list for the processed items
     print("\nMatched list (first {} items):".format(limit or len(matched_list)))
     print(json.dumps(matched_list, indent=2, ensure_ascii=False))
+
+    # Save match events to audit.json
+    if not args.test:
+        try:
+            update_audit_json(project, bidder, "bdoks", audit["bdoks"])
+            print("Updated audit.json with match events")
+        except Exception as e:
+            print(f"Error updating audit.json: {e}")
 
     # Save matched list to file
     os.makedirs("logs", exist_ok=True)

@@ -40,6 +40,8 @@ def read_json_file(project: str, filename: str, key_path: Optional[str] = None) 
         raise ValueError(
             f"Unsupported filename '{filename}'. Supported files: {supported_files}")
 
+    json_file_path: str = ""
+
     # Get project path
     try:
         project_path = get_path(project)
@@ -200,11 +202,13 @@ def update_json_file(project: str, filename: str, key_path: str, value: Any,
     # Write atomically (write to temp file, then rename)
     temp_file_path = f"{json_file_path}.tmp"
     try:
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
         with open(temp_file_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
         # Atomic rename
-        os.rename(temp_file_path, json_file_path)
+        shutil.move(temp_file_path, json_file_path)
         return True
 
     except Exception as e:
@@ -215,7 +219,7 @@ def update_json_file(project: str, filename: str, key_path: str, value: Any,
 
 
 def update_audit_json(project: str, bidder: str, key_path: str, value: Any,
-                       create_backup: bool = False) -> bool:
+                      create_backup: bool = False) -> bool:
     """
     Update a specific key in audit.json for a specific bidder.
 
@@ -269,11 +273,13 @@ def update_audit_json(project: str, bidder: str, key_path: str, value: Any,
     # Write atomically (write to temp file, then rename)
     temp_file_path = f"{audit_file_path}.tmp"
     try:
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
         with open(temp_file_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
         # Atomic rename
-        os.rename(temp_file_path, audit_file_path)
+        shutil.move(temp_file_path, audit_file_path)
         return True
 
     except Exception as e:
@@ -298,7 +304,7 @@ def _get_nested_value(data: Dict[str, Any], key_path: str) -> Any:
         KeyError: If the path doesn't exist
     """
     keys = key_path.split('.')
-    current = data
+    current: Any = data
 
     for key in keys:
         # Handle array indices
@@ -332,7 +338,7 @@ def _set_nested_value(data: Dict[str, Any], key_path: str, value: Any) -> None:
         ValueError: If the path is invalid or cannot be set
     """
     keys = key_path.split('.')
-    current = data
+    current: Any = data
 
     # Navigate to the parent of the target key
     for key in keys[:-1]:
