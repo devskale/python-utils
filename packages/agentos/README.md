@@ -128,21 +128,41 @@ Bei Fragen zur Anpassung der Prompts, zur Reduktion der Token‑Kosten oder zur 
 
 ## 11) MatchaFlow — Automatischer Dokumentenabgleich mit LLM
 
-Dieses Repository enthält auch das Skript `matchaFlow.py`, das den Abgleich zwischen geforderten Dokumenten (aus der Projektbeschreibung) und hochgeladenen Bieter-Dokumenten automatisiert. Es nutzt ein LLM, um die besten Übereinstimmungen zu finden, basierend auf Metadaten wie Name und Kategorie der Dokumente.
+Dieses Repository enthält das Skript `matchaFlow.py`, das den automatischen Abgleich zwischen geforderten Dokumenten (aus der Projektbeschreibung oder Audit-JSON) und hochgeladenen Bieter-Dokumenten durchführt. Es nutzt die Agno-Framework mit einem VLLM-Modell (z.B. "glm-4.5-355b" über TU Wien's Aqueduct-Endpunkt), um die besten Übereinstimmungen zu finden, basierend auf Metadaten wie Name, Kategorie und Beschreibung der Dokumente. Das Skript ist Teil eines agentischen Workflows für Vergabeprozesse und unterstützt Batch-Verarbeitung mit Logging und Audit-Trails.
 
-### Funktionsweise
+### Überblick
 
-- Das Skript lädt die Liste der geforderten Dokumente über `get_bieterdokumente_list(project)`.
-- Es holt die hochgeladenen Bieter-Dokumente über `list_bidder_docs_json(project, bidder, include_metadata=True)`.
-- Für jedes geforderte Dokument wird ein LLM-Prompt erstellt, der die Metadaten der hochgeladenen Dokumente enthält.
-- Das LLM gibt eine Liste der besten passenden Dokumente zurück, inklusive Begründung.
-- Die Ergebnisse werden in einer JSON-Datei gespeichert: `matcha.{project}.{bidder}.json`.
+Das Skript zielt darauf ab, Bieter-Dokumente gegen eine Liste erforderlicher Dokumente zu matchen, um den Prüfungsprozess in Vergabeverfahren zu automatisieren. Es integriert sich mit dem OFS-System für Datenabruf und verwendet LLM-basierte Analyse für präzise Matches. Ergebnisse werden in JSON-Dateien gespeichert und in die Audit-JSON eingetragen, um den Verlauf zu dokumentieren.
 
-### Voraussetzungen
+### Schlüssel-Funktionen
 
-- Dieselben wie oben (Python 3.8+, OFS, LLM-Zugang).
-- Zusätzlich: Installation von `credgoo` und `agno` (für LLM-Integration).
-- Optional: `json_repair` für robustes JSON-Parsing.
+- **`findMatches`**: Wrapper-Funktion, die `kontextBuilder` aufruft, um Prompts für den Dokumentenabgleich zu generieren.
+- **`extract_json_clean`**: Robuste JSON-Parsing-Funktion für LLM-Ausgaben, mit Fallbacks wie direkter Parsing, Extraktion aus Code-Blöcken, partieller Extraktion und optionaler Verwendung von `json_repair` zur Reparatur fehlerhafter JSON-Strings.
+- **`get_bdoks_from_audit`**: Lädt erforderliche Dokumente aus der Audit-JSON, filtert nach Priorität und transformiert sie in das erwartete Format (mit Fallback auf Projekt-JSON, falls Audit leer ist).
+
+### Haupt-Workflow
+
+1. **Argument-Parsing**: Akzeptiert einen `project@bidder`-Identifier, optionale Limits, spezifische Dokument-IDs, Verbose-Modus und Test-Modus.
+2. **Daten-Abruf**:
+   - Holt hochgeladene Bieter-Dokumente via `list_bidder_docs_json`.
+   - Holt erforderliche Dokumente aus Audit-JSON (mit Fallback auf Projekt-JSON).
+3. **Matching-Schleife**:
+   - Iteriert durch erforderliche Dokumente (bis zu einem Limit).
+   - Überspringt, wenn Matches bereits in Audit vorhanden sind.
+   - Generiert einen Prompt via `findMatches`.
+   - Führt den Prompt durch den Agno-Agent aus (außer im Test-Modus).
+   - Parst die LLM-Antwort in Matches.
+   - Loggt Ereignisse in die Audit-JSON's "verlauf" (Historie).
+4. **Ausgabe**: Druckt und speichert die gematchte Liste in einer JSON-Datei im `logs`-Verzeichnis.
+
+### Abhängigkeiten
+
+- Python 3.8+
+- OFS-Paket (für API-Zugriffe wie `list_bidder_docs_json`, `get_kriterien_audit_json`, `update_audit_json`)
+- Agno-Framework (für Agent und VLLM-Modell-Integration)
+- `credgoo`-Paket (für API-Key-Verwaltung)
+- `kontextBuilder`-Modul (für Prompt-Generierung)
+- Optional: `json_repair`-Bibliothek (für robustes JSON-Parsing)
 
 ### Verwendung
 
@@ -159,7 +179,7 @@ Dieses Repository enthält auch das Skript `matchaFlow.py`, das den Abgleich zwi
   ```
   python matchaFlow.py Entrümpelung@Musterfirma --limit 5
   ```
-  Dies verarbeitet die ersten 5 geforderten Dokumente und speichert die Matches in `matcha.Entrümpelung.Musterfirma.json`.
+  Dies verarbeitet die ersten 5 geforderten Dokumente und speichert die Matches in `logs/matcha.Entrümpelung.Musterfirma.json`.
 - Beispiel mit spezifischer ID:
   ```
   python matchaFlow.py test@test --id FORM_SUB_001
@@ -202,6 +222,7 @@ Dieses Repository enthält auch das Skript `matchaFlow.py`, das den Abgleich zwi
 - Bei Fehlern (z.B. fehlende API-Keys) wird das Skript abgebrochen.
 - Für große Dokumentlisten kann `--limit` verwendet werden, um die Verarbeitung zu beschleunigen.
 - Die LLM-Ergebnisse sind assistierend und sollten manuell validiert werden.
+- Das Skript aktualisiert die Audit-JSON mit Match-Ereignissen für Nachverfolgbarkeit.
 
 ## AuditFlow — Automatisierte Kriterienbewertung mit LLM
 

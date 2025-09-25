@@ -58,7 +58,7 @@ def get_ausschreibungsinfo(project: str) -> str:
                 projekt_name = ausschreibungsgegenstand.split(',')[0].strip()
             else:
                 projekt_name = ausschreibungsgegenstand[:50] + ('...' if len(ausschreibungsgegenstand) > 50 else '')
-        
+
         beschreibung = meta.get('ausschreibungsgegenstand', 'No description available')
         referenznummer = meta.get('aktenzeichen', 'Unknown')
         datum = meta.get('datum', 'Unknown')
@@ -93,7 +93,7 @@ def findeDoks(id, kriteriumbeschreibung, doclist, runner = 1):
     prompt = f"""
 Du bist ein hilfreicher Assistent, der dabei hilft, Ausschreibungskriterien zu überprüfen und passende Dokumente zu finden.
 
-Wenn nicht anders angegeben gilt: 
+Wenn nicht anders angegeben gilt:
 - das ausschreibende Unternehmen ist die "Wiener Wohnen Hausbetreuung Gmbh", ein Unternehmen aus Österreich.
 - der Bieter ist ein Unternehmen aus Österreich.
 - der Bieter ein Einzalbieter
@@ -110,11 +110,11 @@ Das zu analysierende Kriterium ist:
 Die liste mit den hochgeladenen Bieterdokumenten ist:
 {json.dumps(doclist, indent=2, ensure_ascii=False)}
 
-gib eine liste der am besten passenden hochgeladenen Dokumente zurück, die für die Bewertung des Kriteriums relevant sind. 
+gib eine liste der am besten passenden hochgeladenen Dokumente zurück, die für die Bewertung des Kriteriums relevant sind.
 Sollte kein Dokument passen, gib eine leere Liste zurück.
 "matches": [
     {{
-    "Dateiname": "...",    # der Dateiname des hochgeladenen Dokuments 
+    "Dateiname": "...",    # der Dateiname des hochgeladenen Dokuments
      "Name": "...",         # der Name aus meta.name des hochgeladenen Dokuments
      "Kategorie": "...",    # die Kategorie aus meta.kategorie des hochgeladenen Dokuments
      "Begründung": "..."}},  # die Begründung für die Zuordnung
@@ -219,7 +219,8 @@ def main():
     """
     parser = argparse.ArgumentParser(description="List bidder docs JSON for project@bidder")
     parser.add_argument("identifier", help="project@bidder")
-    parser.add_argument("--limit", type=int, default=10, help="Number of required docs to process (default: 3)")
+    parser.add_argument("--limit", type=int, default=10, help="Number of criteria to process (default: 10)")
+    parser.add_argument("--id", help="Specific criterion ID to check (optional)")
     parser.add_argument("--out", type=str, default=None, help="Optional path to write JSON results (default: ./<project>.<bidder>.assessments.json)")
     args = parser.parse_args()
 
@@ -258,6 +259,12 @@ def main():
     # Container for JSON output per Kriterium
     ergebnisse = []
 
+    if args.id:
+        auditliste['kriterien'] = [k for k in auditliste['kriterien'] if k.get('id') == args.id]
+        if not auditliste['kriterien']:
+            print(f"Criterion {args.id} not found, skipping analysis")
+            sys.exit(0)
+
     # loop through audit kriterien and print index and bezeichnung
     for i, audit_kriterium in enumerate(auditliste['kriterien'], start=1):
         if limit and i > limit:
@@ -282,7 +289,7 @@ def main():
         # Parse the response into JSON (clean) and extract the matches array
         content = getattr(response, "content", response)
         match_result = extract_json_clean(content if isinstance(content, str) else str(content))
-        
+
         # Handle different possible return types from extract_json_clean
         if isinstance(match_result, list):
             # Direct matches array
@@ -293,7 +300,7 @@ def main():
         else:
             # None or other
             matches = []
-            
+
         # if matches array is present, print matches list
         if not matches:
             print("  Keine passenden Dokumente gefunden.")
@@ -370,14 +377,14 @@ def main():
         # Parse the response into JSON (clean) and extract the matches array
         content = getattr(response, "content", response)
         assessment_result = extract_json_clean(content if isinstance(content, str) else str(content))
-        
+
         # assessment_result should be a dict with erfüllt and begründung keys
         if not isinstance(assessment_result, dict):
             assessment_result = {
                 "erfüllt": "nicht beurteilbar",
                 "begründung": f"Fehler beim Parsen der Antwort: {assessment_result}"
             }
-            
+
         print("---- RESPONSE ----")
         print(json.dumps(assessment_result, indent=2, ensure_ascii=False))
         # Persist per-kriterium entry
@@ -391,7 +398,8 @@ def main():
     # ---------------------------------------------------------------------------------------------
     # Write aggregated results to JSON
     # ---------------------------------------------------------------------------------------------
-    out_path = args.out or os.path.join(os.path.dirname(__file__), f"{project}.{bidder}.assessments.json")
+    os.makedirs("logs", exist_ok=True)
+    out_path = args.out or os.path.join("logs", f"{project}.{bidder}.assessments.json")
     payload = {
         "project": project,
         "bidder": bidder,
