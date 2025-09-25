@@ -5,7 +5,7 @@ import re
 import sys
 import logging
 from credgoo import get_api_key
-from ofs.api import list_bidder_docs_json, get_bieterdokumente_list  # type: ignore
+from ofs.api import list_bidder_docs_json, get_bieterdokumente_list, get_kriterien_audit_json  # type: ignore
 # Agno framework pieces (used to construct the minimal workflow)
 from agno.agent import Agent
 from agno.models.vllm import VLLM
@@ -95,7 +95,7 @@ def extract_json_clean(text: str):
     return None
 
 
-def get_bdoks_from_audit(project, bidder):
+def get_bdoks_from_audit(project, bidder, specific_id=None):
     """
     Read the bdoks from audit.json for the given project and bidder,
     and transform them into the geforderte_dokumente format.
@@ -103,6 +103,7 @@ def get_bdoks_from_audit(project, bidder):
     Args:
         project (str): The project name
         bidder (str): The bidder name
+        specific_id (str, optional): If provided, include this id even if prio <= 0
 
     Returns:
         list: List of geforderte dokumente with id, bezeichnung, kategorie, beschreibung, etc.
@@ -115,8 +116,15 @@ def get_bdoks_from_audit(project, bidder):
         return []
 
     geforderte_dokumente = []
-    for bdok in bdoks:
-        # Transform bdok to gefordertes_doc format
+    for i, bdok in enumerate(bdoks):
+        prio = bdok.get('prio')
+        if prio is None:
+            # Set default prio to 1 (in memory, not persisted)
+            prio = 1
+
+        if prio <= 0:
+            # Skip documents with prio 0 or negative
+            continue        # Transform bdok to gefordertes_doc format
         # bdok has 'id' and 'quelle' with the details
         gefordertes_doc = {
             'id': bdok.get('id'),
@@ -126,7 +134,7 @@ def get_bdoks_from_audit(project, bidder):
             'fachliche_pruefung': bdok.get('quelle', {}).get('fachliche_pruefung'),
             # Include audit info if needed
             'status': bdok.get('audit', {}).get('status'),
-            'prio': bdok.get('audit', {}).get('prio'),
+            'prio': prio,
             'bewertung': bdok.get('audit', {}).get('bewertung'),
         }
         geforderte_dokumente.append(gefordertes_doc)
@@ -187,7 +195,7 @@ def main():
         sys.exit(1)
 
     # geforderte_dokumente = get_bieterdokumente_list(project)
-    geforderte_dokumente = get_bdoks_from_audit(project, bidder)
+    geforderte_dokumente = get_bdoks_from_audit(project, bidder, args.id)
     if not geforderte_dokumente:
         # Fallback to projekt.json if audit bdoks is empty
         geforderte_dokumente = get_bieterdokumente_list(project)
@@ -198,7 +206,10 @@ def main():
     if args.id:
         geforderte_dokumente = [
             d for d in geforderte_dokumente if d.get('id') == args.id]
-        assert geforderte_dokumente, f"No geforderte dokumente found with id {args.id}"
+        if not geforderte_dokumente:
+            print(
+                f"Document {args.id} has prio <= 0 or not found, skipping analysis")
+            sys.exit(0)
         print("Das geforderte Dokument ist:")
         print(json.dumps(
             geforderte_dokumente[0], indent=2, ensure_ascii=False))
