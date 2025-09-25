@@ -228,6 +228,15 @@ def main():
     for i, gefordertes_doc in enumerate(geforderte_dokumente, start=1):
         if limit and i > limit:
             break
+
+        # Check if matches already exist for this document
+        bdok = next(
+            (b for b in audit["bdoks"] if b["id"] == gefordertes_doc["id"]), None)
+        if bdok and "matches" in bdok:
+            print(
+                f"Skipping {gefordertes_doc['id']} - matches already exist")
+            continue
+
         logging.info(
             f"{i}/{len(geforderte_dokumente)} - {gefordertes_doc.get('bezeichnung')}")
         # ask llm if bieterdoc matches a gefordertes_doc
@@ -277,8 +286,6 @@ def main():
 
         # Log match event to audit.json verlauf
         if not args.test:
-            bdok = next(
-                (b for b in audit["bdoks"] if b["id"] == gefordertes_doc["id"]), None)
             if bdok:
                 verlauf = bdok["audit"]["verlauf"]
                 event = {
