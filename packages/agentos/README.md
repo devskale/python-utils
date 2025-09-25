@@ -1,6 +1,7 @@
 # Agentic Workflows für Vergabeprozesse
 
 ## Vorraussetzungen
+
 - Python 3.8+
 - OFS (Opinionated Filesystem) python package installiert
 - LLM-Zugang (API-Key) konfiguriert über Umgebungsvariablen / Secrets
@@ -24,37 +25,42 @@ Dies ist ein Agent, der:
 - Gibt eine Zusammenfassung aus
 
 Nutzt:
+
 - ofs package
 - uniinfer package
 - credgoo package
 
 ## DokDa Agent — Detaillierter Workflow zur Kriterien-Lesung und Dokumentenbewertung
 
-*Hinweis: Dies ist eine Playground-Implementierung mit Terminal-UI für interaktive Kriterienprüfung. Die Produktionsskripte sind MatchaFlow und AuditFlow.*
+_Hinweis: Dies ist eine Playground-Implementierung mit Terminal-UI für interaktive Kriterienprüfung. Die Produktionsskripte sind MatchaFlow und AuditFlow._
 
 Dieses Repository enthält den "DokDa"-Agent (`agentos/agentBieterDokDa.py`), der Bieter‑Dokumente gegen Vergabe‑Kriterien automatisch prüft und bewertet. Der Agent kombiniert Metadaten‑Analyse, eine kleine Terminal‑UI und LLM‑Aufrufe. Im Folgenden wird der Ablauf Schritt für Schritt beschrieben.
 
-1) Vorbereitung und Datenzugriff
+1. Vorbereitung und Datenzugriff
+
 - Projektdaten und Bieter werden als Strings in `Projekt` und `Bieter` definiert.
 - Die Bieter-Dokumentliste wird über die OFS‑API geladen:
   - `BieterDokumente = docs_list(f"{Projekt}@{Bieter}", meta=True)`
   - Audit-IDs / Kriterien-IDs werden via `list_kriterien_audit_ids(Projekt, Bieter)` geladen.
 - Dokumentinhalte werden bei Bedarf mit `read_document` über die Funktion `load_document_content(filename, max_chars)` geladen (mit Trunkierung für sehr lange Texte).
 
-2) Kriterien laden / darstellen
+2. Kriterien laden / darstellen
+
 - Die Funktion `build_criteria(ids_cycle)` erzeugt eine Liste von Kriterienobjekten. Für jedes Kriterium wird die Beschreibung und ggf. die erwarteten Dokument‑Hinweise über `get_kriterium_description(Projekt, cid)` geholt.
 - Jedes Kriterium enthält:
   - `id`, `name`, `beschreibung`, `anforderung`
   - ggf. `dokumente` (Hinweise auf erwartete Formular‑/Beilagenamen)
 
-3) Interaktive Auswahl (TUI)
+3. Interaktive Auswahl (TUI)
+
 - Benutzer starten die textbasierte UI über `tui(stdscr, criteria)`.
 - In der Liste navigierst du mit ↑/↓, Enter öffnet die Analyseansicht eines Kriteriums.
 - Die UI-Funktionen sind:
   - `draw_list`: zeichnet die Kriteriums‑Übersicht
   - `show_results`: führt die Analyse eines ausgewählten Kriteriums aus und zeigt Ergebnisse
 
-4) Finden relevanter Dokumente (LLM‑gestützte Metadatenanalyse)
+4. Finden relevanter Dokumente (LLM‑gestützte Metadatenanalyse)
+
 - `llm_find_relevant_documents(kriterium, projektinfo, listing, ...)`:
   - Baut ein kompaktes JSON‑Kontextobjekt mit:
     - `projektbeschreibung` (Kurzinfo zum Projekt)
@@ -63,20 +69,22 @@ Dieses Repository enthält den "DokDa"-Agent (`agentos/agentBieterDokDa.py`), de
   - Wichtig: In der Standardkonfiguration wird hier NUR mit Metadaten gearbeitet (Inhalte nicht berücksichtigt), um eine erste Relevanzabschätzung durch das LLM zu bekommen.
   - Das System‑Prompt fordert das LLM auf, ausschließlich JSON mit folgendem Schema zurückzugeben:
     - {
-        "relevante_dokumente": [
-          { "filename": string, "relevance": number (0-1), "begruendung": string, "abgedeckte_aspekte": [...], "fehlende_aspekte": [...] }
-        ],
-        "zusammenfassung": string
+      "relevante_dokumente": [
+      { "filename": string, "relevance": number (0-1), "begruendung": string, "abgedeckte_aspekte": [...], "fehlende_aspekte": [...] }
+      ],
+      "zusammenfassung": string
       }
   - Das Ergebnis wird dann von `parse_llm_output` eingelesen und nach `relevance` sortiert.
 
-5) Anzeige der Ergebnisse
+5. Anzeige der Ergebnisse
+
 - `show_results` zeigt:
   - Die zusammenfassende Begründung (`zusammenfassung`) falls vorhanden
   - Die Liste der gefundenen Dokumente mit Relevanzscore und Metadaten
 - In der Anzeige kannst du ein einzelnes Dokument auswählen und mit `b` (bewerten) zur tiefergehenden, inhaltlichen Prüfung wechseln.
 
-6) Detaillierte Dokumentbewertung (Inhaltliche Prüfung)
+6. Detaillierte Dokumentbewertung (Inhaltliche Prüfung)
+
 - `evaluate_and_show(stdscr, crit, filename)`:
   - Lädt den dokument‑Text via `load_document_content`
   - Baut ein Evaluations‑Kontextobjekt:
@@ -85,7 +93,8 @@ Dieses Repository enthält den "DokDa"-Agent (`agentos/agentBieterDokDa.py`), de
     - { "bewertung": ("erfüllt"|"teilweise erfüllt"|"nicht erfüllt"|"unbekannt"), "begruendung": "..." }
   - Ergebnis wird angezeigt (Bewertung + Begründung).
 
-7) Wichtige Implementierungsdetails und Hinweise
+7. Wichtige Implementierungsdetails und Hinweise
+
 - Metadatenbasierte Vorselektion: Die erste LLM‑Abfrage arbeitet primär mit Metadaten (z.B. `meta.name`, `meta.kategorie`, `meta.begründung`), das beschleunigt Entscheidungen und reduziert Token‑Kosten.
 - Inhaltsprüfung ist optional und wird nur für ausgewählte Dokumente ausgeführt, da sie teurer ist.
 - Standard‑Antwortschema des LLM ist JSON; die Codebasis versucht, Ausgaben robust zu parsen (`json_cleanup=True`, Fallbacks).
@@ -96,18 +105,21 @@ Dieses Repository enthält den "DokDa"-Agent (`agentos/agentBieterDokDa.py`), de
   - Laden von Dokumenten und LLM‑Calls sind in try/except‑Blöcken gekapselt und liefern verständliche Fallback‑Strings.
   - Wenn das LLM keine passenden Dokumente findet, wird eine leere Ergebnisliste gezeigt.
 
-8) Sicherheit, Grenzen und Best Practices
+8. Sicherheit, Grenzen und Best Practices
+
 - Vertrauliche Dokumente: Achte beim Einsatz von externen LLM‑Anbietern auf Datenschutz / DSGVO. Sende keine sensiblen Daten, es sei denn deine LLM‑Verträge erlauben es.
 - Prompt‑Engineering: Die Qualität der Einschätzung hängt stark vom Prompt und den gelieferten Metadaten ab. Anpassungen im System‑Prompt verbessern Genauigkeit.
 - Token‑Kosten: Begrenze `max_docs`, `max_chars_total` und `max_chars_per_doc` je nach Budget.
 - Validierung: Die LLM‑Einschätzungen sind assistierend — rechtlich relevante Bewertungen sollten weiterhin durch Menschen geprüft werden.
 
-9) Schnellstart
+9. Schnellstart
+
 - Setze die Umgebungsvariablen (`PROVIDER`, `BASE_URL`, ggf. `MODEL`) und den API‑Key wie in deiner Umgebung üblich.
 - Starte ein kleines Python‑TUI‑Programm, das `build_criteria(...)` nutzt, um die Liste zu erzeugen und dann `tui(stdscr, criteria)` aufzurufen (z. B. mit `curses.wrapper(tui, criteria)`).
 - Wähle ein Kriterium, sieh dir die vorgeschlagenen Dokumente an und führe bei Bedarf die inhaltliche Prüfung durch.
 
-10) Weiterführende Anpassungen
+10. Weiterführende Anpassungen
+
 - Du kannst die Gewichtung von Dokumenten verbessern, indem du im Kontext zusätzliche Metadaten hinzufügst (Dateityp, Upload‑Datum, Seitenanzahl).
 - Für höhere Präzision kannst du spezialisierte System‑Prompts oder ein feingetuntes Modell verwenden.
 - Wenn viele Dokumente vorhanden sind, empfiehlt sich ein zwei‑stufiger Ansatz: schnelle Metadaten‑Filtration → inhaltliche Prüfung nur für Top‑N.
@@ -119,6 +131,7 @@ Bei Fragen zur Anpassung der Prompts, zur Reduktion der Token‑Kosten oder zur 
 Dieses Repository enthält auch das Skript `matchaFlow.py`, das den Abgleich zwischen geforderten Dokumenten (aus der Projektbeschreibung) und hochgeladenen Bieter-Dokumenten automatisiert. Es nutzt ein LLM, um die besten Übereinstimmungen zu finden, basierend auf Metadaten wie Name und Kategorie der Dokumente.
 
 ### Funktionsweise
+
 - Das Skript lädt die Liste der geforderten Dokumente über `get_bieterdokumente_list(project)`.
 - Es holt die hochgeladenen Bieter-Dokumente über `list_bidder_docs_json(project, bidder, include_metadata=True)`.
 - Für jedes geforderte Dokument wird ein LLM-Prompt erstellt, der die Metadaten der hochgeladenen Dokumente enthält.
@@ -126,24 +139,34 @@ Dieses Repository enthält auch das Skript `matchaFlow.py`, das den Abgleich zwi
 - Die Ergebnisse werden in einer JSON-Datei gespeichert: `matcha.{project}.{bidder}.json`.
 
 ### Voraussetzungen
+
 - Dieselben wie oben (Python 3.8+, OFS, LLM-Zugang).
 - Zusätzlich: Installation von `credgoo` und `agno` (für LLM-Integration).
 - Optional: `json_repair` für robustes JSON-Parsing.
 
 ### Verwendung
+
 - Führe das Skript über die Kommandozeile aus:
   ```
-  python matchaFlow.py project@bidder [--limit N]
+  python matchaFlow.py project@bidder [--limit N] [--id ID] [--verbose]
   ```
   - `project@bidder`: Der Identifier, z.B. `Entrümpelung@Musterfirma`.
   - `--limit N`: Optionale Begrenzung der zu verarbeitenden geforderten Dokumente (Standard: 100).
+  - `--id ID`: Optionale Angabe einer spezifischen erforderlichen Dokument-ID zur Überprüfung.
+  - `--verbose`: Aktiviert ausführliche Ausgabe für Debugging.
 - Beispiel:
   ```
   python matchaFlow.py Entrümpelung@Musterfirma --limit 5
   ```
   Dies verarbeitet die ersten 5 geforderten Dokumente und speichert die Matches in `matcha.Entrümpelung.Musterfirma.json`.
+- Beispiel mit spezifischer ID:
+  ```
+  python matchaFlow.py test@test --id FORM_SUB_001
+  ```
+  Dies überprüft nur das geforderte Dokument mit der ID `FORM_SUB_001`.
 
 ### Ausgabe
+
 - Die Konsole zeigt den Fortschritt, Anzahl der Dokumente und eine Vorschau des Prompts.
 - Die finale JSON-Datei enthält eine Liste mit jedem geforderten Dokument und den zugeordneten Matches (Dateiname, Name, Kategorie, Begründung).
 - Beispiel-Ausgabe-Struktur:
@@ -168,6 +191,7 @@ Dieses Repository enthält auch das Skript `matchaFlow.py`, das den Abgleich zwi
   ```
 
 ### Hinweise
+
 - Das Skript arbeitet primär mit Metadaten, um Token-Kosten niedrig zu halten.
 - Bei Fehlern (z.B. fehlende API-Keys) wird das Skript abgebrochen.
 - Für große Dokumentlisten kann `--limit` verwendet werden, um die Verarbeitung zu beschleunigen.
@@ -178,6 +202,7 @@ Dieses Repository enthält auch das Skript `matchaFlow.py`, das den Abgleich zwi
 Dieses Repository enthält auch das Skript `auditFlow.py`, das eine automatisierte Bewertung von Vergabekriterien durchführt. Es nutzt ein LLM, um für jedes Audit-Kriterium relevante Dokumente zu finden und zu bewerten, ob das Kriterium erfüllt ist.
 
 ### Funktionsweise
+
 - Das Skript lädt die Audit-Kriterien über `get_kriterien_audit_json(project, bidder)`.
 - Es holt die hochgeladenen Bieter-Dokumente über `list_bidder_docs_json(project, bidder, include_metadata=True)`.
 - Für jedes Kriterium führt es zwei Schritte aus:
@@ -186,11 +211,13 @@ Dieses Repository enthält auch das Skript `auditFlow.py`, das eine automatisier
 - Die Ergebnisse werden in einer JSON-Datei gespeichert: `{project}.{bidder}.assessments.json`.
 
 ### Voraussetzungen
+
 - Dieselben wie oben (Python 3.8+, OFS, LLM-Zugang).
 - Zusätzlich: Installation von `credgoo` und `agno` (für LLM-Integration).
 - Optional: `json_repair` für robustes JSON-Parsing.
 
 ### Verwendung
+
 - Führe das Skript über die Kommandozeile aus:
   ```
   python auditFlow.py project@bidder [--limit N] [--out PATH]
@@ -205,6 +232,7 @@ Dieses Repository enthält auch das Skript `auditFlow.py`, das eine automatisier
   Dies verarbeitet die ersten 5 Kriterien und speichert die Bewertungen in `Gartengeräte.Bieter1.assessments.json`.
 
 ### Ausgabe
+
 - Die Konsole zeigt den Fortschritt mit Kriterien-IDs, Typen und Namen.
 - Für jedes Kriterium werden gefundene Dokumente mit Begründungen angezeigt.
 - Die finale JSON-Datei enthält eine strukturierte Bewertung pro Kriterium.
@@ -228,6 +256,7 @@ Dieses Repository enthält auch das Skript `auditFlow.py`, das eine automatisier
   ```
 
 ### Hinweise
+
 - Das Skript verwendet einen zweistufigen Ansatz: Metadaten-Filtration gefolgt von inhaltsbasierter Bewertung.
 - Bei Fehlern (z.B. fehlende API-Keys oder Dokumente) wird das Skript abgebrochen oder überspringt einzelne Kriterien.
 - Die `--limit` Option hilft bei der Verarbeitung großer Kriterienlisten.
