@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 import re
 import sys
 import logging
@@ -212,7 +213,8 @@ def main():
     print(json.dumps(matched_list, indent=2, ensure_ascii=False))
 
     # Save matched list to file
-    out_file = f"matcha.{project}.{bidder}.json"
+    os.makedirs("logs", exist_ok=True)
+    out_file = f"logs/matcha.{project}.{bidder}.json"
     try:
         with open(out_file, "w", encoding="utf-8") as f:
             json.dump(matched_list, f, indent=2, ensure_ascii=False)
