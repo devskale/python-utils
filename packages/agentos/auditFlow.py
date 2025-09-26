@@ -242,9 +242,11 @@ def main():
             break
         # hole kriteriumsbeschreibung von ofs.api
         kriterium = get_kriterium_description(project, audit_kriterium.get('id', ''))
-        typ = kriterium.get('typ') or kriterium.get('raw', {}).get('typ') or 'N/A'
-        name = kriterium.get('name') or kriterium.get('raw', {}).get('name') or 'N/A'
-        anforderung = kriterium.get('anforderung') or kriterium.get('raw', {}).get('anforderung') or ''
+        kriterium.get('raw', {}).pop('pruefung', None)
+        kriterium = kriterium['raw']
+        typ = kriterium.get('typ', 'N/A')
+        name = kriterium.get('name', 'N/A')
+        anforderung = kriterium.get('anforderung', '')
 
         print(f"{i}/{len(auditliste['kriterien'])} - {audit_kriterium.get('id', 'N/A')} [{typ}] {name}")
         #print(f"   {anforderung}")
