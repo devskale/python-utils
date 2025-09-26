@@ -111,6 +111,8 @@ def main():
                         help="Enable verbose output for debugging")
     parser.add_argument("--test", action="store_true",
                         help="Test mode: build prompts but skip LLM calls")
+    parser.add_argument("--force", action="store_true",
+                        help="Force re-matching of already matched documents")
     args = parser.parse_args()
 
     # Set up logging
@@ -172,7 +174,7 @@ def main():
         # Check if matches already exist for this document
         bdok = next(
             (b for b in audit["bdoks"] if b["id"] == gefordertes_doc["id"]), None)
-        if bdok and "matches" in bdok:
+        if not args.force and bdok and "matches" in bdok:
             print(
                 f"Skipping {gefordertes_doc['id']} - matches already exist")
             continue
@@ -217,6 +219,10 @@ def main():
                     "Could not extract matches JSON cleanly; storing raw content.")
                 matches = content
 
+            # Filter out invalid matches (e.g., null or empty Dateiname)
+            if isinstance(matches, list):
+                matches = [m for m in matches if isinstance(m, dict) and m.get("Dateiname") not in (None, "", "N/A")]
+
         # Add matches to the current required doc and to the aggregate list
         # gefordertes_doc["matches"] = matches  # Removed to avoid duplication
         matched_list.append({
@@ -229,7 +235,7 @@ def main():
             if bdok:
                 verlauf = bdok["audit"]["verlauf"]
                 event = {
-                    "zeit": datetime.now().isoformat(),
+                    "zeit": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
                     "ereignis": "match",
                     "quelle_status": bdok["audit"].get("status"),
                     "ergebnis": f"Found {len(matches) if isinstance(matches, list) else 'N/A'} matches",
@@ -238,6 +244,8 @@ def main():
                 verlauf.append(event)
                 # Add matches to the bdok
                 bdok["matches"] = matches
+                # Update audit status
+                bdok["audit"]["zustand"] = "auditiert-ki"
 
     # Print the aggregated matched list for the processed items
     print("\nMatched list (first {} items):".format(limit or len(matched_list)))
