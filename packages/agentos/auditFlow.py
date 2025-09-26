@@ -6,6 +6,7 @@ import sys
 from credgoo import get_api_key
 from ofs.api import list_bidder_docs_json, get_bieterdokumente_list, get_kriterien_audit_json, get_kriterium_description, read_doc  # type: ignore
 from ofs.kriterien import find_kriterien_file, load_kriterien  # type: ignore
+from kontextBuilder import kontextBuilder
 # Agno framework pieces (used to construct the minimal workflow)
 from agno.agent import Agent
 from agno.models.vllm import VLLM
@@ -82,7 +83,8 @@ def get_ausschreibungsinfo(project: str) -> str:
   "projektName": "{projekt_name}",
   "beschreibung": "{beschreibung}",
   "referenznummer": "{referenznummer}",
-  "dokumentdatum": "{datum}"{lose_info}
+  "dokumentdatum": "{datum}"
+  {lose_info}
 """
 
     except Exception as e:
@@ -94,62 +96,23 @@ def get_ausschreibungsinfo(project: str) -> str:
   "referenznummer": "Error"
 """
 
-def findeDoks(id, kriteriumbeschreibung, doclist, runner = 1):
-    prompt = f"""
-Du bist ein hilfreicher Assistent, der dabei hilft, Ausschreibungskriterien zu überprüfen und passende Dokumente zu finden.
-
-Wenn nicht anders angegeben gilt:
-- das ausschreibende Unternehmen ist die "Wiener Wohnen Hausbetreuung Gmbh", ein Unternehmen aus Österreich.
-- der Bieter ist ein Unternehmen aus Österreich.
-- der Bieter ein Einzalbieter
-- es gibt keine Bieter- oder Arbeitsgemeinschaft.
-- es gibt keine Subunternehmer.
-- sind die hochgeladenen Dokumente von einem Bieter, der an der Ausschreibung teilnimmt.
-- sind die hochgeladenen Dokumente in deutscher Sprache.
-- bietet der Bieter für alle Lose an.
-- ist der Bieter der Hauptauftragnehmer
-
-Das zu analysierende Kriterium ist:
-{json.dumps(kriteriumbeschreibung, indent=2, ensure_ascii=False)}
-
-Die liste mit den hochgeladenen Bieterdokumenten ist:
-{json.dumps(doclist, indent=2, ensure_ascii=False)}
-
-gib eine liste der am besten passenden hochgeladenen Dokumente zurück, die für die Bewertung des Kriteriums relevant sind.
-Sollte kein Dokument passen, gib eine leere Liste zurück.
-"matches": [
-    {{
-    "Dateiname": "...",    # der Dateiname des hochgeladenen Dokuments
-     "Name": "...",         # der Name aus meta.name des hochgeladenen Dokuments
-     "Kategorie": "...",    # die Kategorie aus meta.kategorie des hochgeladenen Dokuments
-     "Begründung": "..."}},  # die Begründung für die Zuordnung
-]
-
-"""
-    return prompt
+def reduce_doclist(doclist):
+    """Reduce the document list to only include name and meta fields for efficiency."""
+    reduced = []
+    for doc in doclist.get('documents', []):
+        reduced.append({
+            'name': doc.get('name'),
+            'meta': doc.get('meta')
+        })
+    return {'documents': reduced}
 
 
-def prüfeKriterium(id, kriteriumbeschreibung, kontext, ausschreibungsinfo, runner = 1):
-    prompt = f"""
-Du bist ein hilfreicher Assistent, der dabei hilft, Ausschreibungskriterien anhand Dokumenten zu überprüfen.
-Ausschreibungsinformationen:
-{ausschreibungsinfo}
+def findeDoks(identifier, kriteriumbeschreibung, doclist, runner=1):
+    return kontextBuilder(identifier, "findeDoks", kriteriumbeschreibung=kriteriumbeschreibung, doclist=doclist)
 
-Das zu analysierende Kriterium ist:
-{json.dumps(kriteriumbeschreibung, indent=2, ensure_ascii=False)}
 
-Der Kontext (Dokumente) zum Prüfen des Kriteriums ist:
-{json.dumps(kontext, indent=2, ensure_ascii=False)}
-
-Erstelle einen Plan, wie du das Kriterium anhand des Kontextes (Dokumente) überprüfen kannst. Überprüfe das Kriterium sorgfältig anhand des Kontextes (Dokumente).
-Gib eine kurze Beurteilung ab, ob das Kriterium erfüllt ist (ja/nein) und eine kurze Begründung.
-Antwort in der Form:
-{{
-  "erfüllt": "ja" | "nein" | "teilweise" | "nicht beurteilbar" | "benötigt Eingriff",
-  "begründung": "..."
-}}
-"""
-    return prompt
+def prüfeKriterium(identifier, kriteriumbeschreibung, kontext, ausschreibungsinfo, runner=1):
+    return kontextBuilder(identifier, "prüfeKriterium", kriteriumbeschreibung=kriteriumbeschreibung, kontext=kontext, ausschreibungsinfo=ausschreibungsinfo)
 
 def extract_json_clean(text: str):
     """Try to extract/parse JSON from a possibly noisy LLM response.
@@ -259,6 +222,7 @@ def main():
         sys.exit(1)
 
     auditliste = get_kriterien_audit_json(project, bidder)
+    auditliste['kriterien'] = [k for k in auditliste['kriterien'] if k.get('status') != 'entfernt']
     print(f"Auditliste: {len(auditliste['kriterien'])}")
     # Build a matched list for the first N required docs
     limit = max(0, int(args.limit))
@@ -288,7 +252,8 @@ def main():
         # ---------------------------------------------------------------------------------------------
         # Find relevant documents for assessing a kriterium
         # ---------------------------------------------------------------------------------------------
-        prompt = findeDoks(audit_kriterium.get('id', ''), kriterium, hochgeladene_dokumente)
+        doclist_reduced = reduce_doclist(hochgeladene_dokumente)
+        prompt = findeDoks(identifier, kriterium, doclist_reduced)
         print("---- STEP-1 - retrieve Kontext ----")
         if args.test:
             print("Test mode: simulating LLM call for document matching")
@@ -392,7 +357,7 @@ def main():
             })
             continue
 
-        prompt = prüfeKriterium(audit_kriterium.get('id', ''), kriterium, kontext, ausschreibungsinfo)
+        prompt = prüfeKriterium(identifier, kriterium, kontext, ausschreibungsinfo)
         if args.test:
             print("Test mode: simulating LLM call for criterion assessment")
             print("Prompt:")
