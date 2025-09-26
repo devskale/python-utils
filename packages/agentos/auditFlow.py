@@ -3,9 +3,11 @@ import os
 import json
 import re
 import sys
+from datetime import datetime
 from credgoo import get_api_key
 from ofs.api import list_bidder_docs_json, get_bieterdokumente_list, get_kriterien_audit_json, get_kriterium_description, read_doc  # type: ignore
 from ofs.kriterien import find_kriterien_file, load_kriterien  # type: ignore
+from ofs.json_manager import update_audit_json  # type: ignore
 from kontextBuilder import kontextBuilder
 # Agno framework pieces (used to construct the minimal workflow)
 from agno.agent import Agent
@@ -337,6 +339,7 @@ def main():
     parser.add_argument("--id", help="Specific criterion ID to check (optional)")
     parser.add_argument("--out", type=str, default=None, help="Optional path to write JSON results (default: ./logs/<project>.<bidder>.assessments.json)")
     parser.add_argument("--test", action="store_true", help="Test mode: simulate LLM calls without actual API hits")
+    parser.add_argument("--force", action="store_true", help="Force re-auditing of already audited criteria")
     args = parser.parse_args()
 
     agent = Agent(
@@ -368,7 +371,10 @@ def main():
         sys.exit(1)
 
     auditliste = get_kriterien_audit_json(project, bidder)
-    auditliste['kriterien'] = [k for k in auditliste['kriterien'] if k.get('status') != 'entfernt']
+    if not args.force:
+        auditliste['kriterien'] = [k for k in auditliste['kriterien'] if k.get('status') != 'entfernt' and not str(k.get('status', '')).startswith('auditiert')]
+    else:
+        auditliste['kriterien'] = [k for k in auditliste['kriterien'] if k.get('status') != 'entfernt']
     print(f"Auditliste: {len(auditliste['kriterien'])}")
     # Build a matched list for the first N required docs
     limit = max(0, int(args.limit))
@@ -378,7 +384,7 @@ def main():
     if args.id:
         auditliste['kriterien'] = [k for k in auditliste['kriterien'] if k.get('id') == args.id]
         if not auditliste['kriterien']:
-            print(f"Criterion {args.id} not found, skipping analysis")
+            print(f"Criterion {args.id}, skipping analysis")
             sys.exit(0)
 
     # loop through audit kriterien and print index and bezeichnung
@@ -456,6 +462,35 @@ def main():
         print(f"Ergebnisse gespeichert: {out_path}")
     except Exception as e:
         print(f"Warnung: Ergebnisse konnten nicht gespeichert werden: {e}")
+
+    # Update audit.json with assessment results and verlauf events
+    try:
+        audit = get_kriterien_audit_json(project, bidder)
+        for ergebnis in ergebnisse:
+            kriterium_id = ergebnis["id"]
+            for k in audit["kriterien"]:
+                if k.get("id") == kriterium_id:
+                    k["assessment"] = ergebnis["assessment"]
+                    k["doc_names"] = ergebnis["doc_names"]
+                    # Add verlauf event
+                    if "audit" not in k:
+                        k["audit"] = {"verlauf": []}
+                    k["status"] = "auditiert-ki"
+                    k["audit"]["status"] = "auditiert-ki"
+                    verlauf = k["audit"]["verlauf"]
+                    event = {
+                        "zeit": datetime.now().isoformat(),
+                        "ereignis": "assessment",
+                        "ergebnis": ergebnis["assessment"]["erfüllt"],
+                        "begründung": ergebnis["assessment"]["begründung"],
+                        "akteur": "auditFlow"
+                    }
+                    verlauf.append(event)
+                    break
+        update_audit_json(project, bidder, "kriterien", audit["kriterien"])
+        print("Assessment-Ergebnisse in audit.json aktualisiert")
+    except Exception as e:
+        print(f"Warnung: Assessment-Ergebnisse konnten nicht in audit.json gespeichert werden: {e}")
 
 
 if __name__ == "__main__":
