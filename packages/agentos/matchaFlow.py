@@ -1,3 +1,26 @@
+"""
+MatchaFlow Module
+
+This module automates matching required documents to bidder uploads using LLM analysis.
+
+Workflow:
+1. Load required documents from audit or project data.
+2. Load bidder's uploaded documents.
+3. For each required document, use LLM to find matches based on metadata.
+4. Save matches and update audit logs.
+
+Dependencies:
+- Python 3.8+
+- OFS package for data access
+- Agno framework for LLM integration
+- Credgoo for API key management
+- KontextBuilder for prompt generation
+- Optional: json_repair for robust JSON parsing
+
+Usage:
+    python matchaFlow.py project@bidder [--limit N] [--id ID] [--verbose] [--test]
+"""
+
 import argparse
 import json
 import os
@@ -5,96 +28,20 @@ import re
 import sys
 import logging
 from datetime import datetime
-from credgoo import get_api_key
+
 from ofs.api import list_bidder_docs_json, get_bieterdokumente_list, get_kriterien_audit_json  # type: ignore
 from ofs.json_manager import update_json_file, update_audit_json
-# Agno framework pieces (used to construct the minimal workflow)
-from agno.agent import Agent
-from agno.models.vllm import VLLM
+
 # from agno.tools import tool
 # from agno.workflow.v2.workflow import Workflow
 from kontextBuilder import kontextBuilder
+from utils import extract_json_clean, create_agent
 
-# Optional JSON repair for messy LLM outputs
-try:
-    from json_repair import repair_json  # type: ignore
-except Exception:  # pragma: no cover - optional dependency
-    repair_json = None  # type: ignore
 
- # ---------------- Environment / Model selection -----------------
-PROVIDER = "tu"
-BASE_URL = "https://aqueduct.ai.datalab.tuwien.ac.at/v1"
-MODEL = "glm-4.5-355b"
-
-api_key = get_api_key(PROVIDER)
 
 
 def findMatches(identifier, geforderte_dokumente, hochgeladene_docs, runner=1):
     return kontextBuilder(identifier, "matchgDok", geforderte_dokumente=geforderte_dokumente, hochgeladene_docs=hochgeladene_docs)
-
-
-def extract_json_clean(text: str):
-    """Try to extract/parse JSON from a possibly noisy LLM response.
-
-    Strategy:
-    - Try direct json.loads
-    - Try fenced code blocks ```json ... ``` or ``` ... ```
-    - Try extracting just the matches array
-    - Try using json_repair.repair_json when available
-    Returns a Python object (dict or list) or None.
-    """
-    if not text:
-        return None
-    # 1) Direct parse
-    try:
-        return json.loads(text)
-    except Exception:
-        pass
-
-    # 2) Look for fenced json blocks
-    for pattern in [r"```json\s*(.*?)```", r"```\s*(.*?)```"]:
-        m = re.search(pattern, text, flags=re.DOTALL | re.IGNORECASE)
-        if m:
-            block = m.group(1).strip()
-            try:
-                return json.loads(block)
-            except Exception:
-                # Attempt repair on the block if available
-                if repair_json:
-                    try:
-                        fixed = repair_json(block)
-                        return json.loads(fixed)
-                    except Exception:
-                        pass
-                continue
-
-    # 3) Extract just the matches array and wrap it
-    m2 = re.search(r'"matches"\s*:\s*(\[.*?\])', text, flags=re.DOTALL)
-    if m2:
-        arr_text = m2.group(1)
-        try:
-            matches = json.loads(arr_text)
-            return {"matches": matches}
-        except Exception:
-            # Attempt repair on the array if available
-            if repair_json:
-                try:
-                    fixed_arr = repair_json(arr_text)
-                    matches = json.loads(fixed_arr)
-                    return {"matches": matches}
-                except Exception:
-                    pass
-            pass
-
-    # 4) Last resort: try to repair the entire text
-    if repair_json:
-        try:
-            fixed_all = repair_json(text)
-            return json.loads(fixed_all)
-        except Exception:
-            pass
-
-    return None
 
 
 def get_bdoks_from_audit(project, bidder, specific_id=None):
@@ -145,11 +92,13 @@ def get_bdoks_from_audit(project, bidder, specific_id=None):
 
 
 def main():
-    """Minimal utility:
+    """Main entry point for automated document matching.
 
-    - Accepts one positional argument in the form project@bidder
-    - Calls ofs.api.list_bidder_docs_json(project, bidder)
-    - Prints the returned JSON nicely
+    Parses command-line arguments, loads required and uploaded documents, matches them using LLM,
+    and saves results to JSON files and audit logs.
+
+    Command-line usage:
+        python matchaFlow.py project@bidder [--limit N] [--id ID] [--verbose] [--test]
     """
     parser = argparse.ArgumentParser(
         description="List bidder docs JSON for project@bidder")
@@ -172,16 +121,7 @@ def main():
         logging.basicConfig(level=logging.WARNING,
                             format='%(levelname)s: %(message)s')
 
-    agent = Agent(
-        model=VLLM(
-            base_url=BASE_URL,
-            api_key=api_key,
-            id=MODEL,
-            max_retries=3,
-            # stream=True,
-        ),
-        tools=[],
-    )
+    agent = create_agent()
 
     identifier = args.identifier
     if "@" not in identifier:

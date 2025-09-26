@@ -1,3 +1,22 @@
+"""
+KontextBuilder Module
+
+This module builds prompts for LLM interactions by loading templates, injecting data from project and audit JSONs, and evaluating f-strings.
+
+Workflow:
+1. Load a prompt template from the prompts directory.
+2. Replace @projekt.KEY and @audit.KEY placeholders with JSON values.
+3. Evaluate {expressions} as f-strings with provided variables.
+
+Dependencies:
+- Python 3.8+
+- OFS package for data access (read_json_file, read_audit_json)
+
+Usage:
+    from kontextBuilder import kontextBuilder
+    prompt = kontextBuilder("project@bidder", "promptid", **kwargs)
+"""
+
 import os
 import json
 import re

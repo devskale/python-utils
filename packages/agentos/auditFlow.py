@@ -1,17 +1,37 @@
+"""
+AuditFlow Module
+
+This module automates the auditing of bidder criteria in procurement processes using LLM-based analysis.
+
+Workflow:
+1. Load project and bidder data, including required criteria and uploaded documents.
+2. For each criterion, decide if document context is needed.
+3. If needed, find relevant documents from the bidder's uploads.
+4. Assess the criterion based on the context (documents) and project info.
+5. Save assessments and update audit logs.
+
+Dependencies:
+- Python 3.8+
+- OFS package for data access
+- Agno framework for LLM integration
+- Credgoo for API key management
+- Optional: tqdm for progress bars, json_repair for robust JSON parsing
+
+Usage:
+    python auditFlow.py project@bidder [--limit N] [--id ID] [--out PATH] [--test] [--force]
+"""
+
 import argparse
 import os
 import json
-import re
+
 import sys
 from datetime import datetime
-from credgoo import get_api_key
 from ofs.api import list_bidder_docs_json, get_bieterdokumente_list, get_kriterien_audit_json, get_kriterium_description, read_doc  # type: ignore
 from ofs.kriterien import find_kriterien_file, load_kriterien  # type: ignore
 from ofs.json_manager import update_audit_json  # type: ignore
 from kontextBuilder import kontextBuilder
-# Agno framework pieces (used to construct the minimal workflow)
-from agno.agent import Agent
-from agno.models.vllm import VLLM
+from utils import extract_json_clean, create_agent
 # from agno.tools import tool
 # from agno.workflow.v2.workflow import Workflow
 
@@ -20,21 +40,9 @@ try:
 except ImportError:
     tqdm = None  # Fallback if tqdm not available
 
-# Optional JSON repair for messy LLM outputs
-try:
-    from json_repair import repair_json  # type: ignore
-except Exception:  # pragma: no cover - optional dependency
-    repair_json = None  # type: ignore
-
- # ---------------- Environment / Model selection -----------------
-PROVIDER = "tu"
-BASE_URL = "https://aqueduct.ai.datalab.tuwien.ac.at/v1"
-MODEL = "glm-4.5-355b"
 
 
 # AUSSCHREIBUNGSINFO will be retrieved dynamically from kriterien.json
-
-api_key = get_api_key(PROVIDER)
 
 def get_ausschreibungsinfo(project: str) -> str:
     """Retrieve AUSSCHREIBUNGSINFO from the project's kriterien.json metadata."""
@@ -119,68 +127,7 @@ def prüfeKriterium(identifier, kriteriumbeschreibung, kontext, ausschreibungsin
 def entscheideKontext(identifier, kriteriumbeschreibung, ausschreibungsinfo, runner=1):
     return kontextBuilder(identifier, "entscheideKontext", kriteriumbeschreibung=kriteriumbeschreibung, ausschreibungsinfo=ausschreibungsinfo)
 
-def extract_json_clean(text: str):
-    """Try to extract/parse JSON from a possibly noisy LLM response.
 
-    Strategy:
-    - Try direct json.loads
-    - Try fenced code blocks ```json ... ``` or ``` ... ```
-    - Try extracting just the matches array
-    - Try using json_repair.repair_json when available
-    Returns a Python object (dict or list) or None.
-    """
-    if not text:
-        return None
-    # 1) Direct parse
-    try:
-        return json.loads(text)
-    except Exception:
-        pass
-
-    # 2) Look for fenced json blocks
-    for pattern in [r"```json\s*(.*?)```", r"```\s*(.*?)```"]:
-        m = re.search(pattern, text, flags=re.DOTALL | re.IGNORECASE)
-        if m:
-            block = m.group(1).strip()
-            try:
-                return json.loads(block)
-            except Exception:
-                # Attempt repair on the block if available
-                if repair_json:
-                    try:
-                        fixed = repair_json(block)
-                        return json.loads(fixed)
-                    except Exception:
-                        pass
-                continue
-
-    # 3) Extract just the matches array and wrap it
-    m2 = re.search(r'"matches"\s*:\s*(\[.*?\])', text, flags=re.DOTALL)
-    if m2:
-        arr_text = m2.group(1)
-        try:
-            matches = json.loads(arr_text)
-            return {"matches": matches}
-        except Exception:
-            # Attempt repair on the array if available
-            if repair_json:
-                try:
-                    fixed_arr = repair_json(arr_text)
-                    matches = json.loads(fixed_arr)
-                    return {"matches": matches}
-                except Exception:
-                    pass
-            pass
-
-    # 4) Last resort: try to repair the entire text
-    if repair_json:
-        try:
-            fixed_all = repair_json(text)
-            return json.loads(fixed_all)
-        except Exception:
-            pass
-
-    return None
 
 
 def run_step_0(identifier, kriterium, ausschreibungsinfo, agent, test=False):
@@ -327,11 +274,13 @@ def run_step_2(identifier, kriterium, kontext, ausschreibungsinfo, agent, test=F
 
 
 def main():
-    """Minimal utility:
+    """Main entry point for automated criteria assessment.
 
-    - Accepts one positional argument in the form project@bidder
-    - Calls ofs.api.list_bidder_docs_json(project, bidder)
-    - Prints the returned JSON nicely
+    Parses command-line arguments, loads project and bidder data, processes audit criteria using LLM,
+    assesses each criterion against relevant documents, and saves results to JSON files and audit logs.
+
+    Command-line usage:
+        python auditFlow.py project@bidder [--limit N] [--id ID] [--out PATH] [--test] [--force]
     """
     parser = argparse.ArgumentParser(description="Automated criteria assessment with LLM")
     parser.add_argument("identifier", help="project@bidder")
@@ -342,16 +291,7 @@ def main():
     parser.add_argument("--force", action="store_true", help="Force re-auditing of already audited criteria")
     args = parser.parse_args()
 
-    agent = Agent(
-        model=VLLM(
-            base_url=BASE_URL,
-            api_key=api_key,
-            id=MODEL,
-            max_retries=3,
-            #stream=True,
-        ),
-        tools=[],
-    )
+    agent = create_agent()
 
     identifier = args.identifier
     if "@" not in identifier:
