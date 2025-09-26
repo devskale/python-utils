@@ -12,6 +12,11 @@ from agno.models.vllm import VLLM
 # from agno.tools import tool
 # from agno.workflow.v2.workflow import Workflow
 
+try:
+    from tqdm import tqdm  # type: ignore
+except ImportError:
+    tqdm = None  # Fallback if tqdm not available
+
 # Optional JSON repair for messy LLM outputs
 try:
     from json_repair import repair_json  # type: ignore
@@ -217,11 +222,12 @@ def main():
     - Calls ofs.api.list_bidder_docs_json(project, bidder)
     - Prints the returned JSON nicely
     """
-    parser = argparse.ArgumentParser(description="List bidder docs JSON for project@bidder")
+    parser = argparse.ArgumentParser(description="Automated criteria assessment with LLM")
     parser.add_argument("identifier", help="project@bidder")
     parser.add_argument("--limit", type=int, default=10, help="Number of criteria to process (default: 10)")
     parser.add_argument("--id", help="Specific criterion ID to check (optional)")
-    parser.add_argument("--out", type=str, default=None, help="Optional path to write JSON results (default: ./<project>.<bidder>.assessments.json)")
+    parser.add_argument("--out", type=str, default=None, help="Optional path to write JSON results (default: ./logs/<project>.<bidder>.assessments.json)")
+    parser.add_argument("--test", action="store_true", help="Test mode: simulate LLM calls without actual API hits")
     args = parser.parse_args()
 
     agent = Agent(
@@ -266,29 +272,48 @@ def main():
             sys.exit(0)
 
     # loop through audit kriterien and print index and bezeichnung
-    for i, audit_kriterium in enumerate(auditliste['kriterien'], start=1):
+    iterator = tqdm(enumerate(auditliste['kriterien'], start=1), total=len(auditliste['kriterien']), desc="Processing criteria") if tqdm else enumerate(auditliste['kriterien'], start=1)
+    for i, audit_kriterium in iterator:
         if limit and i > limit:
             break
+        # hole kriteriumsbeschreibung von ofs.api
         kriterium = get_kriterium_description(project, audit_kriterium.get('id', ''))
         typ = kriterium.get('typ') or kriterium.get('raw', {}).get('typ') or 'N/A'
         name = kriterium.get('name') or kriterium.get('raw', {}).get('name') or 'N/A'
         anforderung = kriterium.get('anforderung') or kriterium.get('raw', {}).get('anforderung') or ''
 
         print(f"{i}/{len(auditliste['kriterien'])} - {audit_kriterium.get('id', 'N/A')} [{typ}] {name}")
+        #print(f"   {anforderung}")
+        #exit(0)
         # ---------------------------------------------------------------------------------------------
         # Find relevant documents for assessing a kriterium
         # ---------------------------------------------------------------------------------------------
         prompt = findeDoks(audit_kriterium.get('id', ''), kriterium, hochgeladene_dokumente)
         print("---- STEP-1 - retrieve Kontext ----")
-        response = agent.run(
-            prompt,
-            stream=False,  # capture final text only
-            markdown=False,
-            show_message=False
-        )
-        # Parse the response into JSON (clean) and extract the matches array
-        content = getattr(response, "content", response)
-        match_result = extract_json_clean(content if isinstance(content, str) else str(content))
+        if args.test:
+            print("Test mode: simulating LLM call for document matching")
+            print("Prompt:")
+            print(prompt)
+            match_result = {
+                "matches": [
+                    {
+                        "Dateiname": "mock_document.pdf",
+                        "Name": "Mock Document",
+                        "Kategorie": "Test Category",
+                        "Begründung": "Simulated match for testing"
+                    }
+                ]
+            }
+        else:
+            response = agent.run(
+                prompt,
+                stream=False,  # capture final text only
+                markdown=False,
+                show_message=False
+            )
+            # Parse the response into JSON (clean) and extract the matches array
+            content = getattr(response, "content", response)
+            match_result = extract_json_clean(content if isinstance(content, str) else str(content))
 
         # Handle different possible return types from extract_json_clean
         if isinstance(match_result, list):
@@ -368,15 +393,24 @@ def main():
             continue
 
         prompt = prüfeKriterium(audit_kriterium.get('id', ''), kriterium, kontext, ausschreibungsinfo)
-        response = agent.run(
-            prompt,
-            stream=False,  # capture final text only
-            markdown=False,
-            show_message=False
-        )
-        # Parse the response into JSON (clean) and extract the matches array
-        content = getattr(response, "content", response)
-        assessment_result = extract_json_clean(content if isinstance(content, str) else str(content))
+        if args.test:
+            print("Test mode: simulating LLM call for criterion assessment")
+            print("Prompt:")
+            print(prompt)
+            assessment_result = {
+                "erfüllt": "ja",
+                "begründung": "Simulated assessment for testing"
+            }
+        else:
+            response = agent.run(
+                prompt,
+                stream=False,  # capture final text only
+                markdown=False,
+                show_message=False
+            )
+            # Parse the response into JSON (clean) and extract the matches array
+            content = getattr(response, "content", response)
+            assessment_result = extract_json_clean(content if isinstance(content, str) else str(content))
 
         # assessment_result should be a dict with erfüllt and begründung keys
         if not isinstance(assessment_result, dict):
