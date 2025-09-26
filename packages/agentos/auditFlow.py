@@ -114,6 +114,9 @@ def findeDoks(identifier, kriteriumbeschreibung, doclist, runner=1):
 def prüfeKriterium(identifier, kriteriumbeschreibung, kontext, ausschreibungsinfo, runner=1):
     return kontextBuilder(identifier, "prüfeKriterium", kriteriumbeschreibung=kriteriumbeschreibung, kontext=kontext, ausschreibungsinfo=ausschreibungsinfo)
 
+def entscheideKontext(identifier, kriteriumbeschreibung, ausschreibungsinfo, runner=1):
+    return kontextBuilder(identifier, "entscheideKontext", kriteriumbeschreibung=kriteriumbeschreibung, ausschreibungsinfo=ausschreibungsinfo)
+
 def extract_json_clean(text: str):
     """Try to extract/parse JSON from a possibly noisy LLM response.
 
@@ -212,8 +215,8 @@ def main():
 
     # Retrieve AUSSCHREIBUNGSINFO from kriterien.json
     ausschreibungsinfo = get_ausschreibungsinfo(project)
-    print(f"AUSSCHREIBUNGSINFO für Projekt '{project}':")
-    print(ausschreibungsinfo)
+    #print(f"AUSSCHREIBUNGSINFO für Projekt '{project}':")
+    #print(ausschreibungsinfo)
 
     try:
         hochgeladene_dokumente = list_bidder_docs_json(project, bidder, include_metadata=True)
@@ -244,9 +247,9 @@ def main():
         kriterium = get_kriterium_description(project, audit_kriterium.get('id', ''))
         kriterium.get('raw', {}).pop('pruefung', None)
         kriterium = kriterium['raw']
-        if args.id:
-            print("Das zu analysierende Kriterium ist:")
-            print(json.dumps(kriterium, indent=2, ensure_ascii=False))
+#        if args.id:
+#            print("Das zu analysierende Kriterium ist:")
+#            print(json.dumps(kriterium, indent=2, ensure_ascii=False))
         typ = kriterium.get('typ', 'N/A')
         name = kriterium.get('name', 'N/A')
         anforderung = kriterium.get('anforderung', '')
@@ -255,25 +258,13 @@ def main():
         #print(f"   {anforderung}")
         #exit(0)
         # ---------------------------------------------------------------------------------------------
-        # Find relevant documents for assessing a kriterium
+        # Step 0: Decide if context is needed
         # ---------------------------------------------------------------------------------------------
-        doclist_reduced = reduce_doclist(hochgeladene_dokumente)
-        prompt = findeDoks(identifier, kriterium, doclist_reduced)
-        print("---- STEP-1 - retrieve Kontext ----")
+        print("---- STEP-0 - Entscheide ob Kontext nötig ----")
+        prompt = entscheideKontext(identifier, kriterium, ausschreibungsinfo)
         if args.test:
-            print("Test mode: simulating LLM call for document matching")
-            print("Prompt:")
-            print(prompt)
-            match_result = {
-                "matches": [
-                    {
-                        "Dateiname": "mock_document.pdf",
-                        "Name": "Mock Document",
-                        "Kategorie": "Test Category",
-                        "Begründung": "Simulated match for testing"
-                    }
-                ]
-            }
+            print("Test mode: simulating decision")
+            decision = {"kontext_noetig": False, "begruendung": "Test mode: Assume no context needed"}
         else:
             response = agent.run(
                 prompt,
@@ -281,86 +272,138 @@ def main():
                 markdown=False,
                 show_message=False
             )
-            # Parse the response into JSON (clean) and extract the matches array
             content = getattr(response, "content", response)
-            match_result = extract_json_clean(content if isinstance(content, str) else str(content))
+            decision = extract_json_clean(content if isinstance(content, str) else str(content))
 
-        # Handle different possible return types from extract_json_clean
-        if isinstance(match_result, list):
-            # Direct matches array
-            matches = match_result
-        elif isinstance(match_result, dict):
-            # Dict with matches key
-            matches = match_result.get("matches", [])
+        if isinstance(decision, dict):
+            kontext_noetig = decision.get("kontext_noetig", True)
+            begruendung = decision.get("begruendung", "Keine Begründung")
         else:
-            # None or other
-            matches = []
+            kontext_noetig = True  # Default to needing context
+            begruendung = "Fehler beim Parsen der Entscheidung"
 
-        # if matches array is present, print matches list
-        if not matches:
-            print("  Keine passenden Dokumente gefunden.")
-            print("")
-            # Kein Kontext aus Schritt 1 -> nächstes Kriterium
-            ergebnisse.append({
-                "id": audit_kriterium.get('id', ''),
-                "doc_names": [],
-                "assessment": {
-                    "erfüllt": "nicht beurteilbar",
-                    "begründung": "Keine passenden Dokumente gefunden."
+        print(f"Kontext nötig: {kontext_noetig}")
+        print(f"Begründung: {begruendung}")
+        print("")
+
+        if kontext_noetig:
+            # ---------------------------------------------------------------------------------------------
+            # Step 1: Find relevant documents for assessing a kriterium
+            # ---------------------------------------------------------------------------------------------
+            doclist_reduced = reduce_doclist(hochgeladene_dokumente)
+            prompt = findeDoks(identifier, kriterium, doclist_reduced)
+            print("---- STEP-1 - retrieve Kontext ----")
+            if args.test:
+                print("Test mode: simulating LLM call for document matching")
+                print("Prompt:")
+                print(prompt)
+                match_result = {
+                    "matches": [
+                        {
+                            "Dateiname": "mock_document.pdf",
+                            "Name": "Mock Document",
+                            "Kategorie": "Test Category",
+                            "Begründung": "Simulated match for testing"
+                        }
+                    ]
                 }
-            })
-            continue
-        print(f"  Gefundene passende Dokumente: {len(matches)}")
-        # collect matched filenames (initial list from Step 1)
-        matched_names: list[str] = []
-        for m in matches:
-            dateiname = m.get("Dateiname", "N/A")
-            name = m.get("Name", "N/A")
-            kategorie = m.get("Kategorie", "N/A")
-            begruendung = m.get("Begründung", "N/A")
-            print(f"    - {dateiname} (Name: {name}, Kategorie: {kategorie})")
-            print(f"      Begründung: {begruendung}")
-            if dateiname and dateiname != "N/A":
-                matched_names.append(dateiname)
-        print("")
+            else:
+                response = agent.run(
+                    prompt,
+                    stream=False,  # capture final text only
+                    markdown=False,
+                    show_message=False
+                )
+                # Parse the response into JSON (clean) and extract the matches array
+                content = getattr(response, "content", response)
+                match_result = extract_json_clean(content if isinstance(content, str) else str(content))
 
-        # ---------------------------------------------------------------------------------------------
-        # If relevant documents are found let the agent assess the kriterium
-        # ---------------------------------------------------------------------------------------------
-        # build up kontext, its the documents found
-        print("---- STEP-2 - Prüfe Kriterium (Kontext) ----")
-        print(f"Kriterium: {name}")
-        if anforderung:
-            print(f"Anforderung: {anforderung}")
-        print("")
-        kontext = []
-        used_doc_names: list[str] = []
+            # Handle different possible return types from extract_json_clean
+            if isinstance(match_result, list):
+                # Direct matches array
+                matches = match_result
+            elif isinstance(match_result, dict):
+                # Dict with matches key
+                matches = match_result.get("matches", [])
+            else:
+                # None or other
+                matches = []
 
-        for m in matches:
-            dateiname = m.get("Dateiname", "")
-            if not dateiname or dateiname == "N/A":
+            # if matches array is present, print matches list
+            if not matches:
+                print("  Keine passenden Dokumente gefunden.")
+                print("")
+                # Kein Kontext aus Schritt 1 -> nächstes Kriterium
+                ergebnisse.append({
+                    "id": audit_kriterium.get('id', ''),
+                    "doc_names": [],
+                    "assessment": {
+                        "erfüllt": "nicht beurteilbar",
+                        "begründung": "Keine passenden Dokumente gefunden."
+                    }
+                })
                 continue
-            # read_doc from ofs.api expects a single identifier string
-            identifier_doc = f"{project}@{bidder}@{dateiname}"
-            doc = read_doc(identifier_doc)
-            if doc:
-#                print(f"  Kontext-Dokument: {dateiname}")
-                # print(f"  Inhalt (erste 300 Zeichen): {doc.get('content', '')[:300]}")
-                kontext.append(doc)
-                used_doc_names.append(dateiname)
-
-        if not kontext:
-            print("  Kein Kontext (Dokumente) zum Prüfen gefunden, überspringe Kriterium.")
+            print(f"  Gefundene passende Dokumente: {len(matches)}")
+            # collect matched filenames (initial list from Step 1)
+            matched_names: list[str] = []
+            for m in matches:
+                dateiname = m.get("Dateiname", "N/A")
+                name = m.get("Name", "N/A")
+                kategorie = m.get("Kategorie", "N/A")
+                begruendung = m.get("Begründung", "N/A")
+                print(f"    - {dateiname} (Name: {name}, Kategorie: {kategorie})")
+                print(f"      Begründung: {begruendung}")
+                if dateiname and dateiname != "N/A":
+                    matched_names.append(dateiname)
             print("")
-            ergebnisse.append({
-                "id": audit_kriterium.get('id', ''),
-                "doc_names": matched_names,
-                "assessment": {
-                    "erfüllt": "nicht beurteilbar",
-                    "begründung": "Kontext-Dokumente konnten nicht geladen werden."
-                }
-            })
-            continue
+
+            # ---------------------------------------------------------------------------------------------
+            # Step 2: Assess the kriterium with context
+            # ---------------------------------------------------------------------------------------------
+            # build up kontext, its the documents found
+            print("---- STEP-2 - Prüfe Kriterium (Kontext) ----")
+            print(f"Kriterium: {name}")
+            if anforderung:
+                print(f"Anforderung: {anforderung}")
+            print("")
+            kontext = []
+            used_doc_names: list[str] = []
+
+            for m in matches:
+                dateiname = m.get("Dateiname", "")
+                if not dateiname or dateiname == "N/A":
+                    continue
+                # read_doc from ofs.api expects a single identifier string
+                identifier_doc = f"{project}@{bidder}@{dateiname}"
+                doc = read_doc(identifier_doc)
+                if doc:
+    #                print(f"  Kontext-Dokument: {dateiname}")
+                    # print(f"  Inhalt (erste 300 Zeichen): {doc.get('content', '')[:300]}")
+                    kontext.append(doc)
+                    used_doc_names.append(dateiname)
+
+            if not kontext:
+                print("  Kein Kontext (Dokumente) zum Prüfen gefunden, überspringe Kriterium.")
+                print("")
+                ergebnisse.append({
+                    "id": audit_kriterium.get('id', ''),
+                    "doc_names": matched_names,
+                    "assessment": {
+                        "erfüllt": "nicht beurteilbar",
+                        "begründung": "Kontext-Dokumente konnten nicht geladen werden."
+                    }
+                })
+                continue
+        else:
+            # No context needed, proceed directly to Step 2 with empty context
+            matched_names = []
+            kontext = []
+            used_doc_names = []
+            print("---- STEP-2 - Prüfe Kriterium (ohne Kontext) ----")
+            print(f"Kriterium: {name}")
+            if anforderung:
+                print(f"Anforderung: {anforderung}")
+            print("")
 
         prompt = prüfeKriterium(identifier, kriterium, kontext, ausschreibungsinfo)
         if args.test:
