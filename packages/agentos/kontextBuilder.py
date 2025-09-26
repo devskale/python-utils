@@ -94,6 +94,6 @@ def kontextBuilder(identifier, promptid, **kwargs):
     # print(f"Identifier: {identifier}")
     # print(f"Kwargs: {kwargs}")
     print(
-        f"Loaded, injected, and evaluated prompt template for {identifier} using {promptid}:")
+        f"Loaded template {identifier}-{promptid}:")
     # print(template)
     return template

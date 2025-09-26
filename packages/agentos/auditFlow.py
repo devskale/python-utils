@@ -250,11 +250,11 @@ def run_step_1(identifier, kriterium, hochgeladene_dokumente, agent, test=False)
         matches = []
 
     if not matches:
-        print("  Keine passenden Dokumente gefunden.")
+        print("  Doks: 0")
         print("")
         return {"matches": [], "matched_names": [], "kontext": []}
 
-    print(f"  Gefundene passende Dokumente: {len(matches)}")
+    print(f"  Doks: {len(matches)}")
     matched_names = []
     for m in matches:
         dateiname = m.get("Dateiname", "N/A")
@@ -280,7 +280,7 @@ def run_step_1(identifier, kriterium, hochgeladene_dokumente, agent, test=False)
             kontext.append(doc)
 
     if not kontext:
-        print("  Kein Kontext (Dokumente) zum Prüfen gefunden.")
+        print("  Kein Kontext.")
         print("")
         return {"matches": matches, "matched_names": matched_names, "kontext": []}
 
@@ -396,6 +396,16 @@ def main():
         kriterium = get_kriterium_description(project, audit_kriterium.get('id', ''))
         kriterium.get('raw', {}).pop('pruefung', None)
         kriterium = kriterium['raw']
+        # Ensure all relevant keys are present with defaults
+        kriterium.setdefault('typ', 'N/A')
+        kriterium.setdefault('kategorie', 'N/A')
+        kriterium.setdefault('name', 'N/A')
+        kriterium.setdefault('anforderung', '')
+        kriterium.setdefault('schwellenwert', None)
+        kriterium.setdefault('gewichtung_punkte', None)
+        kriterium.setdefault('dokumente', [])
+        kriterium.setdefault('geltung_lose', [])
+        kriterium.setdefault('quelle', '')
         if args.id:
             print("Das zu analysierende Kriterium ist:")
             print(json.dumps(kriterium, indent=2, ensure_ascii=False))
@@ -479,7 +489,7 @@ def main():
                     k["audit"]["status"] = "auditiert-ki"
                     verlauf = k["audit"]["verlauf"]
                     event = {
-                        "zeit": datetime.now().isoformat(),
+                        "zeit": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
                         "ereignis": "assessment",
                         "ergebnis": ergebnis["assessment"]["erfüllt"],
                         "begründung": ergebnis["assessment"]["begründung"],

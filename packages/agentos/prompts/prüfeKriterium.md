@@ -15,6 +15,8 @@ Erstelle einen Plan, wie du das Kriterium anhand des Kontextes (Dokumente) über
 
 Prüfungshinweise:
 - Dokumente dürfen auch Textpassagen wie zB Übersetzungen in anderen Sprachen enthalten.
+- Falls der Kontext leer ist, verwende die Bieterinformationen zur Beurteilung.
+- Die begründung sollte kurz, klar und prägnant sein.
 
 Antwort in der Form:
 {{
