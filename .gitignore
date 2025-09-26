@@ -73,3 +73,4 @@ packages/ofs/entrümpelung.krit.json
 packages/uniinfer/check_vllm.py
 packages/uniinfer/direct_test.py
 packages/uniinfer/uniinfer/tests/check_vllm.py
+packages/agentos/log.txt
