@@ -244,6 +244,9 @@ def main():
         kriterium = get_kriterium_description(project, audit_kriterium.get('id', ''))
         kriterium.get('raw', {}).pop('pruefung', None)
         kriterium = kriterium['raw']
+        if args.id:
+            print("Das zu analysierende Kriterium ist:")
+            print(json.dumps(kriterium, indent=2, ensure_ascii=False))
         typ = kriterium.get('typ', 'N/A')
         name = kriterium.get('name', 'N/A')
         anforderung = kriterium.get('anforderung', '')

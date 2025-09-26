@@ -2,14 +2,16 @@ Du bist ein hilfreicher Assistent, der dabei hilft, Ausschreibungskriterien anha
 Ausschreibungsinformationen:
 {ausschreibungsinfo}
 
+Bieterinformationen:
+@audit.meta
+
 Das zu analysierende Kriterium ist:
 {json.dumps(kriteriumbeschreibung, indent=2, ensure_ascii=False)}
 
 Der Kontext (Dokumente) zum Prüfen des Kriteriums ist:
 {json.dumps(kontext, indent=2, ensure_ascii=False)}
 
-Erstelle einen Plan, wie du das Kriterium anhand des Kontextes (Dokumente) überprüfen kannst. Überprüfe das Kriterium sorgfältig anhand des Kontextes (Dokumente).
-Gib eine kurze Beurteilung ab, ob das Kriterium erfüllt ist (ja/nein) und eine kurze Begründung.
+Erstelle einen Plan, wie du das Kriterium anhand des Kontextes (Dokumente) überprüfst. Überprüfe das Kriterium sorgfältig anhand des Plans und Kontextes (Dokumente). Gib eine Beurteilung ab, ob das Kriterium erfüllt ist (ja/nein) und eine kurze Begründung.
 Antwort in der Form:
 {{
   "erfüllt": "ja" | "nein" | "teilweise" | "nicht beurteilbar" | "benötigt Eingriff",
